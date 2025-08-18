@@ -1,8 +1,3 @@
-Below is a ready-to-paste `README.md` you can add to the root of your repo. It is written so any group member (beginner friendly) can clone the project and start working. It also includes short example contents for the most important files (so members understand what to edit or paste into their local files).
-
-Copy the entire content below into `README.md` in your repo.
-
----
 
 # BrainBoost — Brain Training & Cognitive Assessment (React Native / Expo)
 
