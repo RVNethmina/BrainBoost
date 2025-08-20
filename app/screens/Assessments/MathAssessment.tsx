@@ -1,12 +1,12 @@
 import React from 'react'
 import { Text, View } from 'react-native'
 
-const MemoryTest = () => {
+const MathAssessment = () => {
   return (
     <View>
-      <Text>MemoryTest</Text>
+      <Text>MathAssessment</Text>
     </View>
   )
 }
 
-export default MemoryTest
+export default MathAssessment
