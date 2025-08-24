@@ -1,9 +1,9 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
+import OnboardingScreen from '../screens/Auth/OnboardingScreen';
 import SignInScreen from '../screens/Auth/SignInScreen';
 import SignupScreen from '../screens/Auth/SignupScreen';
-import OnboardingScreen from '../screens/Auth/OnboardingScreen';
 import WelcomeScreen from '../screens/Auth/WelcomeScreen';
 import HomeScreen from '../screens/Main/HomeScreen';
 
@@ -13,6 +13,24 @@ export type RootStackParamList = {
   SignIn: undefined;
   Signup: undefined;
   Home: undefined;
+  Progress: undefined;
+  BrainGames: undefined;
+  Assessment: undefined;
+  MathQuiz: undefined;
+  MathPlay: undefined;
+  MemoryMatch: undefined;
+  AttentionGame: undefined;
+  PuzzleGame: undefined;
+  MemoryTest: undefined;
+  AttentionTest: undefined;
+  MathAssessment: undefined;
+  FullAssessment: undefined;
+  GameResults: undefined;
+  Reminder: undefined;
+  Settings: undefined;
+  Profile: undefined;
+  MemoryGame: undefined;
+  
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
