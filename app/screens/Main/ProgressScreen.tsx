@@ -1,89 +1,204 @@
+// app/src/screens/ProgressScreen.tsx
+import { PALETTE } from '@/app/design/colors';
 import { RootStackParamList } from '@/app/navigation/AppNavigator';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 type ProgressScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'Progress'
 >;
 
-const ProgressScreen = () => {
+const ProgressScreen: React.FC = () => {
   const navigation = useNavigation<ProgressScreenNavigationProp>();
 
+  const weekHeights = [60, 80, 100, 75, 120, 40, 90]; // visual heights for Mon..Sun
+  const weekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-5 pt-10 pb-4 bg-purple-100">
-        <TouchableOpacity 
+      <View style={[styles.header, { backgroundColor: PALETTE.lightTeal }]}>
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="items-center justify-center w-12 h-12 bg-gray-100 rounded-xl"
+          style={styles.headerButton}
+          accessibilityRole="button"
         >
-          <Text className="text-2xl">←</Text>
+          <Text style={styles.headerButtonText}>←</Text>
         </TouchableOpacity>
-        <Text className="text-2xl font-bold text-gray-800">My Progress</Text>
-        <View className="w-12" />
+
+        <Text style={styles.headerTitle}>My Progress</Text>
+
+        <View style={{ width: 48 }} />
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <View className="grid grid-cols-2 gap-4 mt-6">
-          <View className="items-center p-5 bg-yellow-100 rounded-2xl">
-            <Text className="mb-2 text-3xl">🎮</Text>
-            <Text className="text-lg font-bold">Games Played</Text>
-            <Text className="text-2xl font-bold text-purple-600">127</Text>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Top cards */}
+        <View style={styles.topGrid}>
+          <View style={[styles.metricCard, { backgroundColor: PALETTE.yellow }]}>
+            <Text style={styles.metricEmoji}>🎮</Text>
+            <Text style={styles.metricLabel}>Games Played</Text>
+            <Text style={[styles.metricValue, { color: PALETTE.purple }]}>
+              127
+            </Text>
           </View>
-          
-          <View className="items-center p-5 bg-yellow-100 rounded-2xl">
-            <Text className="mb-2 text-3xl">🔥</Text>
-            <Text className="text-lg font-bold">Streak</Text>
-            <Text className="text-2xl font-bold text-orange-600">12 days</Text>
+
+          <View style={[styles.metricCard, { backgroundColor: PALETTE.yellow }]}>
+            <Text style={styles.metricEmoji}>🔥</Text>
+            <Text style={styles.metricLabel}>Streak</Text>
+            <Text style={[styles.metricValue, { color: PALETTE.orange }]}>
+              12 days
+            </Text>
           </View>
         </View>
 
         {/* Weekly Progress */}
-        <View className="p-5 mt-6 bg-white border border-gray-100 shadow-sm rounded-2xl">
-          <Text className="mb-4 text-xl font-bold">Weekly Progress</Text>
-          <View className="flex-row items-end justify-between h-32 mb-4">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
-              <View key={day} className="flex-col items-center">
-                <View 
-                  className="w-8 bg-purple-300 rounded-t" 
-                  style={{ 
-                    height: [60, 80, 100, 75, 120, 40, 90][index],
-                    backgroundColor: index === 4 ? '#8b5cf6' : index === 2 ? '#a855f7' : '#d8b4fe'
-                  }}
-                />
-                <Text className="mt-2 text-sm">{day}</Text>
-              </View>
-            ))}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Weekly Progress</Text>
+
+          <View style={styles.barRow}>
+            {weekLabels.map((day, idx) => {
+              const height = weekHeights[idx];
+              // color mapping: highlight Fri (index 4) and Wed (index 2)
+              const barColor =
+                idx === 4 ? PALETTE.purple : idx === 2 ? PALETTE.lightPink : '#D8B4FE';
+              return (
+                <View key={day} style={styles.barColumn}>
+                  <View
+                    style={[
+                      styles.bar,
+                      { height, backgroundColor: barColor, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
+                    ]}
+                  />
+                  <Text style={styles.barLabel}>{day}</Text>
+                </View>
+              );
+            })}
           </View>
         </View>
 
         {/* Recent Achievements */}
-        <View className="p-5 mt-6 bg-white border border-gray-100 shadow-sm rounded-2xl">
-          <Text className="mb-4 text-xl font-bold">Recent Achievements</Text>
-          <View className="space-y-3">
-            <View className="flex-row items-center gap-3">
-              <Text className="text-2xl">🏆</Text>
-              <View>
-                <Text className="font-semibold">Memory Master</Text>
-                <Text className="text-sm text-gray-600">Completed 10 memory games</Text>
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Recent Achievements</Text>
+
+          <View style={styles.achievementList}>
+            <View style={styles.achievementItem}>
+              <Text style={styles.achievementEmoji}>🏆</Text>
+              <View style={styles.achievementBody}>
+                <Text style={styles.achievementTitle}>Memory Master</Text>
+                <Text style={styles.achievementNote}>
+                  Completed 10 memory games
+                </Text>
               </View>
             </View>
-            <View className="flex-row items-center gap-3">
-              <Text className="text-2xl">⭐</Text>
-              <View>
-                <Text className="font-semibold">Perfect Score</Text>
-                <Text className="text-sm text-gray-600">Got 100% in math game</Text>
+
+            <View style={styles.achievementItem}>
+              <Text style={styles.achievementEmoji}>⭐</Text>
+              <View style={styles.achievementBody}>
+                <Text style={styles.achievementTitle}>Perfect Score</Text>
+                <Text style={styles.achievementNote}>
+                  Got 100% in math game
+                </Text>
               </View>
             </View>
           </View>
         </View>
+
+        <View style={{ height: 32 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
 export default ProgressScreen;
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FFF' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 12,
+  },
+  headerButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 48,
+    height: 48,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+  },
+  headerButtonText: { fontSize: 20 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
+
+  content: { flex: 1, paddingHorizontal: 20 },
+
+  topGrid: {
+    marginTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  metricCard: {
+    width: '48%',
+    alignItems: 'center',
+    padding: 18,
+    borderRadius: 16,
+    // subtle shadow
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
+  metricEmoji: { fontSize: 30, marginBottom: 8 },
+  metricLabel: { fontSize: 16, color: '#111827' },
+  metricValue: { fontSize: 20, fontWeight: '800', marginTop: 6 },
+
+  sectionCard: {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
+  },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
+
+  barRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 140,
+    paddingHorizontal: 6,
+  },
+  barColumn: { alignItems: 'center', width: '12%' }, // 7 columns fits with spacing
+  bar: {
+    width: '100%',
+    borderRadius: 6,
+  },
+  barLabel: { marginTop: 8, fontSize: 12, color: PALETTE.neutralMuted },
+
+  achievementList: { marginTop: 8, paddingTop: 4 },
+  achievementItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  achievementEmoji: { fontSize: 24, marginRight: 12 },
+  achievementBody: { flex: 1 },
+  achievementTitle: { fontSize: 15, fontWeight: '700' },
+  achievementNote: { color: PALETTE.neutralMuted, marginTop: 4 },
+});

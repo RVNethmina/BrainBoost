@@ -1,6 +1,6 @@
 // config/NotificationService.ts
 import * as Notifications from 'expo-notifications';
-import { Platform, Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 // Configure notification behavior - must be at the top level
 Notifications.setNotificationHandler({

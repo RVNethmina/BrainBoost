@@ -1,91 +1,115 @@
-import { RootStackParamList } from '@/app/navigation/AppNavigator';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+// app/src/screens/BrainGames.tsx
+import { PALETTE } from "@/app/design/colors";
+import { RootStackParamList } from "@/app/navigation/AppNavigator";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type BrainGamesScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'BrainGames'
+  "BrainGames"
 >;
 
 const BrainGames = () => {
   const navigation = useNavigation<BrainGamesScreenNavigationProp>();
 
   const games = [
-    { 
-      id: 1, 
-      title: 'Memory Match', 
-      icon: '🧩', 
-      description: 'Find matching pairs',
-      difficulty: 'Easy',
-      difficultyColor: 'bg-green-100 text-green-700',
-      screen: 'MemoryMatch'
+    {
+      id: 1,
+      title: "Memory Match",
+      icon: "🧩",
+      description: "Find matching pairs",
+      difficulty: "Easy",
+      screen: "MemoryMatch",
     },
-    { 
-      id: 2, 
-      title: 'Math Quiz', 
-      icon: '🧮', 
-      description: 'Number challenges',
-      difficulty: 'Medium',
-      difficultyColor: 'bg-yellow-100 text-yellow-700',
-      screen: 'MathQuiz'
+    {
+      id: 2,
+      title: "Math Quiz",
+      icon: "🧮",
+      description: "Number challenges",
+      difficulty: "Medium",
+      screen: "MathQuiz",
     },
-    { 
-      id: 3, 
-      title: 'Attention', 
-      icon: '🎯', 
-      description: 'Focus training',
-      difficulty: 'Easy',
-      difficultyColor: 'bg-blue-100 text-blue-700',
-      screen: 'AttentionGame'
+    {
+      id: 3,
+      title: "Attention",
+      icon: "🎯",
+      description: "Focus training",
+      difficulty: "Easy",
+      screen: "AttentionGame",
     },
-    { 
-      id: 4, 
-      title: 'Puzzle', 
-      icon: '🧩', 
-      description: 'Logic problems',
-      difficulty: 'Hard',
-      difficultyColor: 'bg-red-100 text-red-700',
-      screen: 'PuzzleGame'
+    {
+      id: 4,
+      title: "Puzzle",
+      icon: "🧩",
+      description: "Logic problems",
+      difficulty: "Hard",
+      screen: "PuzzleGame",
     },
   ];
 
+  // Map difficulty to palette colors (bg + text)
+  const difficultyColorMap: Record<
+    string,
+    { bg: string; text: string; border?: string }
+  > = {
+    Easy: { bg: PALETTE.lightTeal, text: PALETTE.teal },
+    Medium: { bg: PALETTE.orange, text: PALETTE.neutralLight },
+    Hard: { bg: PALETTE.red, text: PALETTE.neutralLight },
+    Default: { bg: PALETTE.lightPink, text: PALETTE.neutralDark },
+  };
+
   return (
-    <View className="flex-1 bg-white">
+    <View style={styles.container}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-5 pt-10 pb-4 bg-purple-100">
-        <TouchableOpacity 
+      <View style={[styles.header, { backgroundColor: PALETTE.lightTeal }]}>
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="items-center justify-center w-12 h-12 bg-gray-100 rounded-xl"
+          style={styles.backButton}
         >
-          <Text className="text-2xl">←</Text>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text className="text-2xl font-bold text-gray-800">Brain Games</Text>
-        <View className="w-12" />
+
+        <Text style={styles.headerTitle}>Brain Games</Text>
+
+        <View style={{ width: 48 }} />
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <Text className="my-4 text-lg text-center text-gray-600">
-          Choose a game to train your brain
-        </Text>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Text style={styles.subtitle}>Choose a game to train your brain</Text>
 
-        <View className="grid grid-cols-2 gap-4 mb-6">
-          {games.map((game) => (
-            <TouchableOpacity
-              key={game.id}
-              className="items-center p-5 bg-white border border-gray-100 shadow-sm rounded-2xl"
-              onPress={() => navigation.navigate(game.screen as keyof RootStackParamList)}
-            >
-              <Text className="mb-3 text-4xl">{game.icon}</Text>
-              <Text className="text-xl font-bold text-center">{game.title}</Text>
-              <Text className="mt-2 text-center text-gray-600">{game.description}</Text>
-              <View className={`px-3 py-1 rounded-full mt-3 ${game.difficultyColor}`}>
-                <Text className="text-sm">{game.difficulty}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.grid}>
+          {games.map((game) => {
+            const difficulty =
+              difficultyColorMap[game.difficulty] || difficultyColorMap.Default;
+            return (
+              <TouchableOpacity
+                key={game.id}
+                style={styles.card}
+                onPress={() =>
+                  navigation.navigate(game.screen as keyof RootStackParamList)
+                }
+                accessibilityRole="button"
+              >
+                <Text style={styles.icon}>{game.icon}</Text>
+                <Text style={styles.cardTitle}>{game.title}</Text>
+                <Text style={styles.cardDesc}>{game.description}</Text>
+
+                <View
+                  style={[
+                    styles.badge,
+                    { backgroundColor: difficulty.bg, borderColor: difficulty.border || "transparent" },
+                  ]}
+                >
+                  <Text style={[styles.badgeText, { color: difficulty.text }]}>
+                    {game.difficulty}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
     </View>
@@ -93,3 +117,63 @@ const BrainGames = () => {
 };
 
 export default BrainGames;
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#ffffff" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 12,
+  },
+  backButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 48,
+    height: 48,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 12,
+  },
+  backIcon: { fontSize: 20 },
+  headerTitle: { fontSize: 20, fontWeight: "700", color: "#111827" },
+  scroll: { flex: 1, paddingHorizontal: 20 },
+  subtitle: {
+    marginVertical: 16,
+    textAlign: "center",
+    color: "#6B7280",
+    fontSize: 16,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  card: {
+    width: "48%",
+    marginBottom: 16,
+    padding: 18,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    // subtle shadow (iOS/Android differences)
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+    alignItems: "center",
+  },
+  icon: { fontSize: 36, marginBottom: 10 },
+  cardTitle: { fontSize: 16, fontWeight: "700", textAlign: "center", color: "#111827" },
+  cardDesc: { marginTop: 6, textAlign: "center", color: "#6B7280" },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginTop: 12,
+  },
+  badgeText: { fontSize: 12, fontWeight: "600" },
+});

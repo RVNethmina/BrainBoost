@@ -1,3 +1,4 @@
+import { PALETTE } from '@/app/design/colors';
 import { RootStackParamList } from '@/app/navigation/AppNavigator';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,14 +9,6 @@ type GameResultsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'GameResults'
 >;
-
-const PALETTE = {
-  red: "#F04F4E",
-  teal: "#639D9D",
-  lightTeal: "#92BABA",
-  orange: "#F3A421",
-  lightPink: "#FBD4D3",
-};
 
 const GameResultsScreen = () => {
   const navigation = useNavigation<GameResultsScreenNavigationProp>();

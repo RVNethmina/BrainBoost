@@ -1,10 +1,10 @@
 import "../global.css";
-import ProgressScreen from "./screens/Main/ProgressScreen";
+import AppNavigator from "./navigation/AppNavigator";
 
 
 const index = () => {
   return (
-      <ProgressScreen />
+      <AppNavigator />
   );
 };
 

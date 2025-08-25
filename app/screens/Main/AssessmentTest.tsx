@@ -1,3 +1,4 @@
+import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from '@/app/navigation/AppNavigator';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,6 +10,8 @@ type AssessmentScreenNavigationProp = NativeStackNavigationProp<
   'Assessment'
 >;
 
+
+
 const AssessmentTest = () => {
   const navigation = useNavigation<AssessmentScreenNavigationProp>();
 
@@ -19,8 +22,9 @@ const AssessmentTest = () => {
       icon: '🧠', 
       duration: '15 minutes',
       type: 'Comprehensive',
-      typeColor: 'bg-purple-100 text-purple-700',
-      screen: 'MemoryTest'
+      screen: 'MemoryTest',
+      bgColor: PALETTE.lightTeal,
+      textColor: PALETTE.teal
     },
     { 
       id: 2, 
@@ -28,8 +32,9 @@ const AssessmentTest = () => {
       icon: '⚡', 
       duration: '10 minutes',
       type: 'Focus',
-      typeColor: 'bg-blue-100 text-blue-700',
-      screen: 'AttentionTest'
+      screen: 'AttentionTest',
+      bgColor: PALETTE.lightPink,
+      textColor: PALETTE.orange
     },
     { 
       id: 3, 
@@ -37,8 +42,9 @@ const AssessmentTest = () => {
       icon: '🔢', 
       duration: '12 minutes',
       type: 'Numerical',
-      typeColor: 'bg-green-100 text-green-700',
-      screen: 'MathAssessment'
+      screen: 'MathAssessment',
+      bgColor: PALETTE.lightPink,
+      textColor: PALETTE.red
     },
     { 
       id: 4, 
@@ -46,18 +52,23 @@ const AssessmentTest = () => {
       icon: '🎯', 
       duration: '30 minutes',
       type: 'Complete',
-      typeColor: 'bg-orange-100 text-orange-700',
-      screen: 'FullAssessment'
+      screen: 'FullAssessment',
+      bgColor: PALETTE.lightTeal,
+      textColor: PALETTE.teal
     },
   ];
 
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row items-center justify-between px-5 pt-10 pb-4 bg-purple-100">
+      <View 
+        className="flex-row items-center justify-between px-5 pt-10 pb-4"
+        style={{ backgroundColor: PALETTE.lightPink }}
+      >
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
-          className="items-center justify-center w-12 h-12 bg-gray-100 rounded-xl"
+          className="items-center justify-center w-12 h-12 rounded-xl"
+          style={{ backgroundColor: PALETTE.lightTeal }}
         >
           <Text className="text-2xl">←</Text>
         </TouchableOpacity>
@@ -75,14 +86,28 @@ const AssessmentTest = () => {
           {assessments.map((assessment) => (
             <TouchableOpacity
               key={assessment.id}
-              className="items-center p-5 bg-white border border-gray-100 shadow-sm rounded-2xl"
+              className="items-center p-5 border shadow-sm rounded-2xl"
+              style={{ 
+                backgroundColor: 'white',
+                borderColor: PALETTE.lightTeal
+              }}
               onPress={() => navigation.navigate(assessment.screen as keyof RootStackParamList)}
             >
               <Text className="mb-3 text-4xl">{assessment.icon}</Text>
               <Text className="text-xl font-bold text-center">{assessment.title}</Text>
               <Text className="mt-2 text-center text-gray-600">{assessment.duration}</Text>
-              <View className={`px-3 py-1 rounded-full mt-3 ${assessment.typeColor}`}>
-                <Text className="text-sm">{assessment.type}</Text>
+              <View 
+                className="px-3 py-1 mt-3 rounded-full"
+                style={{ 
+                  backgroundColor: assessment.bgColor
+                }}
+              >
+                <Text 
+                  className="text-sm"
+                  style={{ color: assessment.textColor }}
+                >
+                  {assessment.type}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}
