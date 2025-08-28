@@ -7,18 +7,10 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-nati
 export default function HomeScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
-      {/* Header with Profile */}
+      {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Good Morning!</Text>
-          <Text style={styles.subtitle}>Ready to exercise your brain?</Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={() => navigation.navigate("Profile")}
-        >
-          <Ionicons name={'person-outline' as any} size={24} color={PALETTE.teal} />
-        </TouchableOpacity>
+        <Text style={styles.greeting}>Good Morning!</Text>
+        <Text style={styles.subtitle}>Ready to exercise your brain?</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -26,25 +18,25 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.grid}>
           <TouchableOpacity
             onPress={() => navigation.navigate("BrainGames")}
-            style={[styles.card, { borderColor: PALETTE.lightTeal }]}
+            style={styles.card}
           >
-            <Ionicons name={'extension-puzzle-outline' as any} size={32} color={PALETTE.teal} style={styles.icon} />
+            <Ionicons name={'extension-puzzle-outline' as any} size={32} color={PALETTE.red} style={styles.icon} />
             <Text style={styles.cardTitle}>Brain Games</Text>
             <Text style={styles.cardText}>Fun puzzles</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.navigate("Assessment")}
-            style={[styles.card, { borderColor: PALETTE.lightTeal }]}
+            style={styles.card}
           >
-            <Ionicons name={'stats-chart-outline' as any} size={32} color={PALETTE.teal} style={styles.icon} />
+            <Ionicons name={'stats-chart-outline' as any} size={32} color={PALETTE.orange} style={styles.icon} />
             <Text style={styles.cardTitle}>Assessment</Text>
             <Text style={styles.cardText}>Test progress</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.navigate("Progress")}
-            style={[styles.card, { borderColor: PALETTE.lightTeal }]}
+            style={styles.card}
           >
             <Ionicons name={'bar-chart-outline' as any} size={32} color={PALETTE.teal} style={styles.icon} />
             <Text style={styles.cardTitle}>Progress</Text>
@@ -53,9 +45,9 @@ export default function HomeScreen({ navigation }: any) {
 
           <TouchableOpacity
             onPress={() => navigation.navigate("Insights")}
-            style={[styles.card, { borderColor: PALETTE.lightTeal }]}
+            style={styles.card}
           >
-            <Ionicons name={'bulb-outline' as any} size={32} color={PALETTE.teal} style={styles.icon} />
+            <Ionicons name={'bulb-outline' as any} size={32} color={PALETTE.red} style={styles.icon} />
             <Text style={styles.cardTitle}>Insights</Text>
             <Text style={styles.cardText}>Learn more</Text>
           </TouchableOpacity>
@@ -64,19 +56,17 @@ export default function HomeScreen({ navigation }: any) {
         {/* Footer Buttons */}
         <View style={styles.footer}>
           <TouchableOpacity 
-            style={[styles.footerBtn, { backgroundColor: PALETTE.lightPink }]} 
+            style={[styles.footerBtn, { backgroundColor: "#FAD4D4" }]} 
             onPress={() => navigation.navigate("Reminder")}
           >
-            <Ionicons name={'alarm-outline' as any} size={20} color={PALETTE.red} style={styles.footerIcon} />
-            <Text style={[styles.footerText, { color: PALETTE.red }]}>Reminders</Text>
+            <Text style={[styles.footerText, { color: "#D9534F" }]}>Reminders</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.footerBtn, { backgroundColor: PALETTE.lightTeal }]} 
+            style={[styles.footerBtn, { backgroundColor: "#FEC84D" }]} 
             onPress={() => navigation.navigate("Settings")}
           >
-            <Ionicons name={'settings-outline' as any} size={20} color={PALETTE.teal} style={styles.footerIcon} />
-            <Text style={[styles.footerText, { color: PALETTE.teal }]}>Settings</Text>
+            <Text style={[styles.footerText, { color: "#fff" }]}>Settings</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -87,38 +77,28 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#96B5B5", // light teal background
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: PALETTE.lightPink,
+    marginTop: 60,
+    marginBottom: 30,
   },
   greeting: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "700",
-    color: PALETTE.teal,
-    marginBottom: 5,
+    color: "#2C3E3E", // darker teal
+    marginBottom: 8,
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: PALETTE.teal,
-    opacity: 0.8,
-  },
-  profileButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: PALETTE.lightTeal,
-    justifyContent: "center",
-    alignItems: "center",
+    color: "#D9534F", // red like in screenshot
+    textAlign: "center",
   },
   grid: {
     flexDirection: "row",
@@ -128,31 +108,25 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "48%",
-    padding: 20,
-    borderRadius: 20,
-    borderWidth: 2,
+    paddingVertical: 25,
+    borderRadius: 12,
     marginBottom: 16,
     alignItems: "center",
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: "#E6F1F1", // light grey/teal card background
   },
   icon: {
     marginBottom: 12,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
-    color: PALETTE.teal,
+    color: "#2C3E3E",
     marginBottom: 4,
     textAlign: "center",
   },
   cardText: {
-    fontSize: 14,
-    color: PALETTE.teal,
+    fontSize: 13,
+    color: "#2C3E3E",
     opacity: 0.7,
     textAlign: "center",
   },
@@ -163,15 +137,11 @@ const styles = StyleSheet.create({
   },
   footerBtn: {
     flex: 1,
-    flexDirection: "row",
-    padding: 16,
+    paddingVertical: 14,
     marginHorizontal: 5,
-    borderRadius: 15,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-  },
-  footerIcon: {
-    marginRight: 8,
   },
   footerText: {
     fontSize: 16,
