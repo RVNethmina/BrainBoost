@@ -21,7 +21,7 @@ const BrainGames = () => {
       icon: "🧩",
       description: "Find matching pairs",
       difficulty: "Easy",
-      screen: "MemoryMatch",
+      screen: "MemoryQuiz",
     },
     {
       id: 2,
