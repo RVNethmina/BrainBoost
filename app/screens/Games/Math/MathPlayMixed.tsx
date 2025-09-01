@@ -196,7 +196,7 @@ const MathPlayMixed: React.FC = () => {
     <View className="flex-1 bg-white">
       {/* Header */}
       <View
-        className="flex-row items-center justify-between px-5 pt-10 pb-4"
+        className="flex-row items-center justify-between px-4 pt-10 pb-4 shadow-lg sm:px-6 sm:pt-12 sm:pb-6"
         style={{ backgroundColor: PALETTE.lightPink }}
       >
         <TouchableOpacity
@@ -204,81 +204,133 @@ const MathPlayMixed: React.FC = () => {
             handlePause();
             navigation.goBack();
           }}
-          className="items-center justify-center w-12 h-12 rounded-xl"
+          className="items-center justify-center w-10 h-10 shadow-md sm:w-12 sm:h-12 rounded-xl active:scale-95"
           style={{ backgroundColor: PALETTE.lightTeal }}
         >
-          <Text className="text-2xl">←</Text>
+          <Text className="text-xl sm:text-2xl">←</Text>
         </TouchableOpacity>
 
-        <View className="flex-row items-center gap-4">
-          <View className="items-center mr-4">
-            <Text className="text-sm text-gray-600">Time</Text>
-            <Text className="text-xl font-bold">{formatTime(timeLeft)}</Text>
+        <View className="flex-row items-center gap-3 sm:gap-4">
+          <View 
+            className="items-center px-3 py-2 shadow-sm rounded-xl"
+            style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
+          >
+            <Text className="text-xs font-medium sm:text-sm" style={{ color: PALETTE.red }}>Time</Text>
+            <Text 
+              className="text-lg font-bold sm:text-xl" 
+              style={{ color: timeLeft <= 30 ? PALETTE.red : PALETTE.red }}
+            >
+              {formatTime(timeLeft)}
+            </Text>
           </View>
-          <View className="items-center">
-            <Text className="text-sm text-gray-600">Score</Text>
-            <Text className="text-xl font-bold">{score}</Text>
+          <View 
+            className="items-center px-3 py-2 shadow-sm rounded-xl"
+            style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
+          >
+            <Text className="text-xs font-medium sm:text-sm" style={{ color: PALETTE.red }}>Score</Text>
+            <Text className="text-lg font-bold sm:text-xl" style={{ color: PALETTE.red }}>
+              {score}
+            </Text>
           </View>
         </View>
 
-        <View style={{ width: 44 }}>
+        <View className="items-center w-10 sm:w-12">
           {isRunning ? (
-            <TouchableOpacity onPress={handlePause}>
-              <Text className="text-2xl">⏸️</Text>
+            <TouchableOpacity 
+              onPress={handlePause}
+              className="active:scale-95"
+            >
+              <Text className="text-xl sm:text-2xl">⏸️</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity onPress={isRunning ? handlePause : handleResume}>
-              <Text className="text-2xl">{showStartHint ? "▶️" : "▶️"}</Text>
+            <TouchableOpacity 
+              onPress={isRunning ? handlePause : handleResume}
+              className="active:scale-95"
+            >
+              <Text className="text-xl sm:text-2xl">{showStartHint ? "▶️" : "▶️"}</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Questions */}
-      <View className="justify-center flex-1 px-5">
+      {/* Main Content */}
+      <View className="justify-center flex-1 px-4 sm:px-6">
+        {/* Question Card */}
         <View
-          className="p-5 mb-8 border shadow-sm rounded-2xl"
-          style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+          className="p-6 mb-6 border-2 shadow-lg sm:p-8 sm:mb-8 rounded-3xl"
+          style={{ backgroundColor: "white", borderColor: '#FFE0E0' }}
         >
-          <Text className="mb-8 text-4xl font-bold text-center">
-            {current ? `${current.a} ${current.operation} ${current.b} = ?` : "Loading..."}
-          </Text>
+          {/* Question Display */}
+          <View className="mb-6 sm:mb-8">
+            <Text className="text-3xl font-bold text-center sm:text-4xl lg:text-5xl" style={{ color: PALETTE.red }}>
+              {current ? `${current.a} ${current.operation} ${current.b} = ?` : "Loading..."}
+            </Text>
+          </View>
 
-          <View className="grid grid-cols-2 gap-4">
-            {current
-              ? current.options.map((option, index) => {
-                  const disabled = !isRunning;
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      className="py-6 border-2 rounded-2xl"
-                      style={{
-                        backgroundColor: disabled ? "#F3F4F6" : PALETTE.lightTeal,
-                        borderColor: PALETTE.teal,
-                        opacity: disabled ? 0.6 : 1,
-                      }}
-                      onPress={() => handleAnswer(option)}
-                      disabled={disabled}
-                      accessibilityRole="button"
+          {/* Answer Options Grid */}
+          <View className="gap-3 sm:gap-4">
+            <View className="flex-row gap-3 sm:gap-4">
+              {current?.options.slice(0, 2).map((option, index) => {
+                const disabled = !isRunning;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    className="flex-1 py-4 border-2 shadow-sm sm:py-6 rounded-2xl active:scale-95"
+                    style={{
+                      backgroundColor: disabled ? "#F3F4F6" : '#FFE0E0',
+                      borderColor: PALETTE.red,
+                      opacity: disabled ? 0.6 : 1,
+                    }}
+                    onPress={() => handleAnswer(option)}
+                    disabled={disabled}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Answer option: ${option}`}
+                  >
+                    <Text
+                      className="text-xl font-bold text-center sm:text-2xl"
+                      style={{ color: disabled ? '#9CA3AF' : PALETTE.red }}
                     >
-                      <Text
-                        className="text-2xl font-bold text-center"
-                        style={{ color: PALETTE.teal }}
-                      >
-                        {option}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })
-              : null}
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View className="flex-row gap-3 sm:gap-4">
+              {current?.options.slice(2, 4).map((option, index) => {
+                const disabled = !isRunning;
+                return (
+                  <TouchableOpacity
+                    key={index + 2}
+                    className="flex-1 py-4 border-2 shadow-sm sm:py-6 rounded-2xl active:scale-95"
+                    style={{
+                      backgroundColor: disabled ? "#F3F4F6" : '#FFE0E0',
+                      borderColor: PALETTE.red,
+                      opacity: disabled ? 0.6 : 1,
+                    }}
+                    onPress={() => handleAnswer(option)}
+                    disabled={disabled}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Answer option: ${option}`}
+                  >
+                    <Text
+                      className="text-xl font-bold text-center sm:text-2xl"
+                      style={{ color: disabled ? '#9CA3AF' : PALETTE.red }}
+                    >
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
 
-        {/* Progressbar */}
-        <View className="items-center">
-          <Text className="mb-2 text-lg text-gray-600">
+        {/* Progress Section */}
+        <View className="items-center mb-6">
+          <Text className="mb-3 text-base text-gray-600 sm:text-lg">
             Question:{" "}
-            <Text className="font-bold" style={{ color: PALETTE.teal }}>
+            <Text className="font-bold" style={{ color: PALETTE.red }}>
               {Math.min(currentQuestionIndex + 1, TOTAL_QUESTIONS)}/{TOTAL_QUESTIONS}
             </Text>
           </Text>
@@ -286,37 +338,43 @@ const MathPlayMixed: React.FC = () => {
             <View
               style={[
                 styles.progressFill,
-                { width: `${progressPercent}%`, backgroundColor: PALETTE.teal },
+                { width: `${progressPercent}%`, backgroundColor: PALETTE.red },
               ]}
             />
           </View>
         </View>
 
-        {/* Controls */}
-        <View className="flex-row items-center justify-center mt-6">
+        {/* Control Button */}
+        <View className="items-center">
           {!isRunning && showStartHint ? (
             <TouchableOpacity
-              className="px-6 py-4 rounded-2xl"
-              style={{ backgroundColor: PALETTE.teal }}
+              className="px-8 py-4 shadow-lg sm:px-12 sm:py-5 rounded-3xl active:scale-95"
+              style={{ backgroundColor: PALETTE.red }}
               onPress={handleStart}
+              accessibilityRole="button"
+              accessibilityLabel="Start the quiz"
             >
-              <Text className="text-lg font-semibold text-white">Start</Text>
+              <Text className="text-lg font-semibold text-white sm:text-xl">🚀 Start Quiz</Text>
             </TouchableOpacity>
           ) : isRunning ? (
             <TouchableOpacity
-              className="px-6 py-4 rounded-2xl"
-              style={{ backgroundColor: PALETTE.lightPink }}
+              className="px-8 py-4 shadow-lg sm:px-12 sm:py-5 rounded-3xl active:scale-95"
+              style={{ backgroundColor: PALETTE.orange }}
               onPress={handlePause}
+              accessibilityRole="button"
+              accessibilityLabel="Pause the quiz"
             >
-              <Text className="text-lg font-semibold text-white">Pause</Text>
+              <Text className="text-lg font-semibold text-white sm:text-xl">⏸️ Pause</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              className="px-6 py-4 rounded-2xl"
-              style={{ backgroundColor: PALETTE.teal }}
+              className="px-8 py-4 shadow-lg sm:px-12 sm:py-5 rounded-3xl active:scale-95"
+              style={{ backgroundColor: PALETTE.red }}
               onPress={handleResume}
+              accessibilityRole="button"
+              accessibilityLabel="Resume the quiz"
             >
-              <Text className="text-lg font-semibold text-white">Resume</Text>
+              <Text className="text-lg font-semibold text-white sm:text-xl">▶️ Resume</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -330,13 +388,14 @@ export default MathPlayMixed;
 const styles = StyleSheet.create({
   progressTrack: {
     width: "100%",
-    height: 12,
+    height: 8,
     backgroundColor: "#E5E7EB",
-    borderRadius: 8,
+    borderRadius: 6,
     overflow: "hidden",
-    marginTop: 6,
+    marginTop: 4,
   },
   progressFill: {
     height: "100%",
+    borderRadius: 6,
   },
 });

@@ -9,10 +9,11 @@ Notifications.setNotificationHandler({
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
     };
   },
 });
-
 
 export class NotificationService {
   static async initialize() {
@@ -56,7 +57,12 @@ export class NotificationService {
   static async sendLocalNotification(title: string, body: string) {
     try {
       return await Notifications.scheduleNotificationAsync({
-        content: { title, body, sound: 'default', priority: Notifications.AndroidNotificationPriority.HIGH },
+        content: {
+          title,
+          body,
+          sound: 'default',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+        },
         trigger: null,
       });
     } catch (error) {
