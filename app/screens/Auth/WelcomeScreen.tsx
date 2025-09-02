@@ -42,9 +42,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50, // makes it circular
+    width: 120,
+    height: 120,
+    borderRadius: 60, // makes it circular
     marginBottom: 20,
   },
   title: {
