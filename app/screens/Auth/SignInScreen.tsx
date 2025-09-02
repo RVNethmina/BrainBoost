@@ -111,9 +111,9 @@ export default function SignInScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "#ffffff" },
   logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+     width: 120,
+    height: 120,
+    borderRadius: 60,
     alignSelf: "center",
     marginBottom: 20,
     resizeMode: "cover",

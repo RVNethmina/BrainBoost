@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginTop: 60,
-    marginBottom: 30,
+    marginTop: 80, // Increased from 60 to push content down
+    marginBottom: 40, // Increased from 30 for better spacing
   },
   greeting: {
     fontSize: 26,
@@ -104,7 +104,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: 50, // Increased from 30 for better spacing before footer
+    marginTop: 20, // Added top margin to push grid down
   },
   card: {
     width: "48%",
@@ -133,7 +134,8 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 10,
+    marginTop: 30, // Increased from 10 for better spacing
+    paddingHorizontal: 5, // Added horizontal padding for consistent spacing
   },
   footerBtn: {
     flex: 1,

@@ -4,7 +4,7 @@ import { RootStackParamList } from '@/app/navigation/AppNavigator';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type MathQuizScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -23,40 +23,49 @@ const MathQuiz: React.FC = () => {
       id: 1,
       name: 'Easy',
       description: 'Addition & Subtraction',
-      color: PALETTE.lightTeal,
-      borderColor: PALETTE.teal,
-      textColor: PALETTE.teal,
-      selectedBackground: PALETTE.teal,
-      selectedBorder: PALETTE.teal,
+      difficulty: 'Easy',
+      color: '#E6F1F1', // Memory quiz card color
+      borderColor: '#96B5B5', // Memory quiz teal
+      textColor: '#2C3E3E', // Memory quiz dark text
+      selectedBackground: '#96B5B5', // Memory quiz teal
+      selectedBorder: '#96B5B5',
       selectedTextColor: '#FFFFFF',
       route: 'MathPlayAddition' as MathPlayRoute,
-      icon: '➕'
+      icon: '➕',
+      details: '10 questions • 2 minutes • Basic operations',
+      description2: 'Perfect for beginners - simple addition and subtraction problems.'
     },
     {
       id: 2,
       name: 'Medium',
       description: 'Multiplication & Division',
-      color: '#FFEDCC',
-      borderColor: PALETTE.orange,
-      textColor: PALETTE.orange,
-      selectedBackground: PALETTE.orange,
-      selectedBorder: PALETTE.orange,
+      difficulty: 'Medium',
+      color: '#FFE6CC', // Light orange tint
+      borderColor: '#FEC84D', // Memory quiz orange
+      textColor: '#2C3E3E',
+      selectedBackground: '#FEC84D',
+      selectedBorder: '#FEC84D',
       selectedTextColor: '#FFFFFF',
       route: 'MathPlayMultiplication' as MathPlayRoute,
-      icon: '✖️'
+      icon: '✖️',
+      details: '10 questions • 2 minutes • Times tables',
+      description2: 'Test your multiplication and division skills with progressively harder problems.'
     },
     {
       id: 3,
       name: 'Hard',
       description: 'Mixed Operations',
-      color: '#FFE0E0',
-      borderColor: PALETTE.red,
-      textColor: PALETTE.red,
-      selectedBackground: PALETTE.red,
-      selectedBorder: PALETTE.red,
+      difficulty: 'Hard',
+      color: '#FFE6E6', // Light red tint
+      borderColor: '#D9534F', // Memory quiz red
+      textColor: '#2C3E3E',
+      selectedBackground: '#D9534F',
+      selectedBorder: '#D9534F',
       selectedTextColor: '#FFFFFF',
       route: 'MathPlayMixed' as MathPlayRoute,
-      icon: '🔀'
+      icon: '🔀',
+      details: '10 questions • 2 minutes • All operations',
+      description2: 'Challenge yourself with a mix of addition, subtraction, multiplication, and division.'
     },
   ];
 
@@ -89,142 +98,399 @@ const MathQuiz: React.FC = () => {
     }
   };
 
+  const selectedGame = difficulties.find(d => d.id === selectedId);
+
   return (
-    <View className="flex-1" style={{ backgroundColor: PALETTE.lightPink }}>
+    <View style={styles.container}>
       {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-4 pt-12 pb-6 shadow-lg sm:px-6"
-        style={{ backgroundColor: PALETTE.teal }}
-      >
+      <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="items-center justify-center w-12 h-12 shadow-md sm:w-14 sm:h-14 rounded-xl active:scale-95"
-          style={{ backgroundColor: '#FFFFFF' }}
+          style={styles.backButton}
         >
-          <Text className="text-2xl sm:text-3xl" style={{ color: PALETTE.teal }}>←</Text>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text className="text-2xl font-bold text-white sm:text-3xl">Math Quiz</Text>
-        <View className="w-12 sm:w-14" />
+        <Text style={styles.headerTitle}>Math Quiz</Text>
+        <View style={{ width: 48 }} />
       </View>
 
       {/* Content */}
-      <ScrollView 
-        className="flex-1 px-4 sm:px-6" 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      >
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
-        <View className="items-center my-6 sm:my-8">
-          <View
-            className="items-center justify-center w-32 h-32 mb-4 rounded-full shadow-lg sm:w-40 sm:h-40 sm:mb-6"
-            style={{ backgroundColor: PALETTE.teal }}
-          >
-            <Text className="text-6xl sm:text-7xl">🧮</Text>
+        <View style={styles.heroSection}>
+          <View style={styles.brainIcon}>
+            <Text style={styles.brainEmoji}>🧮</Text>
           </View>
-          <Text className="mb-2 text-3xl font-bold text-center sm:mb-4 sm:text-4xl" style={{ color: PALETTE.teal }}>
-            Math Quiz
-          </Text>
-          <Text className="px-4 mb-6 text-lg text-center sm:mb-8 sm:text-2xl" style={{ color: PALETTE.teal }}>
+          <Text style={styles.mainTitle}>Math Training</Text>
+          <Text style={styles.mainSubtitle}>
             Test your math skills with timed challenges
           </Text>
         </View>
 
-        {/* Difficulty Selection Card */}
-        <View
-          className="p-4 mx-2 mb-6 shadow-lg sm:p-6 sm:mb-8 rounded-3xl"
-          style={{ backgroundColor: '#FFFFFF' }}
-        >
-          <Text className="mb-4 text-2xl font-bold text-center sm:mb-6 sm:text-3xl" style={{ color: PALETTE.teal }}>
+        {/* Games Container */}
+        <View style={styles.gamesContainer}>
+          <Text style={styles.sectionTitle}>
             Choose Your Challenge
           </Text>
 
-          <View className="space-y-3 sm:space-y-4">
-            {difficulties.map((difficulty, index) => {
+          <View style={styles.gamesList}>
+            {difficulties.map((difficulty) => {
               const isSelected = difficulty.id === selectedId;
               return (
                 <TouchableOpacity
                   key={difficulty.id}
-                  className="flex-row items-center p-4 sm:p-5 rounded-2xl active:scale-[0.98] shadow-sm"
-                  style={{
-                    backgroundColor: isSelected ? difficulty.selectedBackground : difficulty.color,
-                    borderWidth: 2,
-                    borderColor: isSelected ? difficulty.selectedBorder : difficulty.borderColor,
-                    transform: [{ scale: isSelected ? 1.02 : 1 }],
-                  }}
+                  style={[
+                    styles.gameCard,
+                    {
+                      backgroundColor: isSelected ? difficulty.selectedBackground : difficulty.color,
+                      borderColor: isSelected ? difficulty.selectedBorder : difficulty.borderColor,
+                    }
+                  ]}
                   onPress={() => setSelectedId(difficulty.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${difficulty.name} difficulty: ${difficulty.description}`}
-                  accessibilityState={{ selected: isSelected }}
                 >
-                  <View 
-                    className="items-center justify-center w-12 h-12 mr-4 sm:w-14 sm:h-14 rounded-xl"
-                    style={{ 
-                      backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)' 
-                    }}
-                  >
-                    <Text className="text-2xl sm:text-3xl">{difficulty.icon}</Text>
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className="mb-1 text-xl font-bold sm:text-2xl"
-                      style={{ color: isSelected ? difficulty.selectedTextColor : difficulty.textColor }}
-                    >
-                      {difficulty.name}
-                    </Text>
-                    <Text
-                      className="text-sm sm:text-lg"
-                      style={{ 
-                        color: isSelected 
-                          ? difficulty.selectedTextColor 
-                          : difficulty.textColor,
-                        opacity: isSelected ? 0.9 : 0.8 
-                      }}
-                    >
-                      {difficulty.description}
-                    </Text>
-                  </View>
-                  {isSelected && (
-                    <View className="ml-2">
-                      <Text className="text-xl sm:text-2xl">✓</Text>
+                  <View style={styles.gameCardContent}>
+                    <View style={styles.gameCardLeft}>
+                      <Text style={styles.gameIcon}>{difficulty.icon}</Text>
+                      <View style={styles.gameInfo}>
+                        <View style={styles.gameTitleRow}>
+                          <Text
+                            style={[
+                              styles.gameTitle,
+                              { color: isSelected ? difficulty.selectedTextColor : difficulty.textColor }
+                            ]}
+                          >
+                            {difficulty.name}
+                          </Text>
+                          <View
+                            style={[
+                              styles.difficultyBadge,
+                              { 
+                                backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' 
+                              }
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.difficultyText,
+                                { color: isSelected ? difficulty.selectedTextColor : difficulty.textColor }
+                              ]}
+                            >
+                              {difficulty.difficulty}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text
+                          style={[
+                            styles.gameDescription,
+                            { color: isSelected ? difficulty.selectedTextColor : difficulty.textColor }
+                          ]}
+                        >
+                          {difficulty.description}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.gameDetails,
+                            { 
+                              color: isSelected ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)' 
+                            }
+                          ]}
+                        >
+                          {difficulty.details}
+                        </Text>
+                      </View>
                     </View>
-                  )}
+                    
+                    {isSelected && (
+                      <View style={styles.selectedIndicator}>
+                        <Text style={styles.checkMark}>✓</Text>
+                      </View>
+                    )}
+                  </View>
                 </TouchableOpacity>
               );
             })}
+          </View>
+
+          {/* Game Preview */}
+          {selectedGame && (
+            <View style={styles.previewContainer}>
+              <Text style={styles.previewTitle}>
+                About {selectedGame.name}:
+              </Text>
+              <View style={styles.previewContent}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.previewText}>
+                  {selectedGame.description2}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Tips Section */}
+          <View style={styles.tipsContainer}>
+            <Text style={styles.tipsTitle}>
+              💡 Math Quiz Tips:
+            </Text>
+            <View style={styles.tipsList}>
+              <View style={styles.tipItem}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.tipText}>Start with easier levels and work your way up</Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.tipText}>You have 2 minutes to answer 10 questions</Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.tipText}>Practice regularly to improve your speed and accuracy</Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.tipText}>Don't worry about perfect scores - improvement is the goal</Text>
+              </View>
+            </View>
           </View>
         </View>
 
         {/* Start Button */}
         <TouchableOpacity
-          className="flex-row items-center justify-center py-5 mx-2 shadow-lg sm:py-6 rounded-3xl active:scale-95"
-          style={{ 
-            backgroundColor: selectedId ? PALETTE.teal : '#CCCCCC',
-            opacity: selectedId ? 1 : 0.6,
-          }}
+          style={[
+            styles.startButton,
+            { 
+              backgroundColor: selectedId ? '#96B5B5' : '#CCCCCC' // Memory quiz teal when active
+            }
+          ]}
           onPress={onStart}
           disabled={!selectedId}
-          accessibilityRole="button"
-          accessibilityLabel="Start the math quiz"
-          accessibilityState={{ disabled: !selectedId }}
         >
-          <Text className="mr-3 text-2xl sm:text-3xl">🎮</Text>
-          <Text className="text-xl font-semibold text-white sm:text-2xl">
-            {selectedId ? 'Start Quiz' : 'Select Difficulty First'}
-          </Text>
+          <Text style={styles.startButtonIcon}>🧮</Text>
+          <Text style={styles.startButtonText}>Start Quiz</Text>
         </TouchableOpacity>
-
-        {/* Quick Tips */}
-        <View 
-          className="p-4 mx-2 mt-6 rounded-2xl"
-          style={{ backgroundColor: 'rgba(255,255,255,0.7)' }}
-        >
-          <Text className="text-sm text-center sm:text-base" style={{ color: PALETTE.teal }}>
-            💡 <Text className="font-semibold">Quick Tip:</Text> You have 2 minutes to answer 10 questions!
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );
 };
 
 export default MathQuiz;
+
+const styles = StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: "#96B5B5" // Memory quiz background
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: "#96B5B5", // Match background
+  },
+  backButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 48,
+    height: 48,
+    backgroundColor: "#E6F1F1", // Memory quiz card color
+    borderRadius: 12,
+  },
+  backIcon: { 
+    fontSize: 20,
+    color: "#2C3E3E" // Memory quiz text color
+  },
+  headerTitle: { 
+    fontSize: 20, 
+    fontWeight: "700", 
+    color: "#2C3E3E" // Memory quiz text color
+  },
+  scroll: { 
+    flex: 1, 
+    paddingHorizontal: 20 
+  },
+  heroSection: {
+    alignItems: "center",
+    marginVertical: 30,
+  },
+  brainIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+    borderRadius: 60,
+    backgroundColor: "#2C3E3E", // Dark teal from memory quiz
+  },
+  brainEmoji: {
+    fontSize: 50,
+  },
+  mainTitle: {
+    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#2C3E3E", // Memory quiz text color
+    textAlign: "center",
+  },
+  mainSubtitle: {
+    marginBottom: 20,
+    fontSize: 16,
+    textAlign: "center",
+    color: "#2C3E3E", // Memory quiz text color
+    opacity: 0.8,
+  },
+  gamesContainer: {
+    padding: 20,
+    marginBottom: 20,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  sectionTitle: {
+    marginBottom: 20,
+    fontSize: 20,
+    fontWeight: "700",
+    textAlign: "center",
+    color: "#2C3E3E", // Memory quiz text color
+  },
+  gamesList: {
+    gap: 12,
+  },
+  gameCard: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+  },
+  gameCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  gameCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  gameIcon: {
+    marginRight: 12,
+    fontSize: 24,
+  },
+  gameInfo: {
+    flex: 1,
+  },
+  gameTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 8,
+  },
+  gameTitle: {
+    fontSize: 16,
+    fontWeight: "600", // Match memory quiz weight
+  },
+  difficultyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  difficultyText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  gameDescription: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  gameDetails: {
+    fontSize: 12,
+  },
+  selectedIndicator: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  checkMark: {
+    fontSize: 14,
+    color: 'white',
+  },
+  previewContainer: {
+    padding: 16,
+    marginTop: 20,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  previewTitle: {
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2C3E3E", // Memory quiz text color
+  },
+  previewContent: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  previewText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#666',
+  },
+  tipsContainer: {
+    padding: 16,
+    marginTop: 20,
+    borderRadius: 16,
+    backgroundColor: '#F0F9FF',
+  },
+  tipsTitle: {
+    marginBottom: 12,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2C3E3E", // Memory quiz text color
+  },
+  tipsList: {
+    gap: 8,
+  },
+  tipItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#666',
+  },
+  bulletPoint: {
+    fontSize: 12,
+    color: '#666',
+  },
+  startButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    marginBottom: 30,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  startButtonIcon: {
+    marginRight: 8,
+    fontSize: 20,
+  },
+  startButtonText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: 'white',
+  },
+});

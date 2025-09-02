@@ -4,7 +4,7 @@ import { RootStackParamList } from '@/app/navigation/AppNavigator';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type MemoryQuizScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -27,11 +27,11 @@ const MemoryQuiz: React.FC = () => {
       name: 'Pattern Memory',
       description: 'Watch & repeat color patterns',
       difficulty: 'Easy',
-      color: PALETTE.lightTeal,
-      borderColor: PALETTE.teal,
-      textColor: PALETTE.teal,
-      selectedBackground: PALETTE.teal,
-      selectedBorder: PALETTE.teal,
+      color: '#E6F1F1', // Home page card color
+      borderColor: '#96B5B5', // Home page teal
+      textColor: '#2C3E3E', // Home page dark text
+      selectedBackground: '#96B5B5', // Home page teal
+      selectedBorder: '#96B5B5',
       selectedTextColor: '#FFFFFF',
       route: 'MemoryPlayLevel1' as MemoryPlayRoute,
       icon: '🎨',
@@ -43,11 +43,11 @@ const MemoryQuiz: React.FC = () => {
       name: 'Memory Cards',
       description: 'Find matching card pairs',
       difficulty: 'Easy',
-      color: '#FFEDCC',
-      borderColor: PALETTE.orange,
-      textColor: PALETTE.orange,
-      selectedBackground: PALETTE.orange,
-      selectedBorder: PALETTE.orange,
+      color: '#E6F1F1',
+      borderColor: '#96B5B5',
+      textColor: '#2C3E3E',
+      selectedBackground: '#96B5B5',
+      selectedBorder: '#96B5B5',
       selectedTextColor: '#FFFFFF',
       route: 'MemoryPlayLevel2' as MemoryPlayRoute,
       icon: '🃏',
@@ -59,11 +59,11 @@ const MemoryQuiz: React.FC = () => {
       name: 'Number Memory',
       description: 'Remember number sequences',
       difficulty: 'Medium',
-      color: '#FFE0E0',
-      borderColor: PALETTE.red,
-      textColor: PALETTE.red,
-      selectedBackground: PALETTE.red,
-      selectedBorder: PALETTE.red,
+      color: '#FFE6CC', // Light orange tint
+      borderColor: '#FEC84D', // Home page orange
+      textColor: '#2C3E3E',
+      selectedBackground: '#FEC84D',
+      selectedBorder: '#FEC84D',
       selectedTextColor: '#FFFFFF',
       route: 'MemoryPlayLevel3' as MemoryPlayRoute,
       icon: '🔢',
@@ -74,12 +74,12 @@ const MemoryQuiz: React.FC = () => {
       id: 4,
       name: 'Picture Memory',
       description: 'Remember everyday objects',
-      difficulty: 'Medium',
-      color: '#E6F1F1',
-      borderColor: '#9333EA',
-      textColor: '#9333EA',
-      selectedBackground: '#9333EA',
-      selectedBorder: '#9333EA',
+      difficulty: 'Hard',
+      color: '#FFE6E6', // Light red tint
+      borderColor: '#D9534F', // Home page red
+      textColor: '#2C3E3E',
+      selectedBackground: '#D9534F',
+      selectedBorder: '#D9534F',
       selectedTextColor: '#FFFFFF',
       route: 'MemoryPlayLevel4' as MemoryPlayRoute,
       icon: '🖼️',
@@ -103,96 +103,99 @@ const MemoryQuiz: React.FC = () => {
   const selectedGame = memoryGames.find(g => g.id === selectedId);
 
   return (
-    <View className="flex-1" style={{ backgroundColor: PALETTE.lightPink }}>
+    <View style={styles.container}>
       {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pt-12 pb-6"
-        style={{ backgroundColor: PALETTE.teal }}
-      >
+      <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="items-center justify-center w-14 h-14 rounded-xl"
-          style={{ backgroundColor: '#FFFFFF' }}
+          style={styles.backButton}
         >
-          <Text className="text-3xl" style={{ color: PALETTE.teal }}>←</Text>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text className="text-3xl font-bold text-white">Memory Games</Text>
-        <View className="w-14" />
+        <Text style={styles.headerTitle}>Memory Games</Text>
+        <View style={{ width: 48 }} />
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <View className="items-center my-8">
-          <View
-            className="items-center justify-center w-40 h-40 mb-6 rounded-full"
-            style={{ backgroundColor: PALETTE.teal }}
-          >
-            <Text className="text-7xl">🧠</Text>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <View style={styles.brainIcon}>
+            <Text style={styles.brainEmoji}>🧠</Text>
           </View>
-          <Text className="mb-4 text-4xl font-bold" style={{ color: PALETTE.teal }}>Memory Training</Text>
-          <Text className="mb-8 text-2xl text-center" style={{ color: PALETTE.teal }}>
+          <Text style={styles.mainTitle}>Memory Training</Text>
+          <Text style={styles.mainSubtitle}>
             Fun & engaging brain exercises
           </Text>
         </View>
 
-        <View
-          className="p-6 mb-8 rounded-3xl"
-          style={{ backgroundColor: '#FFFFFF', elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 }}
-        >
-          <Text className="mb-6 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+        {/* Games Container */}
+        <View style={styles.gamesContainer}>
+          <Text style={styles.sectionTitle}>
             Choose Your Challenge
           </Text>
 
-          <View className="space-y-5">
+          <View style={styles.gamesList}>
             {memoryGames.map((game) => {
               const isSelected = game.id === selectedId;
               return (
                 <TouchableOpacity
                   key={game.id}
-                  className="py-5 pl-5 pr-3 rounded-2xl"
-                  style={{
-                    backgroundColor: isSelected ? game.selectedBackground : game.color,
-                    borderWidth: 3,
-                    borderColor: isSelected ? game.selectedBorder : game.borderColor,
-                  }}
+                  style={[
+                    styles.gameCard,
+                    {
+                      backgroundColor: isSelected ? game.selectedBackground : game.color,
+                      borderColor: isSelected ? game.selectedBorder : game.borderColor,
+                    }
+                  ]}
                   onPress={() => setSelectedId(game.id)}
                 >
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                      <Text className="mr-4 text-3xl">{game.icon}</Text>
-                      <View className="flex-1">
-                        <View className="flex-row items-center gap-2 mb-1">
+                  <View style={styles.gameCardContent}>
+                    <View style={styles.gameCardLeft}>
+                      <Text style={styles.gameIcon}>{game.icon}</Text>
+                      <View style={styles.gameInfo}>
+                        <View style={styles.gameTitleRow}>
                           <Text
-                            className="text-2xl font-bold"
-                            style={{ color: isSelected ? game.selectedTextColor : game.textColor }}
+                            style={[
+                              styles.gameTitle,
+                              { color: isSelected ? game.selectedTextColor : game.textColor }
+                            ]}
                           >
                             {game.name}
                           </Text>
                           <View
-                            className="px-2 py-1 rounded-full"
-                            style={{ 
-                              backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' 
-                            }}
+                            style={[
+                              styles.difficultyBadge,
+                              { 
+                                backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' 
+                              }
+                            ]}
                           >
                             <Text
-                              className="text-xs font-semibold"
-                              style={{ color: isSelected ? game.selectedTextColor : game.textColor }}
+                              style={[
+                                styles.difficultyText,
+                                { color: isSelected ? game.selectedTextColor : game.textColor }
+                              ]}
                             >
                               {game.difficulty}
                             </Text>
                           </View>
                         </View>
                         <Text
-                          className="text-lg mb-1"
-                          style={{ color: isSelected ? game.selectedTextColor : game.textColor }}
+                          style={[
+                            styles.gameDescription,
+                            { color: isSelected ? game.selectedTextColor : game.textColor }
+                          ]}
                         >
                           {game.description}
                         </Text>
                         <Text
-                          className="text-sm"
-                          style={{ 
-                            color: isSelected ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)' 
-                          }}
+                          style={[
+                            styles.gameDetails,
+                            { 
+                              color: isSelected ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)' 
+                            }
+                          ]}
                         >
                           {game.details}
                         </Text>
@@ -200,11 +203,8 @@ const MemoryQuiz: React.FC = () => {
                     </View>
                     
                     {isSelected && (
-                      <View
-                        className="items-center justify-center w-8 h-8 rounded-full"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
-                      >
-                        <Text className="text-lg text-white">✓</Text>
+                      <View style={styles.selectedIndicator}>
+                        <Text style={styles.checkMark}>✓</Text>
                       </View>
                     )}
                   </View>
@@ -215,65 +215,58 @@ const MemoryQuiz: React.FC = () => {
 
           {/* Game Preview */}
           {selectedGame && (
-            <View 
-              className="p-4 mt-6 rounded-2xl"
-              style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
-            >
-              <Text className="mb-2 text-lg font-semibold" style={{ color: PALETTE.teal }}>
+            <View style={styles.previewContainer}>
+              <Text style={styles.previewTitle}>
                 About {selectedGame.name}:
               </Text>
-              <View className="flex-row items-start gap-2">
-                <Text className="text-base text-gray-700">•</Text>
-                <Text className="flex-1 text-base text-gray-700">
+              <View style={styles.previewContent}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.previewText}>
                   {selectedGame.description2}
                 </Text>
               </View>
             </View>
           )}
 
-          {/* Helpful Tips Section */}
-          <View 
-            className="p-4 mt-6 rounded-2xl"
-            style={{ backgroundColor: '#F0F9FF' }}
-          >
-            <Text className="mb-2 text-lg font-semibold" style={{ color: PALETTE.teal }}>
+          {/* Tips Section */}
+          <View style={styles.tipsContainer}>
+            <Text style={styles.tipsTitle}>
               💡 Memory Training Tips:
             </Text>
-            <View className="space-y-2">
-              <View className="flex-row items-start gap-2">
-                <Text className="text-sm text-gray-700">•</Text>
-                <Text className="flex-1 text-sm text-gray-700">Start with easier games and work your way up</Text>
+            <View style={styles.tipsList}>
+              <View style={styles.tipItem}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.tipText}>Start with easier games and work your way up</Text>
               </View>
-              <View className="flex-row items-start gap-2">
-                <Text className="text-sm text-gray-700">•</Text>
-                <Text className="flex-1 text-sm text-gray-700">Take breaks between rounds to stay focused</Text>
+              <View style={styles.tipItem}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.tipText}>Take breaks between rounds to stay focused</Text>
               </View>
-              <View className="flex-row items-start gap-2">
-                <Text className="text-sm text-gray-700">•</Text>
-                <Text className="flex-1 text-sm text-gray-700">Play regularly for best results - even 10 minutes helps!</Text>
+              <View style={styles.tipItem}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.tipText}>Play regularly for best results - even 10 minutes helps!</Text>
               </View>
-              <View className="flex-row items-start gap-2">
-                <Text className="text-sm text-gray-700">•</Text>
-                <Text className="flex-1 text-sm text-gray-700">Don't worry about perfect scores - improvement is the goal</Text>
+              <View style={styles.tipItem}>
+                <Text style={styles.bulletPoint}>•</Text>
+                <Text style={styles.tipText}>Don't worry about perfect scores - improvement is the goal</Text>
               </View>
             </View>
           </View>
         </View>
 
+        {/* Start Button */}
         <TouchableOpacity
-          className="flex-row items-center justify-center py-6 mb-10 rounded-3xl"
-          style={{ 
-            backgroundColor: selectedId ? PALETTE.teal : '#CCCCCC',
-            elevation: 5,
-            shadowColor: '#000',
-            shadowOpacity: 0.2,
-            shadowRadius: 5
-          }}
+          style={[
+            styles.startButton,
+            { 
+              backgroundColor: selectedId ? '#96B5B5' : '#CCCCCC' // Home page teal when active
+            }
+          ]}
           onPress={onStart}
           disabled={!selectedId}
         >
-          <Text className="mr-3 text-3xl">🧠</Text>
-          <Text className="text-2xl font-semibold text-white">Start Training</Text>
+          <Text style={styles.startButtonIcon}>🧠</Text>
+          <Text style={styles.startButtonText}>Start Training</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -281,3 +274,225 @@ const MemoryQuiz: React.FC = () => {
 };
 
 export default MemoryQuiz;
+
+const styles = StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: "#96B5B5" // Home page background
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 60, // Increased for mobile spacing
+    paddingBottom: 20,
+    backgroundColor: "#96B5B5", // Match background
+  },
+  backButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 48,
+    height: 48,
+    backgroundColor: "#E6F1F1", // Home page card color
+    borderRadius: 12,
+  },
+  backIcon: { 
+    fontSize: 20,
+    color: "#2C3E3E" // Home page text color
+  },
+  headerTitle: { 
+    fontSize: 20, 
+    fontWeight: "700", 
+    color: "#2C3E3E" // Home page text color
+  },
+  scroll: { 
+    flex: 1, 
+    paddingHorizontal: 20 
+  },
+  heroSection: {
+    alignItems: "center",
+    marginVertical: 30, // Reduced from large margins
+  },
+  brainIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 120, // Reduced from 160
+    height: 120, // Reduced from 160
+    marginBottom: 20, // Reduced from 24
+    borderRadius: 60,
+    backgroundColor: "#2C3E3E", // Dark teal from home page
+  },
+  brainEmoji: {
+    fontSize: 50, // Reduced from 70
+  },
+  mainTitle: {
+    marginBottom: 8, // Reduced from 16
+    fontSize: 28, // Reduced from 32
+    fontWeight: "700",
+    color: "#2C3E3E", // Home page text color
+    textAlign: "center",
+  },
+  mainSubtitle: {
+    marginBottom: 20, // Reduced from 32
+    fontSize: 16, // Reduced from 18
+    textAlign: "center",
+    color: "#2C3E3E", // Home page text color
+    opacity: 0.8,
+  },
+  gamesContainer: {
+    padding: 20, // Reduced from 24
+    marginBottom: 20, // Reduced from 32
+    borderRadius: 20, // Reduced from 24
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  sectionTitle: {
+    marginBottom: 20, // Reduced from 24
+    fontSize: 20, // Reduced from 24
+    fontWeight: "700",
+    textAlign: "center",
+    color: "#2C3E3E", // Home page text color
+  },
+  gamesList: {
+    gap: 12, // Reduced from 20
+  },
+  gameCard: {
+    paddingVertical: 16, // Reduced from 20
+    paddingHorizontal: 16,
+    borderRadius: 16, // Reduced from 20
+    borderWidth: 2,
+  },
+  gameCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  gameCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  gameIcon: {
+    marginRight: 12, // Reduced from 16
+    fontSize: 24, // Reduced from 30
+  },
+  gameInfo: {
+    flex: 1,
+  },
+  gameTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 8,
+  },
+  gameTitle: {
+    fontSize: 16, // Reduced from 18
+    fontWeight: "600", // Changed from 700 to match home page
+  },
+  difficultyBadge: {
+    paddingHorizontal: 8, // Reduced from 10
+    paddingVertical: 3, // Reduced from 4
+    borderRadius: 12,
+  },
+  difficultyText: {
+    fontSize: 10, // Reduced from 12
+    fontWeight: "600",
+  },
+  gameDescription: {
+    fontSize: 14, // Reduced from 16
+    marginBottom: 4,
+  },
+  gameDetails: {
+    fontSize: 12, // Reduced from 14
+  },
+  selectedIndicator: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 24, // Reduced from 32
+    height: 24, // Reduced from 32
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  checkMark: {
+    fontSize: 14, // Reduced from 18
+    color: 'white',
+  },
+  previewContainer: {
+    padding: 16, // Reduced from 20
+    marginTop: 20, // Reduced from 24
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  previewTitle: {
+    marginBottom: 8,
+    fontSize: 14, // Reduced from 16
+    fontWeight: "600",
+    color: "#2C3E3E", // Home page text color
+  },
+  previewContent: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  previewText: {
+    flex: 1,
+    fontSize: 13, // Reduced from 14
+    color: '#666',
+  },
+  tipsContainer: {
+    padding: 16, // Reduced from 20
+    marginTop: 20, // Reduced from 24
+    borderRadius: 16,
+    backgroundColor: '#F0F9FF',
+  },
+  tipsTitle: {
+    marginBottom: 12, // Reduced from 16
+    fontSize: 14, // Reduced from 16
+    fontWeight: "600",
+    color: "#2C3E3E", // Home page text color
+  },
+  tipsList: {
+    gap: 8, // Reduced from 12
+  },
+  tipItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 12, // Reduced from 13
+    color: '#666',
+  },
+  bulletPoint: {
+    fontSize: 12,
+    color: '#666',
+  },
+  startButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16, // Reduced from 24
+    marginBottom: 30, // Reduced from 40
+    borderRadius: 16, // Reduced from 24
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  startButtonIcon: {
+    marginRight: 8, // Reduced from 12
+    fontSize: 20, // Reduced from 24
+  },
+  startButtonText: {
+    fontSize: 18, // Reduced from 20
+    fontWeight: "600",
+    color: 'white',
+  },
+});
