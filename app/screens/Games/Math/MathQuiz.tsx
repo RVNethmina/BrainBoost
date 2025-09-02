@@ -93,94 +93,135 @@ const MathQuiz: React.FC = () => {
     <View className="flex-1" style={{ backgroundColor: PALETTE.lightPink }}>
       {/* Header */}
       <View
-        className="flex-row items-center justify-between px-5 pt-12 pb-6"
+        className="flex-row items-center justify-between px-4 pt-12 pb-6 shadow-lg sm:px-6"
         style={{ backgroundColor: PALETTE.teal }}
       >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="items-center justify-center w-14 h-14 rounded-xl"
+          className="items-center justify-center w-12 h-12 shadow-md sm:w-14 sm:h-14 rounded-xl active:scale-95"
           style={{ backgroundColor: '#FFFFFF' }}
         >
-          <Text className="text-3xl" style={{ color: PALETTE.teal }}>←</Text>
+          <Text className="text-2xl sm:text-3xl" style={{ color: PALETTE.teal }}>←</Text>
         </TouchableOpacity>
-        <Text className="text-3xl font-bold text-white">Math Quiz</Text>
-        <View className="w-14" />
+        <Text className="text-2xl font-bold text-white sm:text-3xl">Math Quiz</Text>
+        <View className="w-12 sm:w-14" />
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <View className="items-center my-8">
+      <ScrollView 
+        className="flex-1 px-4 sm:px-6" 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      >
+        {/* Hero Section */}
+        <View className="items-center my-6 sm:my-8">
           <View
-            className="items-center justify-center w-40 h-40 mb-6 rounded-full"
+            className="items-center justify-center w-32 h-32 mb-4 rounded-full shadow-lg sm:w-40 sm:h-40 sm:mb-6"
             style={{ backgroundColor: PALETTE.teal }}
           >
-            <Text className="text-7xl">🧮</Text>
+            <Text className="text-6xl sm:text-7xl">🧮</Text>
           </View>
-          <Text className="mb-4 text-4xl font-bold" style={{ color: PALETTE.teal }}>Math Quiz</Text>
-          <Text className="mb-8 text-2xl text-center" style={{ color: PALETTE.teal }}>
-            Solve math problems quickly
+          <Text className="mb-2 text-3xl font-bold text-center sm:mb-4 sm:text-4xl" style={{ color: PALETTE.teal }}>
+            Math Quiz
+          </Text>
+          <Text className="px-4 mb-6 text-lg text-center sm:mb-8 sm:text-2xl" style={{ color: PALETTE.teal }}>
+            Test your math skills with timed challenges
           </Text>
         </View>
 
+        {/* Difficulty Selection Card */}
         <View
-          className="p-6 mb-8 rounded-3xl"
-          style={{ backgroundColor: '#FFFFFF', elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 }}
+          className="p-4 mx-2 mb-6 shadow-lg sm:p-6 sm:mb-8 rounded-3xl"
+          style={{ backgroundColor: '#FFFFFF' }}
         >
-          <Text className="mb-6 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
-            Choose Difficulty
+          <Text className="mb-4 text-2xl font-bold text-center sm:mb-6 sm:text-3xl" style={{ color: PALETTE.teal }}>
+            Choose Your Challenge
           </Text>
 
-          <View className="space-y-5">
-            {difficulties.map((difficulty) => {
+          <View className="space-y-3 sm:space-y-4">
+            {difficulties.map((difficulty, index) => {
               const isSelected = difficulty.id === selectedId;
               return (
                 <TouchableOpacity
                   key={difficulty.id}
-                  className="flex-row items-center justify-start py-5 pl-5 rounded-2xl"
+                  className="flex-row items-center p-4 sm:p-5 rounded-2xl active:scale-[0.98] shadow-sm"
                   style={{
                     backgroundColor: isSelected ? difficulty.selectedBackground : difficulty.color,
-                    borderWidth: 3,
+                    borderWidth: 2,
                     borderColor: isSelected ? difficulty.selectedBorder : difficulty.borderColor,
+                    transform: [{ scale: isSelected ? 1.02 : 1 }],
                   }}
                   onPress={() => setSelectedId(difficulty.id)}
                   accessibilityRole="button"
+                  accessibilityLabel={`${difficulty.name} difficulty: ${difficulty.description}`}
+                  accessibilityState={{ selected: isSelected }}
                 >
-                  <Text className="mr-4 text-3xl">{difficulty.icon}</Text>
-                  <View>
+                  <View 
+                    className="items-center justify-center w-12 h-12 mr-4 sm:w-14 sm:h-14 rounded-xl"
+                    style={{ 
+                      backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)' 
+                    }}
+                  >
+                    <Text className="text-2xl sm:text-3xl">{difficulty.icon}</Text>
+                  </View>
+                  <View className="flex-1">
                     <Text
-                      className="text-2xl font-bold"
+                      className="mb-1 text-xl font-bold sm:text-2xl"
                       style={{ color: isSelected ? difficulty.selectedTextColor : difficulty.textColor }}
                     >
                       {difficulty.name}
                     </Text>
                     <Text
-                      className="text-lg"
-                      style={{ color: isSelected ? difficulty.selectedTextColor : difficulty.textColor }}
+                      className="text-sm sm:text-lg"
+                      style={{ 
+                        color: isSelected 
+                          ? difficulty.selectedTextColor 
+                          : difficulty.textColor,
+                        opacity: isSelected ? 0.9 : 0.8 
+                      }}
                     >
                       {difficulty.description}
                     </Text>
                   </View>
+                  {isSelected && (
+                    <View className="ml-2">
+                      <Text className="text-xl sm:text-2xl">✓</Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
+        {/* Start Button */}
         <TouchableOpacity
-          className="flex-row items-center justify-center py-6 mb-10 rounded-3xl"
+          className="flex-row items-center justify-center py-5 mx-2 shadow-lg sm:py-6 rounded-3xl active:scale-95"
           style={{ 
             backgroundColor: selectedId ? PALETTE.teal : '#CCCCCC',
-            elevation: 5,
-            shadowColor: '#000',
-            shadowOpacity: 0.2,
-            shadowRadius: 5
+            opacity: selectedId ? 1 : 0.6,
           }}
           onPress={onStart}
           disabled={!selectedId}
+          accessibilityRole="button"
+          accessibilityLabel="Start the math quiz"
+          accessibilityState={{ disabled: !selectedId }}
         >
-          <Text className="mr-3 text-3xl">🎮</Text>
-          <Text className="text-2xl font-semibold text-white">Start Quiz</Text>
+          <Text className="mr-3 text-2xl sm:text-3xl">🎮</Text>
+          <Text className="text-xl font-semibold text-white sm:text-2xl">
+            {selectedId ? 'Start Quiz' : 'Select Difficulty First'}
+          </Text>
         </TouchableOpacity>
+
+        {/* Quick Tips */}
+        <View 
+          className="p-4 mx-2 mt-6 rounded-2xl"
+          style={{ backgroundColor: 'rgba(255,255,255,0.7)' }}
+        >
+          <Text className="text-sm text-center sm:text-base" style={{ color: PALETTE.teal }}>
+            💡 <Text className="font-semibold">Quick Tip:</Text> You have 2 minutes to answer 10 questions!
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );

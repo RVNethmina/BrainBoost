@@ -24,6 +24,11 @@ import ProfileScreen from '../screens/Main/ProfileScreen';
 import ProgressScreen from '../screens/Main/ProgressScreen';
 import ReminderScreen from '../screens/Main/RemainderScreen';
 import SettingsScreen from '../screens/Main/SettingsScreen';
+import AttentionPlayEasy from '../screens/Games/Attention/AttentionPlayEasy';
+import AttentionPlayHard from '../screens/Games/Attention/AttentionPlayHard';
+import AttentionPlayMedium from '../screens/Games/Attention/AttentionPlayMedium';
+import AttentionQuiz from '../screens/Games/Attention/AttentionQuiz';
+import AttentionResultsScreen from '../screens/Games/Attention/AttentionResults';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -74,6 +79,11 @@ export type RootStackParamList = {
   Reminder: undefined;
   Settings: undefined;
   Profile: undefined;
+  AttentionQuiz: undefined;
+  AttentionPlayEasy: undefined;
+  AttentionPlayMedium: undefined;
+  AttentionPlayHard: undefined;
+  AttentionResults: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -109,6 +119,11 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="Reminder" component={ReminderScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="AttentionGame" component={AttentionQuiz} />
+      <Stack.Screen name="AttentionPlayEasy" component={AttentionPlayEasy} />
+      <Stack.Screen name="AttentionPlayMedium" component={AttentionPlayMedium} />
+      <Stack.Screen name="AttentionPlayHard" component={AttentionPlayHard} />
+      <Stack.Screen name="AttentionResults" component={AttentionResultsScreen} /> 
     </Stack.Navigator>
   );
 };
