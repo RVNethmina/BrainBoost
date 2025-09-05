@@ -45,7 +45,7 @@ const BrainGames = () => {
       icon: "🧩",
       description: "Logic problems",
       difficulty: "Hard",
-      screen: "PuzzleGame",
+      screen: "PuzzleQuiz", // Changed from "PuzzleGame" to "PuzzleQuiz"
     },
   ];
 
