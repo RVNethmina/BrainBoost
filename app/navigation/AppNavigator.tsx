@@ -5,16 +5,21 @@ import OnboardingScreen from '../screens/Auth/OnboardingScreen';
 import SignInScreen from '../screens/Auth/SignInScreen';
 import SignupScreen from '../screens/Auth/SignupScreen';
 import WelcomeScreen from '../screens/Auth/WelcomeScreen';
+import AttentionPlayEasy from '../screens/Games/Attention/AttentionPlayEasy';
+import AttentionPlayHard from '../screens/Games/Attention/AttentionPlayHard';
+import AttentionPlayMedium from '../screens/Games/Attention/AttentionPlayMedium';
+import AttentionQuiz from '../screens/Games/Attention/AttentionQuiz';
+import AttentionResultsScreen from '../screens/Games/Attention/AttentionResults';
 import MathPlayAddition from '../screens/Games/Math/MathPlayAddition';
 import MathPlayMixed from '../screens/Games/Math/MathPlayMixed';
 import MathPlayMultiplication from '../screens/Games/Math/MathPlayMultiplication';
 import MathQuiz from '../screens/Games/Math/MathQuiz';
 import MathResults from '../screens/Games/Math/MathResults';
-import MemoryQuiz from '../screens/Games/MemoryMatch/MemoryQuiz';
-import MemoryPlayPattern from '../screens/Games/MemoryMatch/MemoryPlayPattern';
 import MemoryPlayCards from '../screens/Games/MemoryMatch/MemoryPlayCards';
 import MemoryPlayNumbers from '../screens/Games/MemoryMatch/MemoryPlayNumbers';
+import MemoryPlayPattern from '../screens/Games/MemoryMatch/MemoryPlayPattern';
 import MemoryPlayPictures from '../screens/Games/MemoryMatch/MemoryPlayPictures';
+import MemoryQuiz from '../screens/Games/MemoryMatch/MemoryQuiz';
 import MemoryResultsScreen from '../screens/Games/MemoryMatch/MemoryResultsScreen';
 import AssessmentTest from '../screens/Main/AssessmentTest';
 import BrainGames from '../screens/Main/BrainGames';
@@ -24,11 +29,18 @@ import ProfileScreen from '../screens/Main/ProfileScreen';
 import ProgressScreen from '../screens/Main/ProgressScreen';
 import ReminderScreen from '../screens/Main/RemainderScreen';
 import SettingsScreen from '../screens/Main/SettingsScreen';
-import AttentionPlayEasy from '../screens/Games/Attention/AttentionPlayEasy';
-import AttentionPlayHard from '../screens/Games/Attention/AttentionPlayHard';
-import AttentionPlayMedium from '../screens/Games/Attention/AttentionPlayMedium';
-import AttentionQuiz from '../screens/Games/Attention/AttentionQuiz';
-import AttentionResultsScreen from '../screens/Games/Attention/AttentionResults';
+// Existing Puzzle set
+import ArrowPlay from '../screens/Games/Puzzle/ArrowPlay';
+import CompPlay from '../screens/Games/Puzzle/CompPlay';
+import OddPlay from '../screens/Games/Puzzle/OddPlay';
+import PuzzleQuiz from '../screens/Games/Puzzle/PuzzleQuiz';
+import SeqPlay from '../screens/Games/Puzzle/SeqPlay';
+
+// NEW: Senior-friendly Puzzle set
+import JigsawPlay from '../screens/Games/Puzzle/JigsawPlay';
+import OrderTapPlay from '../screens/Games/Puzzle/OrderTapPlay';
+import SudokuPlay from '../screens/Games/Puzzle/SudokuPlay';
+import TargetNumberPlay from '../screens/Games/Puzzle/TargetNumberPlay';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -52,6 +64,9 @@ export type RootStackParamList = {
     timeTaken: number;
     endedBy: string;
     gameType: string;
+
+
+
   };
 
   MemoryQuiz: undefined;
@@ -68,6 +83,19 @@ export type RootStackParamList = {
     level: number;
     difficulty: 'easy' | 'medium' | 'hard' | 'expert';
   };
+    
+  // Puzzles – existing
+  PuzzleQuiz: undefined;
+  OddPlay:   { difficulty: 'easy' | 'medium' | 'hard' };
+  SeqPlay:   { difficulty: 'easy' | 'medium' | 'hard' };
+  ArrowPlay: { difficulty: 'easy' | 'medium' | 'hard' };
+  CompPlay:  { difficulty: 'easy' | 'medium' | 'hard' };
+
+  // Puzzles – NEW
+  SudokuPlay:        { difficulty: 'easy' | 'medium' | 'hard' };
+  JigsawPlay:        { difficulty: 'easy' | 'medium' | 'hard' };
+  TargetNumberPlay:  { difficulty: 'easy' | 'medium' | 'hard' };
+  OrderTapPlay:      { difficulty: 'easy' | 'medium' | 'hard' };
 
   AttentionGame: undefined;
   PuzzleGame: undefined;
@@ -124,6 +152,19 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="AttentionPlayMedium" component={AttentionPlayMedium} />
       <Stack.Screen name="AttentionPlayHard" component={AttentionPlayHard} />
       <Stack.Screen name="AttentionResults" component={AttentionResultsScreen} /> 
+
+       {/* Puzzles – existing */}
+      <Stack.Screen name="PuzzleQuiz" component={PuzzleQuiz} />
+      <Stack.Screen name="OddPlay" component={OddPlay} />
+      <Stack.Screen name="SeqPlay" component={SeqPlay} />
+      <Stack.Screen name="ArrowPlay" component={ArrowPlay} />
+      <Stack.Screen name="CompPlay" component={CompPlay} />
+
+      {/* Puzzles – NEW */}
+      <Stack.Screen name="SudokuPlay" component={SudokuPlay} />
+      <Stack.Screen name="JigsawPlay" component={JigsawPlay} />
+      <Stack.Screen name="TargetNumberPlay" component={TargetNumberPlay} />
+      <Stack.Screen name="OrderTapPlay" component={OrderTapPlay} />
     </Stack.Navigator>
   );
 };
