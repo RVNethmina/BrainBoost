@@ -1,71 +1,80 @@
+// app/src/screens/AssessmentTest.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from '@/app/navigation/AppNavigator';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-type AssessmentScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'Assessment'
->;
+// Use the generic navigation prop for the whole stack (not just 'Assessment')
+type RootNavProp = NativeStackNavigationProp<RootStackParamList>;
 
+// Narrow union of the assessment route names
+type AssessmentRoute = 'MemoryTest' | 'AttentionTest' | 'MathAssessment' | 'FullAssessment';
 
+const AssessmentTest: React.FC = () => {
+  const navigation = useNavigation<RootNavProp>();
 
-const AssessmentTest = () => {
-  const navigation = useNavigation<AssessmentScreenNavigationProp>();
-
-  const assessments = [
-    { 
-      id: 1, 
-      title: 'Memory Test', 
-      icon: '🧠', 
+  const assessments: {
+    id: number;
+    title: string;
+    icon: string;
+    duration: string;
+    type: string;
+    screen: AssessmentRoute;
+    bgColor: string;
+    textColor: string;
+  }[] = [
+    {
+      id: 1,
+      title: 'Memory Test',
+      icon: '🧠',
       duration: '15 minutes',
       type: 'Comprehensive',
       screen: 'MemoryTest',
       bgColor: PALETTE.lightTeal,
-      textColor: PALETTE.teal
+      textColor: PALETTE.teal,
     },
-    { 
-      id: 2, 
-      title: 'Attention Test', 
-      icon: '⚡', 
+    {
+      id: 2,
+      title: 'Attention Test',
+      icon: '⚡',
       duration: '10 minutes',
       type: 'Focus',
       screen: 'AttentionTest',
       bgColor: PALETTE.lightPink,
-      textColor: PALETTE.orange
+      textColor: PALETTE.orange,
     },
-    { 
-      id: 3, 
-      title: 'Math Assessment', 
-      icon: '🔢', 
+    {
+      id: 3,
+      title: 'Math Assessment',
+      icon: '🔢',
       duration: '12 minutes',
       type: 'Numerical',
       screen: 'MathAssessment',
       bgColor: PALETTE.lightPink,
-      textColor: PALETTE.red
+      textColor: PALETTE.red,
     },
-    { 
-      id: 4, 
-      title: 'Full Assessment', 
-      icon: '🎯', 
+    {
+      id: 4,
+      title: 'Full Assessment',
+      icon: '🎯',
       duration: '30 minutes',
       type: 'Complete',
       screen: 'FullAssessment',
       bgColor: PALETTE.lightTeal,
-      textColor: PALETTE.teal
+      textColor: PALETTE.teal,
     },
   ];
 
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <View 
+      <View
         className="flex-row items-center justify-between px-5 pt-10 pb-4"
         style={{ backgroundColor: PALETTE.lightPink }}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="items-center justify-center w-12 h-12 rounded-xl"
           style={{ backgroundColor: PALETTE.lightTeal }}
@@ -78,34 +87,29 @@ const AssessmentTest = () => {
 
       {/* Content */}
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
-        <Text className="my-4 text-lg text-center text-gray-600">
-          Test your cognitive abilities
-        </Text>
+        <Text className="my-4 text-lg text-center text-gray-600">Test your cognitive abilities</Text>
 
         <View className="grid grid-cols-2 gap-4 mb-6">
           {assessments.map((assessment) => (
             <TouchableOpacity
               key={assessment.id}
               className="items-center p-5 border shadow-sm rounded-2xl"
-              style={{ 
+              style={{
                 backgroundColor: 'white',
-                borderColor: PALETTE.lightTeal
+                borderColor: PALETTE.lightTeal,
               }}
-              onPress={() => navigation.navigate(assessment.screen as keyof RootStackParamList)}
+              onPress={() => navigation.navigate(assessment.screen)}
             >
               <Text className="mb-3 text-4xl">{assessment.icon}</Text>
               <Text className="text-xl font-bold text-center">{assessment.title}</Text>
               <Text className="mt-2 text-center text-gray-600">{assessment.duration}</Text>
-              <View 
+              <View
                 className="px-3 py-1 mt-3 rounded-full"
-                style={{ 
-                  backgroundColor: assessment.bgColor
+                style={{
+                  backgroundColor: assessment.bgColor,
                 }}
               >
-                <Text 
-                  className="text-sm"
-                  style={{ color: assessment.textColor }}
-                >
+                <Text className="text-sm" style={{ color: assessment.textColor }}>
                   {assessment.type}
                 </Text>
               </View>
