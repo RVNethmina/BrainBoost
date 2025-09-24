@@ -37,10 +37,12 @@ import PuzzleQuiz from '../screens/Games/Puzzle/PuzzleQuiz';
 import SeqPlay from '../screens/Games/Puzzle/SeqPlay';
 
 // NEW: Senior-friendly Puzzle set
+import MathAssessment from '../screens/Assessments/MathAssessment';
 import JigsawPlay from '../screens/Games/Puzzle/JigsawPlay';
 import OrderTapPlay from '../screens/Games/Puzzle/OrderTapPlay';
 import SudokuPlay from '../screens/Games/Puzzle/SudokuPlay';
 import TargetNumberPlay from '../screens/Games/Puzzle/TargetNumberPlay';
+
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -165,6 +167,9 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="JigsawPlay" component={JigsawPlay} />
       <Stack.Screen name="TargetNumberPlay" component={TargetNumberPlay} />
       <Stack.Screen name="OrderTapPlay" component={OrderTapPlay} />
+
+      {/* Math Assessment */}
+      <Stack.Screen name="MathAssessment" component={MathAssessment} />
     </Stack.Navigator>
   );
 };

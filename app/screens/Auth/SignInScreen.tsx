@@ -1,8 +1,18 @@
 // SignInScreen.tsx
-import React, { useState } from "react";
-import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity, Image, Platform } from "react-native";
-import { auth } from "../../../config/firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import React, { useState } from "react";
+import {
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { auth } from "../../../config/firebaseConfig";
 
 const PALETTE = {
   red: "#F04F4E",
@@ -19,29 +29,27 @@ export default function SignInScreen({ navigation }: any) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please enter email and password");
+      Alert.alert("Error", "Please enter your email and password.");
       return;
     }
 
     setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
 
-      // ✅ Navigate immediately to Home
       navigation.reset({
         index: 0,
         routes: [{ name: "Home" }],
       });
 
-      // Optional: show success notification on mobile only
       if (Platform.OS !== "web") {
-        Alert.alert("Success", "Logged in successfully!");
+        Alert.alert("Success", "You are now logged in!");
       }
     } catch (error: any) {
       let errorMessage = error.message;
-      if (error.code === "auth/user-not-found") errorMessage = "User not found";
-      else if (error.code === "auth/wrong-password") errorMessage = "Incorrect password";
-      else if (error.code === "auth/invalid-email") errorMessage = "Invalid email";
+      if (error.code === "auth/user-not-found") errorMessage = "No account found with this email.";
+      else if (error.code === "auth/wrong-password") errorMessage = "Incorrect password.";
+      else if (error.code === "auth/invalid-email") errorMessage = "Invalid email format.";
       Alert.alert("Login Error", errorMessage);
     } finally {
       setIsLoading(false);
@@ -49,93 +57,88 @@ export default function SignInScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Logo */}
-      <Image source={require("../../assets/logo.png")} style={styles.logo} />
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <View style={styles.container}>
+        <Image source={require("../../assets/logo.png")} style={styles.logo} />
 
-      <Text style={styles.title}>Sign In</Text>
+        <Text style={styles.title}>Log In to Your Account</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          placeholderTextColor="#666"
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          placeholderTextColor="#666"
+        />
 
-      {/* Login Button */}
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: PALETTE.red }]}
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        <Text style={styles.buttonText}>{isLoading ? "Logging In..." : "Sign In"}</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: PALETTE.red }]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>{isLoading ? "Logging In..." : "Sign In"}</Text>
+        </TouchableOpacity>
 
-      {/* Forgot Password */}
-      <TouchableOpacity
-        style={{ marginTop: 10 }}
-        onPress={() => Alert.alert("Forgot Password", "Password reset functionality coming soon!")}
-      >
-        <Text style={[styles.linkText]}>Forgot Password?</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={{ marginTop: 20 }}
+          onPress={() => Alert.alert("Forgot Password", "Password reset will be available soon.")}
+        >
+          <Text style={styles.linkText}>Forgot Password?</Text>
+        </TouchableOpacity>
 
-      {/* Create Account */}
-      <TouchableOpacity
-        style={{ marginTop: 12 }}
-        onPress={() => navigation.navigate("Signup")}
-      >
-        <Text style={[styles.linkText]}>Create Account</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={{ marginTop: 20 }} onPress={() => navigation.navigate("Signup")}>
+          <Text style={styles.linkText}>Create a New Account</Text>
+        </TouchableOpacity>
 
-      {/* Back to Welcome */}
-      <TouchableOpacity
-        style={{ marginTop: 20 }}
-        onPress={() => navigation.navigate("Welcome")}
-      >
-        <Text style={[styles.linkText, { color: "#666" }]}>Back to Welcome</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity style={{ marginTop: 30 }} onPress={() => navigation.navigate("Welcome")}>
+          <Text style={[styles.linkText, { color: "#444" }]}>Back to Welcome</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "#ffffff" },
+  scroll: { flexGrow: 1, justifyContent: "center" },
+  container: { flex: 1, justifyContent: "center", padding: 30, backgroundColor: "#fff" },
   logo: {
-     width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     alignSelf: "center",
-    marginBottom: 20,
-    resizeMode: "cover",
+    marginBottom: 30,
+    resizeMode: "contain",
   },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, textAlign: "center", color: PALETTE.teal },
+  title: { fontSize: 28, fontWeight: "bold", marginBottom: 30, textAlign: "center", color: PALETTE.teal },
   input: {
     borderWidth: 1,
-    padding: 12,
-    marginVertical: 10,
-    borderRadius: 10,
-    borderColor: "#ddd",
-    fontSize: 16,
+    padding: 16,
+    marginVertical: 12,
+    borderRadius: 12,
+    borderColor: "#bbb",
+    fontSize: 18,
   },
   button: {
-    paddingVertical: 15,
-    borderRadius: 25,
+    marginTop: 20,
+    paddingVertical: 18,
+    borderRadius: 28,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 6,
   },
-  buttonText: { color: "#fff", fontSize: 18, fontWeight: "600", textAlign: "center" },
-  linkText: { fontSize: 14, color: PALETTE.lightTeal, textAlign: "center", textDecorationLine: "underline" },
+  buttonText: { color: "#fff", fontSize: 20, fontWeight: "700", textAlign: "center" },
+  linkText: { fontSize: 18, color: PALETTE.lightTeal, textAlign: "center", textDecorationLine: "underline" },
 });
