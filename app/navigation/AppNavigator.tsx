@@ -21,6 +21,7 @@ import MemoryPlayPattern from '../screens/Games/MemoryMatch/MemoryPlayPattern';
 import MemoryPlayPictures from '../screens/Games/MemoryMatch/MemoryPlayPictures';
 import MemoryQuiz from '../screens/Games/MemoryMatch/MemoryQuiz';
 import MemoryResultsScreen from '../screens/Games/MemoryMatch/MemoryResultsScreen';
+import MemoryTest from '../screens/Assessments/MemoryTest';
 import AssessmentTest from '../screens/Main/AssessmentTest';
 import BrainGames from '../screens/Main/BrainGames';
 import HomeScreen from '../screens/Main/HomeScreen';
@@ -29,20 +30,16 @@ import ProfileScreen from '../screens/Main/ProfileScreen';
 import ProgressScreen from '../screens/Main/ProgressScreen';
 import ReminderScreen from '../screens/Main/RemainderScreen';
 import SettingsScreen from '../screens/Main/SettingsScreen';
-// Existing Puzzle set
 import ArrowPlay from '../screens/Games/Puzzle/ArrowPlay';
 import CompPlay from '../screens/Games/Puzzle/CompPlay';
 import OddPlay from '../screens/Games/Puzzle/OddPlay';
 import PuzzleQuiz from '../screens/Games/Puzzle/PuzzleQuiz';
 import SeqPlay from '../screens/Games/Puzzle/SeqPlay';
-
-// NEW: Senior-friendly Puzzle set
 import MathAssessment from '../screens/Assessments/MathAssessment';
 import JigsawPlay from '../screens/Games/Puzzle/JigsawPlay';
 import OrderTapPlay from '../screens/Games/Puzzle/OrderTapPlay';
 import SudokuPlay from '../screens/Games/Puzzle/SudokuPlay';
 import TargetNumberPlay from '../screens/Games/Puzzle/TargetNumberPlay';
-
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -52,10 +49,8 @@ export type RootStackParamList = {
   Home: undefined;
   Insights: undefined;
   Progress: undefined;
-
   BrainGames: undefined;
   Assessment: undefined;
-
   MathQuiz: undefined;
   MathPlayAddition: undefined;
   MathPlayMultiplication: undefined;
@@ -66,16 +61,12 @@ export type RootStackParamList = {
     timeTaken: number;
     endedBy: string;
     gameType: string;
-
-
-
   };
-
   MemoryQuiz: undefined;
-  MemoryPlayLevel1: undefined; // Pattern Memory
-  MemoryPlayLevel2: undefined; // Memory Cards
-  MemoryPlayLevel3: undefined; // Number Memory
-  MemoryPlayLevel4: undefined; // Picture Memory
+  MemoryPlayLevel1: undefined;
+  MemoryPlayLevel2: undefined;
+  MemoryPlayLevel3: undefined;
+  MemoryPlayLevel4: undefined;
   MemoryResults: {
     score: number;
     totalQuestions: number;
@@ -85,22 +76,16 @@ export type RootStackParamList = {
     level: number;
     difficulty: 'easy' | 'medium' | 'hard' | 'expert';
   };
-    
-  // Puzzles – existing
   PuzzleQuiz: undefined;
-  OddPlay:   { difficulty: 'easy' | 'medium' | 'hard' };
-  SeqPlay:   { difficulty: 'easy' | 'medium' | 'hard' };
+  OddPlay: { difficulty: 'easy' | 'medium' | 'hard' };
+  SeqPlay: { difficulty: 'easy' | 'medium' | 'hard' };
   ArrowPlay: { difficulty: 'easy' | 'medium' | 'hard' };
-  CompPlay:  { difficulty: 'easy' | 'medium' | 'hard' };
-
-  // Puzzles – NEW
-  SudokuPlay:        { difficulty: 'easy' | 'medium' | 'hard' };
-  JigsawPlay:        { difficulty: 'easy' | 'medium' | 'hard' };
-  TargetNumberPlay:  { difficulty: 'easy' | 'medium' | 'hard' };
-  OrderTapPlay:      { difficulty: 'easy' | 'medium' | 'hard' };
-
+  CompPlay: { difficulty: 'easy' | 'medium' | 'hard' };
+  SudokuPlay: { difficulty: 'easy' | 'medium' | 'hard' };
+  JigsawPlay: { difficulty: 'easy' | 'medium' | 'hard' };
+  TargetNumberPlay: { difficulty: 'easy' | 'medium' | 'hard' };
+  OrderTapPlay: { difficulty: 'easy' | 'medium' | 'hard' };
   AttentionGame: undefined;
-  PuzzleGame: undefined;
   MemoryTest: undefined;
   AttentionTest: undefined;
   MathAssessment: undefined;
@@ -130,22 +115,18 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="Assessment" component={AssessmentTest} />
       <Stack.Screen name="Progress" component={ProgressScreen} />
       <Stack.Screen name="Insights" component={InsightsScreen} />
-      
-      {/* Math Games */}
       <Stack.Screen name="MathQuiz" component={MathQuiz} />
       <Stack.Screen name="MathPlayAddition" component={MathPlayAddition} />
       <Stack.Screen name="MathPlayMultiplication" component={MathPlayMultiplication} />
       <Stack.Screen name="MathPlayMixed" component={MathPlayMixed} />
       <Stack.Screen name="MathResults" component={MathResults} />
-
-      {/* Memory Games */}
       <Stack.Screen name="MemoryQuiz" component={MemoryQuiz} />
       <Stack.Screen name="MemoryPlayLevel1" component={MemoryPlayPattern} />
       <Stack.Screen name="MemoryPlayLevel2" component={MemoryPlayCards} />
       <Stack.Screen name="MemoryPlayLevel3" component={MemoryPlayNumbers} />
       <Stack.Screen name="MemoryPlayLevel4" component={MemoryPlayPictures} />
       <Stack.Screen name="MemoryResults" component={MemoryResultsScreen} />
-
+      <Stack.Screen name="MemoryTest" component={MemoryTest} />
       <Stack.Screen name="Reminder" component={ReminderScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
@@ -153,22 +134,16 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="AttentionPlayEasy" component={AttentionPlayEasy} />
       <Stack.Screen name="AttentionPlayMedium" component={AttentionPlayMedium} />
       <Stack.Screen name="AttentionPlayHard" component={AttentionPlayHard} />
-      <Stack.Screen name="AttentionResults" component={AttentionResultsScreen} /> 
-
-       {/* Puzzles – existing */}
+      <Stack.Screen name="AttentionResults" component={AttentionResultsScreen} />
       <Stack.Screen name="PuzzleQuiz" component={PuzzleQuiz} />
       <Stack.Screen name="OddPlay" component={OddPlay} />
       <Stack.Screen name="SeqPlay" component={SeqPlay} />
       <Stack.Screen name="ArrowPlay" component={ArrowPlay} />
       <Stack.Screen name="CompPlay" component={CompPlay} />
-
-      {/* Puzzles – NEW */}
       <Stack.Screen name="SudokuPlay" component={SudokuPlay} />
       <Stack.Screen name="JigsawPlay" component={JigsawPlay} />
       <Stack.Screen name="TargetNumberPlay" component={TargetNumberPlay} />
       <Stack.Screen name="OrderTapPlay" component={OrderTapPlay} />
-
-      {/* Math Assessment */}
       <Stack.Screen name="MathAssessment" component={MathAssessment} />
     </Stack.Navigator>
   );

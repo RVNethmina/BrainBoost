@@ -59,7 +59,7 @@ const games: Game[] = [
     icon: "🧩",
     description: "Solve simple puzzles",
     difficulty: "Hard",
-    screen: "MemoryQuiz", // fallback if PuzzleQuiz isn't registered — replace with your screen name
+    screen: "PuzzleQuiz", // Changed from "MemoryQuiz" to "PuzzleQuiz"
   },
 ];
 
