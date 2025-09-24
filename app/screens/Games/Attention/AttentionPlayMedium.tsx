@@ -1,95 +1,127 @@
-// app/src/screens/AttentionPlayMedium.tsx
+// app/src/screens/Games/Attention/AttentionPlayMedium.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Vibration } from "react-native";
 
-type AttentionPlayScreenNavigationProp = NativeStackNavigationProp<
+type AttentionPlayMediumNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "AttentionPlayMedium"
 >;
 
-const GAME_DURATION = 60; // seconds
-const TARGET_DISPLAY_TIME = 1500; // ms - faster than easy
-const TARGET_SIZE = 65; // smaller than easy
-const SHAPES = ['circle', 'square', 'triangle'] as const;
-const COLORS = ['red', 'blue', 'green', 'yellow', 'orange'] as const; // more colors
+const INITIAL_TIME = 240; // 4 minutes
+const TOTAL_ROUNDS = 12;
+const GRID_SIZE = 16; // 4x4 grid for medium level
+const TARGET_COUNT = 3; // Number of targets per round
 
-type Shape = typeof SHAPES[number];
-type Color = typeof COLORS[number];
+const COLOR_SHAPES = [
+  { color: '#EF4444', shape: '●', name: 'red circle' },
+  { color: '#10B981', shape: '●', name: 'green circle' },
+  { color: '#3B82F6', shape: '●', name: 'blue circle' },
+  { color: '#F59E0B', shape: '●', name: 'yellow circle' },
+  { color: '#EF4444', shape: '■', name: 'red square' },
+  { color: '#10B981', shape: '■', name: 'green square' },
+  { color: '#3B82F6', shape: '■', name: 'blue square' },
+  { color: '#F59E0B', shape: '■', name: 'yellow square' },
+];
 
-type Target = {
-  id: string;
-  shape: Shape;
-  color: Color;
-  x: number;
-  y: number;
+type GridItem = {
+  id: number;
+  colorShape: typeof COLOR_SHAPES[0];
   isTarget: boolean;
-  timestamp: number;
+  isSelected: boolean;
+  position: { row: number, col: number };
 };
 
-function randInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function generateTargets(gameWidth: number, gameHeight: number): Target[] {
-  const targets: Target[] = [];
-  const numTargets = randInt(2, 4); // Multiple targets at once
-  const hasRealTarget = Math.random() < 0.4; // 40% chance of having the real target
-  
-  for (let i = 0; i < numTargets; i++) {
-    const isThisTheTarget = hasRealTarget && i === 0;
-    const shape = SHAPES[randInt(0, SHAPES.length - 1)];
-    const color = isThisTheTarget ? 'red' : COLORS[randInt(0, COLORS.length - 1)];
-    
-    const finalShape = isThisTheTarget ? 'circle' : shape;
-    const finalColor = isThisTheTarget ? 'red' : (color === 'red' && shape === 'circle' ? 'blue' : color);
-
-    let x: number;
-    let y: number;
-    let attempts = 0;
-    do {
-      x = randInt(TARGET_SIZE / 2, gameWidth - TARGET_SIZE / 2);
-      y = randInt(TARGET_SIZE / 2, gameHeight - TARGET_SIZE / 2);
-      attempts++;
-    } while (
-      attempts < 10 &&
-      targets.some(t => 
-        Math.sqrt(Math.pow(t.x - x, 2) + Math.pow(t.y - y, 2)) < TARGET_SIZE + 10
-      )
-    );
-
-    targets.push({
-      id: `target_${Date.now()}_${i}`,
-      shape: finalShape,
-      color: finalColor,
-      x,
-      y,
-      isTarget: isThisTheTarget,
-      timestamp: Date.now(),
-    });
-  }
-
-  return targets;
-}
-
 const AttentionPlayMedium: React.FC = () => {
-  const navigation = useNavigation<AttentionPlayScreenNavigationProp>();
-
-  const [timeLeft, setTimeLeft] = useState<number>(GAME_DURATION);
+  const navigation = useNavigation<AttentionPlayMediumNavigationProp>();
+  
+  const [timeLeft, setTimeLeft] = useState<number>(INITIAL_TIME);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [score, setScore] = useState<number>(0);
-  const [currentTargets, setCurrentTargets] = useState<Target[]>([]);
+  const [currentRound, setCurrentRound] = useState<number>(0);
+  const [gameState, setGameState] = useState<'start' | 'showing' | 'playing' | 'feedback'>('start');
+  const [gridItems, setGridItems] = useState<GridItem[]>([]);
+  const [targetShape, setTargetShape] = useState<typeof COLOR_SHAPES[0] | null>(null);
+  const [targetsFound, setTargetsFound] = useState<number>(0);
   const [reactionTimes, setReactionTimes] = useState<number[]>([]);
-  const [totalTargetsShown, setTotalTargetsShown] = useState<number>(0);
-  const [showStartHint, setShowStartHint] = useState<boolean>(true);
+  const [roundStartTime, setRoundStartTime] = useState<number>(0);
+  const [correctSelections, setCorrectSelections] = useState<number>(0);
+  const [totalSelections, setTotalSelections] = useState<number>(0);
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const targetIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const gameAreaRef = useRef<View>(null);
-  const [gameAreaSize, setGameAreaSize] = useState({ width: 300, height: 400 });
+
+  // Generate grid for current round
+  const generateGrid = (round: number): { items: GridItem[], target: typeof COLOR_SHAPES[0] } => {
+    const target = COLOR_SHAPES[round % COLOR_SHAPES.length];
+    const distractors = COLOR_SHAPES.filter(s => 
+      s.color !== target.color || s.shape !== target.shape
+    );
+    
+    // Create grid items
+    const items: GridItem[] = [];
+    let targetCount = 0;
+    
+    for (let i = 0; i < GRID_SIZE; i++) {
+      const row = Math.floor(i / 4);
+      const col = i % 4;
+      
+      // Decide if this should be a target
+      const shouldBeTarget = targetCount < TARGET_COUNT && 
+        (Math.random() < 0.25 || (GRID_SIZE - i) <= (TARGET_COUNT - targetCount));
+      
+      let colorShape: typeof COLOR_SHAPES[0];
+      if (shouldBeTarget) {
+        colorShape = target;
+        targetCount++;
+      } else {
+        // Use random distractor
+        colorShape = distractors[Math.floor(Math.random() * distractors.length)];
+      }
+      
+      items.push({
+        id: i,
+        colorShape,
+        isTarget: shouldBeTarget,
+        isSelected: false,
+        position: { row, col }
+      });
+    }
+    
+    // Ensure we have exactly TARGET_COUNT targets
+    while (targetCount < TARGET_COUNT) {
+      const randomIndex = Math.floor(Math.random() * GRID_SIZE);
+      if (!items[randomIndex].isTarget) {
+        items[randomIndex].colorShape = target;
+        items[randomIndex].isTarget = true;
+        targetCount++;
+      }
+    }
+    
+    return { items, target };
+  };
+
+  // Initialize round
+  useEffect(() => {
+    if (currentRound < TOTAL_ROUNDS) {
+      const { items, target } = generateGrid(currentRound);
+      setGridItems(items);
+      setTargetShape(target);
+      setTargetsFound(0);
+      
+      if (currentRound === 0) {
+        setGameState('start');
+      } else {
+        setGameState('showing');
+        setTimeout(() => {
+          setGameState('playing');
+          setRoundStartTime(Date.now());
+        }, 2000);
+      }
+    }
+  }, [currentRound]);
 
   // Timer effect
   useEffect(() => {
@@ -113,52 +145,34 @@ const AttentionPlayMedium: React.FC = () => {
     };
   }, [isRunning]);
 
-  // Target generation effect
-  useEffect(() => {
-    if (isRunning) {
-      const spawnTargets = () => {
-        const newTargets = generateTargets(gameAreaSize.width, gameAreaSize.height);
-        const hasTarget = newTargets.some(t => t.isTarget);
-        
-        setCurrentTargets(newTargets);
-        if (hasTarget) {
-          setTotalTargetsShown(prev => prev + 1);
-        }
-
-        // Remove targets after display time
-        setTimeout(() => {
-          setCurrentTargets([]);
-        }, TARGET_DISPLAY_TIME);
-      };
-
-      spawnTargets();
-      targetIntervalRef.current = setInterval(spawnTargets, TARGET_DISPLAY_TIME + 300);
-    } else {
-      if (targetIntervalRef.current) {
-        clearInterval(targetIntervalRef.current);
-        targetIntervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (targetIntervalRef.current) {
-        clearInterval(targetIntervalRef.current);
-        targetIntervalRef.current = null;
-      }
-    };
-  }, [isRunning, gameAreaSize]);
-
-  // Game end effect
+  // Time up effect
   useEffect(() => {
     if (timeLeft <= 0) {
-      endGame();
+      endGame("time");
     }
   }, [timeLeft]);
 
+  // Check if round is complete
+  useEffect(() => {
+    if (gameState === 'playing' && targetsFound === TARGET_COUNT) {
+      setGameState('feedback');
+      setTimeout(() => {
+        if (currentRound + 1 >= TOTAL_ROUNDS) {
+          endGame("finished");
+        } else {
+          setCurrentRound(r => r + 1);
+        }
+      }, 1500);
+    }
+  }, [targetsFound, gameState, currentRound]);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (targetIntervalRef.current) clearInterval(targetIntervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
   }, []);
 
@@ -168,49 +182,71 @@ const AttentionPlayMedium: React.FC = () => {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleTargetTap = (target: Target) => {
-    if (!isRunning) return;
+  const handleItemPress = (itemId: number) => {
+    if (gameState !== 'playing' || !isRunning) return;
 
-    const reactionTime = Date.now() - target.timestamp;
-    
-    if (target.isTarget) {
-      setScore(prev => prev + 1);
+    const item = gridItems.find(g => g.id === itemId);
+    if (!item || item.isSelected) return;
+
+    const reactionTime = Date.now() - roundStartTime;
+    setTotalSelections(prev => prev + 1);
+
+    // Update grid item
+    setGridItems(prev => 
+      prev.map(g => 
+        g.id === itemId ? { ...g, isSelected: true } : g
+      )
+    );
+
+    if (item.isTarget) {
+      // Correct target found
+      setTargetsFound(prev => prev + 1);
+      setCorrectSelections(prev => prev + 1);
+      setScore(s => s + 15); // Higher points for medium difficulty
       setReactionTimes(prev => [...prev, reactionTime]);
-      setCurrentTargets([]);
+      Vibration.vibrate(100);
+    } else {
+      // Wrong selection
+      setScore(s => Math.max(0, s - 3)); // Larger penalty for medium
+      Vibration.vibrate([50, 50, 50]);
     }
   };
 
-  const endGame = () => {
+  const endGame = (reason: "time" | "finished") => {
     setIsRunning(false);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    if (targetIntervalRef.current) {
-      clearInterval(targetIntervalRef.current);
-      targetIntervalRef.current = null;
-    }
-
-    const timeTaken = GAME_DURATION - Math.max(0, timeLeft);
-    const averageReactionTime = reactionTimes.length > 0 
-      ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length 
+    
+    const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
+    const avgReactionTime = reactionTimes.length > 0 
+      ? Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length)
       : 0;
-    const accuracy = totalTargetsShown > 0 ? (score / totalTargetsShown) * 100 : 0;
-
-    navigation.navigate("AttentionResults", {
+    const accuracy = totalSelections > 0 ? Math.round((correctSelections / totalSelections) * 100) : 0;
+    
+    navigation.navigate("AttentionResults" as any, {
       score,
-      totalTargets: totalTargetsShown,
+      totalQuestions: TOTAL_ROUNDS * TARGET_COUNT,
       timeTaken,
-      averageReactionTime: Math.round(averageReactionTime),
-      accuracy: Math.round(accuracy),
-      endedBy: timeLeft <= 0 ? 'time' : 'finished',
-      difficulty: 'medium'
+      endedBy: reason,
+      gameType: 'color_focus',
+      level: 2,
+      difficulty: 'medium',
+      accuracy,
+      avgReactionTime,
+      totalSelections,
+      correctSelections
     } as any);
   };
 
   const handleStart = () => {
-    setShowStartHint(false);
     setIsRunning(true);
+    setGameState('showing');
+    setTimeout(() => {
+      setGameState('playing');
+      setRoundStartTime(Date.now());
+    }, 2000);
   };
 
   const handlePause = () => {
@@ -219,61 +255,13 @@ const AttentionPlayMedium: React.FC = () => {
 
   const handleResume = () => {
     setIsRunning(true);
-  };
-
-  const renderShape = (target: Target) => {
-    const baseStyle = {
-      position: 'absolute' as const,
-      left: target.x - TARGET_SIZE / 2,
-      top: target.y - TARGET_SIZE / 2,
-      width: TARGET_SIZE,
-      height: TARGET_SIZE,
-      backgroundColor: target.color,
-    };
-
-    if (target.shape === 'circle') {
-      return (
-        <TouchableOpacity
-          key={target.id}
-          style={[baseStyle, { borderRadius: TARGET_SIZE / 2 }]}
-          onPress={() => handleTargetTap(target)}
-          activeOpacity={0.7}
-        />
-      );
-    } else if (target.shape === 'square') {
-      return (
-        <TouchableOpacity
-          key={target.id}
-          style={[baseStyle, { borderRadius: 8 }]}
-          onPress={() => handleTargetTap(target)}
-          activeOpacity={0.7}
-        />
-      );
-    } else {
-      return (
-        <TouchableOpacity
-          key={target.id}
-          style={[baseStyle, { backgroundColor: 'transparent' }]}
-          onPress={() => handleTargetTap(target)}
-          activeOpacity={0.7}
-        >
-          <View
-            style={{
-              width: 0,
-              height: 0,
-              borderLeftWidth: TARGET_SIZE / 2,
-              borderRightWidth: TARGET_SIZE / 2,
-              borderBottomWidth: TARGET_SIZE,
-              borderStyle: 'solid',
-              borderLeftColor: 'transparent',
-              borderRightColor: 'transparent',
-              borderBottomColor: target.color,
-            }}
-          />
-        </TouchableOpacity>
-      );
+    if (gameState === 'playing') {
+      setRoundStartTime(Date.now());
     }
   };
+
+  const progressPercent = Math.min(100, ((currentRound) / TOTAL_ROUNDS) * 100);
+  const accuracy = totalSelections > 0 ? Math.round((correctSelections / totalSelections) * 100) : 0;
 
   return (
     <View className="flex-1 bg-white">
@@ -294,103 +282,223 @@ const AttentionPlayMedium: React.FC = () => {
         </TouchableOpacity>
 
         <View className="flex-row items-center gap-4">
-          <View className="items-center mr-4">
+          <View className="items-center">
             <Text className="text-sm text-gray-600">Time</Text>
-            <Text className="text-xl font-bold">{formatTime(timeLeft)}</Text>
+            <Text className="text-lg font-bold">{formatTime(timeLeft)}</Text>
           </View>
           <View className="items-center">
             <Text className="text-sm text-gray-600">Score</Text>
-            <Text className="text-xl font-bold">{score}</Text>
+            <Text className="text-lg font-bold">{score}</Text>
+          </View>
+          <View className="items-center">
+            <Text className="text-sm text-gray-600">Round</Text>
+            <Text className="text-lg font-bold">{currentRound + 1}/{TOTAL_ROUNDS}</Text>
           </View>
         </View>
 
         <View style={{ width: 44 }}>
-          {isRunning ? (
+          {gameState === 'start' ? (
+            <TouchableOpacity onPress={handleStart}>
+              <Text className="text-2xl">▶️</Text>
+            </TouchableOpacity>
+          ) : isRunning ? (
             <TouchableOpacity onPress={handlePause}>
               <Text className="text-2xl">⏸️</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity onPress={showStartHint ? handleStart : handleResume}>
+            <TouchableOpacity onPress={handleResume}>
               <Text className="text-2xl">▶️</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Instructions */}
-      <View className="px-5 py-4" style={{ backgroundColor: '#FFEDCC' }}>
-        <Text className="text-lg font-semibold text-center" style={{ color: PALETTE.orange }}>
-          MEDIUM: Tap RED CIRCLES only! 🔴
-        </Text>
-        <Text className="text-sm text-center text-gray-600">
-          Multiple targets, faster pace
-        </Text>
-      </View>
-
       {/* Game Area */}
-      <View 
-        className="justify-center flex-1 mx-5 my-4 border-2 border-dashed rounded-2xl"
-        style={{ borderColor: PALETTE.orange }}
-        ref={gameAreaRef}
-        onLayout={(event) => {
-          const { width, height } = event.nativeEvent.layout;
-          setGameAreaSize({ width, height });
-        }}
-      >
-        {currentTargets.map(target => renderShape(target))}
-        
-        {!isRunning && showStartHint && (
-          <View className="items-center justify-center">
-            <Text className="text-6xl mb-4">⚡</Text>
-            <Text className="text-2xl font-bold mb-2" style={{ color: PALETTE.orange }}>
-              Medium Challenge
+      <View className="justify-center flex-1 px-5">
+        {gameState === 'start' && (
+          <View
+            className="p-6 mb-8 border shadow-sm rounded-2xl"
+            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+          >
+            <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+              Color Focus
             </Text>
-            <Text className="text-lg text-center text-gray-600 mb-6 px-4">
-              Faster pace with multiple targets. Find red circles among distractors!
+            <Text className="mb-6 text-lg text-center text-gray-600">
+              Find all items that match the target color and shape. Ignore similar distractors!
+            </Text>
+            <TouchableOpacity
+              className="px-8 py-4 rounded-2xl"
+              style={{ backgroundColor: PALETTE.teal }}
+              onPress={handleStart}
+            >
+              <Text className="text-xl font-semibold text-white text-center">Start Game</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {gameState === 'showing' && (
+          <View
+            className="p-6 mb-8 border shadow-sm rounded-2xl"
+            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+          >
+            <Text className="mb-4 text-2xl font-bold text-center" style={{ color: PALETTE.teal }}>
+              Round {currentRound + 1}
+            </Text>
+            <Text className="mb-4 text-lg text-center text-gray-600">
+              Find all instances of this target:
+            </Text>
+            
+            {targetShape && (
+              <View 
+                className="items-center justify-center p-8 mb-4 rounded-2xl"
+                style={{ backgroundColor: PALETTE.lightTeal }}
+              >
+                <Text style={{ fontSize: 60, color: targetShape.color }}>
+                  {targetShape.shape}
+                </Text>
+                <Text className="mt-2 text-lg font-semibold" style={{ color: PALETTE.teal }}>
+                  {targetShape.name}
+                </Text>
+              </View>
+            )}
+            
+            <Text className="text-center text-gray-600">
+              Look for {TARGET_COUNT} of these items
             </Text>
           </View>
         )}
 
-        {!isRunning && !showStartHint && currentTargets.length === 0 && (
-          <View className="items-center justify-center">
-            <Text className="text-4xl mb-2">⏸️</Text>
-            <Text className="text-xl font-semibold" style={{ color: PALETTE.orange }}>
-              Paused
+        {gameState === 'playing' && (
+          <View
+            className="p-4 mb-6 border shadow-sm rounded-2xl"
+            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+          >
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-row items-center gap-2">
+                <Text className="text-lg font-bold" style={{ color: PALETTE.teal }}>
+                  Find:
+                </Text>
+                {targetShape && (
+                  <View className="flex-row items-center gap-1">
+                    <Text style={{ fontSize: 24, color: targetShape.color }}>
+                      {targetShape.shape}
+                    </Text>
+                    <Text className="text-sm" style={{ color: PALETTE.teal }}>
+                      ({targetShape.name})
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text className="text-lg text-gray-600">
+                Found: {targetsFound}/{TARGET_COUNT}
+              </Text>
+            </View>
+
+            {/* Grid */}
+            <View className="flex-row flex-wrap justify-center gap-1">
+              {gridItems.map((item) => {
+                const isCorrectTarget = item.isTarget && item.isSelected;
+                const isWrongSelection = !item.isTarget && item.isSelected;
+                
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    className="items-center justify-center rounded-xl"
+                    style={{
+                      backgroundColor: isCorrectTarget 
+                        ? '#D1FAE5' 
+                        : isWrongSelection 
+                        ? '#FEE2E2' 
+                        : '#F9FAFB',
+                      borderWidth: 2,
+                      borderColor: isCorrectTarget 
+                        ? '#059669' 
+                        : isWrongSelection 
+                        ? '#DC2626' 
+                        : '#E5E7EB',
+                      width: 65,
+                      height: 65,
+                      margin: 1,
+                      opacity: item.isSelected ? 0.8 : 1,
+                    }}
+                    onPress={() => handleItemPress(item.id)}
+                    disabled={!isRunning || item.isSelected}
+                  >
+                    <Text style={{ fontSize: 24, color: item.colorShape.color }}>
+                      {item.colorShape.shape}
+                    </Text>
+                    {item.isSelected && (
+                      <View className="absolute -top-2 -right-2 bg-white rounded-full w-6 h-6 items-center justify-center">
+                        <Text className="text-sm" style={{ color: isCorrectTarget ? '#059669' : '#DC2626' }}>
+                          {isCorrectTarget ? '✓' : '✗'}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {totalSelections > 0 && (
+              <View className="mt-4 p-3 rounded-xl" style={{ backgroundColor: '#F9FAFB' }}>
+                <Text className="text-center text-gray-600">
+                  Accuracy: {accuracy}% ({correctSelections}/{totalSelections})
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {gameState === 'feedback' && (
+          <View
+            className="p-6 mb-8 border shadow-sm rounded-2xl"
+            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+          >
+            <Text className="mb-4 text-2xl font-bold text-center" style={{ 
+              color: targetsFound === TARGET_COUNT ? PALETTE.teal : PALETTE.orange 
+            }}>
+              {targetsFound === TARGET_COUNT ? "Excellent Focus!" : `Found ${targetsFound}/${TARGET_COUNT}`}
+            </Text>
+            
+            <Text className="text-center text-gray-600">
+              {targetsFound === TARGET_COUNT 
+                ? "Your attention skills are sharp!" 
+                : "Keep training your focus abilities!"}
             </Text>
           </View>
         )}
-      </View>
 
-      {/* Controls */}
-      <View className="flex-row items-center justify-center px-5 pb-8">
-        {!isRunning && showStartHint ? (
-          <TouchableOpacity
-            className="px-8 py-4 rounded-2xl"
-            style={{ backgroundColor: PALETTE.orange }}
-            onPress={handleStart}
-          >
-            <Text className="text-lg font-semibold text-white">Start Game</Text>
-          </TouchableOpacity>
-        ) : isRunning ? (
-          <TouchableOpacity
-            className="px-8 py-4 rounded-2xl"
-            style={{ backgroundColor: PALETTE.lightPink }}
-            onPress={handlePause}
-          >
-            <Text className="text-lg font-semibold text-white">Pause</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            className="px-8 py-4 rounded-2xl"
-            style={{ backgroundColor: PALETTE.orange }}
-            onPress={handleResume}
-          >
-            <Text className="text-lg font-semibold text-white">Resume</Text>
-          </TouchableOpacity>
-        )}
+        {/* Progress */}
+        <View className="items-center">
+          <Text className="mb-2 text-lg text-gray-600">
+            Round: {Math.min(currentRound + 1, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
+          </Text>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${progressPercent}%`, backgroundColor: PALETTE.orange },
+              ]}
+            />
+          </View>
+        </View>
       </View>
     </View>
   );
 };
 
 export default AttentionPlayMedium;
+
+const styles = StyleSheet.create({
+  progressTrack: {
+    width: "100%",
+    height: 12,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 8,
+    overflow: "hidden",
+    marginTop: 6,
+  },
+  progressFill: {
+    height: "100%",
+  },
+});
