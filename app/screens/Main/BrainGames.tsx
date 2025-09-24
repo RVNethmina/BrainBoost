@@ -1,71 +1,92 @@
 // app/src/screens/BrainGames.tsx
-import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type BrainGamesScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "BrainGames"
 >;
 
-const BrainGames = () => {
+type Game = {
+  id: number;
+  title: string;
+  icon: string;
+  description: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  // we cast strings to route keys at runtime; see navigate(...) below
+  screen: string;
+};
+
+const games: Game[] = [
+  {
+    id: 1,
+    title: "Memory Match",
+    icon: "🧩",
+    description: "Find matching pairs",
+    difficulty: "Easy",
+    screen: "MemoryQuiz",
+  },
+  {
+    id: 2,
+    title: "Math Quiz",
+    icon: "🧮",
+    description: "Number challenges",
+    difficulty: "Medium",
+    screen: "MathQuiz",
+  },
+  {
+    id: 3,
+    title: "Attention Trainer",
+    icon: "🎯",
+    description: "Focus exercises",
+    difficulty: "Easy",
+    screen: "AttentionResults", // use a route that exists in your stack — adjust if needed
+  },
+  {
+    id: 4,
+    title: "Logic Puzzle",
+    icon: "🧩",
+    description: "Solve simple puzzles",
+    difficulty: "Hard",
+    screen: "MemoryQuiz", // fallback if PuzzleQuiz isn't registered — replace with your screen name
+  },
+];
+
+const difficultyColorMap: Record<string, { bg: string; text: string }> = {
+  Easy: { bg: "#96B5B5", text: "#2C3E3E" },
+  Medium: { bg: "#FEC84D", text: "#fff" },
+  Hard: { bg: "#D9534F", text: "#fff" },
+};
+
+export default function BrainGames() {
   const navigation = useNavigation<BrainGamesScreenNavigationProp>();
 
-  const games = [
-    {
-      id: 1,
-      title: "Memory Match",
-      icon: "🧩",
-      description: "Find matching pairs",
-      difficulty: "Easy",
-      screen: "MemoryQuiz",
-    },
-    {
-      id: 2,
-      title: "Math Quiz",
-      icon: "🧮",
-      description: "Number challenges",
-      difficulty: "Medium",
-      screen: "MathQuiz",
-    },
-    {
-      id: 3,
-      title: "Attention",
-      icon: "🎯",
-      description: "Focus training",
-      difficulty: "Easy",
-      screen: "AttentionGame",
-    },
-    {
-      id: 4,
-      title: "Puzzle",
-      icon: "🧩",
-      description: "Logic problems",
-      difficulty: "Hard",
-      screen: "PuzzleQuiz", // Changed from "PuzzleGame" to "PuzzleQuiz"
-    },
-  ];
-
-  // Map difficulty to consistent colors
-  const difficultyColorMap: Record<
-    string,
-    { bg: string; text: string }
-  > = {
-    Easy: { bg: "#96B5B5", text: "#2C3E3E" }, // home page teal theme
-    Medium: { bg: "#FEC84D", text: "#fff" }, // home page orange
-    Hard: { bg: "#D9534F", text: "#fff" }, // home page red
+  const handleNavigate = (screenName: string) => {
+    // TypeScript nav overloads are strict about literal route names.
+    // We cast to `any` here to satisfy the navigator while keeping runtime safety:
+    navigation.navigate(screenName as any);
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
+    <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
@@ -75,129 +96,134 @@ const BrainGames = () => {
         <View style={{ width: 48 }} />
       </View>
 
-      {/* Content */}
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.subtitle}>Choose a game to train your brain</Text>
 
-        <View style={styles.grid}>
+        {/* Use single-column full-width cards for easier tapping */}
+        <View style={styles.list}>
           {games.map((game) => {
-            const difficulty = difficultyColorMap[game.difficulty];
+            const difficulty = difficultyColorMap[game.difficulty] || difficultyColorMap.Easy;
             return (
               <TouchableOpacity
                 key={game.id}
                 style={styles.card}
-                onPress={() =>
-                  navigation.navigate(game.screen as keyof RootStackParamList)
-                }
+                onPress={() => handleNavigate(game.screen)}
                 accessibilityRole="button"
+                accessibilityLabel={`${game.title}. ${game.description}. Difficulty: ${game.difficulty}`}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={styles.icon}>{game.icon}</Text>
-                <Text style={styles.cardTitle}>{game.title}</Text>
-                <Text style={styles.cardDesc}>{game.description}</Text>
+                <View style={styles.cardLeft}>
+                  <View style={[styles.iconCircle, { borderColor: difficulty.bg + "33" }]}>
+                    <Text style={styles.icon}>{game.icon}</Text>
+                  </View>
 
-                <View
-                  style={[
-                    styles.badge,
-                    { backgroundColor: difficulty.bg },
-                  ]}
-                >
-                  <Text style={[styles.badgeText, { color: difficulty.text }]}>
-                    {game.difficulty}
-                  </Text>
+                  <View style={styles.textWrap}>
+                    <Text style={styles.cardTitle}>{game.title}</Text>
+                    <Text style={styles.cardDesc}>{game.description}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.badge, { backgroundColor: difficulty.bg }]}>
+                  <Text style={[styles.badgeText, { color: difficulty.text }]}>{game.difficulty}</Text>
                 </View>
               </TouchableOpacity>
             );
           })}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
-};
-
-export default BrainGames;
+}
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#96B5B5" // Changed to match home page background
+  safe: {
+    flex: 1,
+    backgroundColor: "#96B5B5", // keep your color
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 60, // Increased from 40
-    paddingBottom: 20, // Increased from 12
-    backgroundColor: "#96B5B5", // Match home page background
+    paddingTop: Platform.OS === "ios" ? 18 : 12,
+    paddingHorizontal: 18,
+    paddingBottom: 8,
   },
   backButton: {
-    alignItems: "center",
-    justifyContent: "center",
     width: 48,
     height: 48,
-    backgroundColor: "#E6F1F1", // Light teal to match home page cards
     borderRadius: 12,
+    backgroundColor: "#E6F1F1",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  backIcon: { 
-    fontSize: 20, 
-    color: "#2C3E3E" // Dark teal to match home page text
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: "700", 
-    color: "#2C3E3E" // Changed to match home page text color
-  },
-  scroll: { 
-    flex: 1, 
-    paddingHorizontal: 20,
-    paddingTop: 20 // Added top padding
+  backIcon: { fontSize: 20, color: "#2C3E3E" },
+  headerTitle: { fontSize: 22, fontWeight: "800", color: "#2C3E3E" },
+
+  content: {
+    paddingHorizontal: 18,
+    paddingBottom: 40,
+    paddingTop: 8,
   },
   subtitle: {
-    marginVertical: 16,
+    fontSize: 20,
     textAlign: "center",
-    color: "#2C3E3E", // Changed to match home page text
-    fontSize: 16,
-    opacity: 0.8,
+    color: "#2C3E3E",
+    marginVertical: 8,
+    opacity: 0.9,
   },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginTop: 20, // Added top margin
+
+  list: {
+    marginTop: 8,
   },
+
   card: {
-    width: "48%",
-    marginBottom: 16,
-    padding: 18,
-    backgroundColor: "#E6F1F1", // Match home page card background
-    borderRadius: 12, // Match home page card radius
+    width: "100%",
+    backgroundColor: "#E6F1F1",
+    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    // subtle elevation/shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    minHeight: 92,
   },
-  icon: { 
-    fontSize: 36, 
-    marginBottom: 10 
+
+  cardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    paddingRight: 12,
   },
-  cardTitle: { 
-    fontSize: 16, 
-    fontWeight: "600", // Changed from 700 to match home page
-    textAlign: "center", 
-    color: "#2C3E3E" // Match home page text
+
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
   },
-  cardDesc: { 
-    marginTop: 4, // Reduced from 6
-    textAlign: "center", 
-    color: "#2C3E3E", // Match home page text
-    opacity: 0.7,
-    fontSize: 13 // Match home page card text size
-  },
+  icon: { fontSize: 32 },
+
+  textWrap: { flex: 1 },
+  cardTitle: { fontSize: 18, fontWeight: "800", color: "#2C3E3E", marginBottom: 6 },
+  cardDesc: { fontSize: 14, color: "#2C3E3E", opacity: 0.85 },
+
   badge: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 999,
-    marginTop: 12,
+    alignSelf: "center",
+    marginLeft: 6,
   },
-  badgeText: { 
-    fontSize: 12, 
-    fontWeight: "600" 
-  },
+  badgeText: { fontSize: 14, fontWeight: "700" },
 });
