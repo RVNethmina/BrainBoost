@@ -40,6 +40,9 @@ import JigsawPlay from '../screens/Games/Puzzle/JigsawPlay';
 import OrderTapPlay from '../screens/Games/Puzzle/OrderTapPlay';
 import SudokuPlay from '../screens/Games/Puzzle/SudokuPlay';
 import TargetNumberPlay from '../screens/Games/Puzzle/TargetNumberPlay';
+import AttentionAssessmentIntro from '../screens/Assessments/AttentionAssessmentIntro';
+import AttentionAssessmentRun from '../screens/Assessments/AttentionAssessmentRun';
+import AttentionAssessmentResult from '../screens/Assessments/AttentionAssessmentResult';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -99,6 +102,24 @@ export type RootStackParamList = {
   AttentionPlayMedium: undefined;
   AttentionPlayHard: undefined;
   AttentionResults: undefined;
+
+  AttentionAssessmentIntro: undefined;
+  AttentionAssessmentRun: undefined;
+  AttentionAssessmentResult: {
+    totalTime: number;
+    results: Array<{
+      taskId: number;
+      trialNumber: number;
+      targetPresent: boolean;
+      responseGiven: boolean;
+      responseTime: number | null;
+      accuracy: boolean;
+      timestamp: number;
+    }>;
+    overallAccuracy: number;
+    averageReactionTime: number;
+    tasksCompleted: number;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -145,6 +166,9 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="TargetNumberPlay" component={TargetNumberPlay} />
       <Stack.Screen name="OrderTapPlay" component={OrderTapPlay} />
       <Stack.Screen name="MathAssessment" component={MathAssessment} />
+       <Stack.Screen name="AttentionAssessmentIntro" component={AttentionAssessmentIntro} />
+      <Stack.Screen name="AttentionAssessmentRun" component={AttentionAssessmentRun} />
+      <Stack.Screen name="AttentionAssessmentResult" component={AttentionAssessmentResult} />
     </Stack.Navigator>
   );
 };
