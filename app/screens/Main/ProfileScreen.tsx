@@ -2,7 +2,7 @@ import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from '@/app/navigation/AppNavigator';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Platform,
@@ -12,7 +12,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
+import { auth, firestore } from '../../../config/firebaseConfig';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -22,25 +26,97 @@ type ProfileScreenNavigationProp = NativeStackNavigationProp<
 const ProfileScreen = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const [isEditMode, setIsEditMode] = useState(false);
-  const [name, setName] = useState('Margaret Johnson');
-  const [email, setEmail] = useState('margaret.j@email.com');
-  const [birthday, setBirthday] = useState('1952-03-15');
+  const [isLoading, setIsLoading] = useState(true);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [birthday, setBirthday] = useState('');
   const [phone, setPhone] = useState('');
+  const [memberSince, setMemberSince] = useState('');
+  
+  // Temporary state for edit mode
+  const [editName, setEditName] = useState('');
+  const [editBirthday, setEditBirthday] = useState('');
+  const [editPhone, setEditPhone] = useState('');
 
-  const toggleEditMode = () => setIsEditMode(prev => !prev);
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
-  const saveProfile = () => {
-    // TODO: persist changes to backend / firebase
-    setIsEditMode(false);
-    Alert.alert("Saved", "Your profile has been updated.");
+  const fetchUserData = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        navigation.reset({ index: 0, routes: [{ name: "Welcome" as any }] });
+        return;
+      }
+
+      setEmail(user.email || '');
+
+      const userDocRef = doc(firestore, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const displayName = data.displayName || user.email?.split("@")[0] || 'User';
+        setName(displayName);
+        setBirthday(data.birthday || '');
+        setPhone(data.phone || '');
+        
+        if (data.createdAt) {
+          const year = new Date(data.createdAt).getFullYear();
+          setMemberSince(year.toString());
+        }
+      } else {
+        setName(user.email?.split("@")[0] || 'User');
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      Alert.alert("Error", "Failed to load profile data.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleEditMode = () => {
+    if (!isEditMode) {
+      // Entering edit mode - copy current values to edit state
+      setEditName(name);
+      setEditBirthday(birthday);
+      setEditPhone(phone);
+    }
+    setIsEditMode(prev => !prev);
+  };
+
+  const saveProfile = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const userDocRef = doc(firestore, "users", user.uid);
+      await updateDoc(userDocRef, {
+        displayName: editName,
+        birthday: editBirthday,
+        phone: editPhone,
+      });
+
+      // Update local state
+      setName(editName);
+      setBirthday(editBirthday);
+      setPhone(editPhone);
+      
+      setIsEditMode(false);
+      Alert.alert("Saved", "Your profile has been updated.");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      Alert.alert("Error", "Failed to save profile. Please try again.");
+    }
   };
 
   const cancelEdit = () => {
-    // Reset form values (could reload from persistent storage)
-    setName('Margaret Johnson');
-    setEmail('margaret.j@email.com');
-    setBirthday('1952-03-15');
-    setPhone('');
+    // Reset edit values to current values
+    setEditName(name);
+    setEditBirthday(birthday);
+    setEditPhone(phone);
     setIsEditMode(false);
   };
 
@@ -53,15 +129,48 @@ const ProfileScreen = () => {
         {
           text: "Sign Out",
           style: "destructive",
-          onPress: () => {
-            // TODO: call your auth.signOut() here if available
-            navigation.reset({ index: 0, routes: [{ name: "Welcome" as any }] });
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              navigation.reset({ index: 0, routes: [{ name: "Welcome" as any }] });
+            } catch (error) {
+              console.error("Error signing out:", error);
+              Alert.alert("Error", "Failed to sign out. Please try again.");
+            }
           },
         },
       ],
       { cancelable: true }
     );
   };
+
+  const calculateAge = () => {
+    if (!birthday) return null;
+    const birthDate = new Date(birthday);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const formatBirthday = () => {
+    if (!birthday) return 'Not set';
+    const date = new Date(birthday);
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.page, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={PALETTE.teal} />
+        <Text style={{ marginTop: 12, color: '#666' }}>Loading profile...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.page}>
@@ -91,18 +200,28 @@ const ProfileScreen = () => {
                 <Text style={styles.avatarEmoji}>👤</Text>
               </View>
               <Text style={styles.nameText}>{name}</Text>
-              <Text style={styles.memberText}>Age 72 • Member since 2024</Text>
+              <Text style={styles.memberText}>
+                {calculateAge() ? `Age ${calculateAge()} • ` : ''}
+                {memberSince ? `Member since ${memberSince}` : 'New Member'}
+              </Text>
             </View>
 
             <View style={styles.card}>
               <Text style={styles.cardLabel}>📧 Email</Text>
-              <Text style={styles.cardValue}>{email}</Text>
+              <Text style={styles.cardValue}>{email || 'Not available'}</Text>
             </View>
 
             <View style={styles.card}>
               <Text style={styles.cardLabel}>🎂 Birthday</Text>
-              <Text style={styles.cardValue}>March 15, 1952</Text>
+              <Text style={styles.cardValue}>{formatBirthday()}</Text>
             </View>
+
+            {phone && (
+              <View style={styles.card}>
+                <Text style={styles.cardLabel}>📱 Phone</Text>
+                <Text style={styles.cardValue}>{phone}</Text>
+              </View>
+            )}
 
             <View style={styles.card}>
               <Text style={styles.cardLabel}>🏆 Achievements</Text>
@@ -135,8 +254,8 @@ const ProfileScreen = () => {
               <Text style={styles.inputLabel}>👤 Full Name</Text>
               <TextInput
                 style={styles.input}
-                value={name}
-                onChangeText={setName}
+                value={editName}
+                onChangeText={setEditName}
                 placeholder="Full name"
                 placeholderTextColor="#666"
                 accessibilityLabel="Full name"
@@ -144,20 +263,20 @@ const ProfileScreen = () => {
 
               <Text style={styles.inputLabel}>📧 Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: '#f5f5f5' }]}
                 value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                editable={false}
                 placeholder="Email"
                 placeholderTextColor="#666"
-                accessibilityLabel="Email"
+                accessibilityLabel="Email (cannot be changed)"
               />
+              <Text style={styles.smallHint}>Email cannot be changed</Text>
 
               <Text style={styles.inputLabel}>🎂 Birthday</Text>
               <TextInput
                 style={styles.input}
-                value={birthday}
-                onChangeText={setBirthday}
+                value={editBirthday}
+                onChangeText={setEditBirthday}
                 placeholder="YYYY-MM-DD"
                 placeholderTextColor="#666"
                 accessibilityLabel="Birthday"
@@ -166,8 +285,8 @@ const ProfileScreen = () => {
               <Text style={styles.inputLabel}>📱 Phone (optional)</Text>
               <TextInput
                 style={styles.input}
-                value={phone}
-                onChangeText={setPhone}
+                value={editPhone}
+                onChangeText={setEditPhone}
                 keyboardType="phone-pad"
                 placeholder="Phone number"
                 placeholderTextColor="#666"
@@ -254,7 +373,7 @@ const styles = StyleSheet.create({
   // Edit mode
   avatarLarge: { width: 110, height: 110, borderRadius: 55, alignItems: "center", justifyContent: "center" },
   avatarEmojiLarge: { fontSize: 44 },
-  smallHint: { marginTop: 8, color: "#666" },
+  smallHint: { marginTop: 8, color: "#666", fontSize: 14 },
 
   form: { marginTop: 8 },
   inputLabel: { fontSize: 16, marginTop: 12, fontWeight: "700", color: "#333" },
