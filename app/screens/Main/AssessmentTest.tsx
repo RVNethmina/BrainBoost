@@ -16,7 +16,7 @@ import {
 // navigation type for the whole stack
 type RootNavProp = NativeStackNavigationProp<RootStackParamList>;
 
-type AssessmentRoute = "MemoryTest" | "AttentionTest" | "MathAssessment" | "FullAssessment";
+type AssessmentRoute = "MemoryTest" | "AttentionTest" | "MathAssessmentStart" | "FullAssessment";
 
 type AssessmentItem = {
   id: number;
@@ -56,7 +56,7 @@ const assessments: AssessmentItem[] = [
     icon: "🔢",
     duration: "12 minutes",
     type: "Numerical",
-    screen: "MathAssessment",
+    screen: "MathAssessmentStart",
     bgColor: PALETTE.lightPink,
     textColor: PALETTE.red,
   },
