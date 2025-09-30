@@ -12,7 +12,7 @@ type AttentionAssessmentRunNavigationProp = NativeStackNavigationProp<
 >;
 
 const TOTAL_TIME = 660; // 11 minutes total
-const TASK_TIMES = [240, 240, 180]; // 4min, 4min, 3min per task
+const TASK_TIMES = [180, 180, 180]; // 4min, 4min, 3min per task
 
 // Task 1: Visual Search
 const TASK1_SYMBOLS = ['🔴', '🟢', '🔵', '🟡', '🟣'];
@@ -27,6 +27,8 @@ const TASK2_TARGET_PROBABILITY = 0.3; // 30% chance of target
 // Task 3: Divided Attention
 const TASK3_DURATION = 180; // 3 minutes
 const TASK3_GRID_SIZE = 12;
+const TASK3_TARGET_INTERVAL = 3000; // New target every 3 seconds
+const TASK3_TARGET_DISPLAY_TIME = 2000; // Targets visible for 2 seconds
 
 type AssessmentPhase = 'task1' | 'task2' | 'task3' | 'complete';
 type TaskState = 'instruction' | 'running' | 'complete';
@@ -74,6 +76,7 @@ const AttentionAssessmentRun: React.FC = () => {
   const [task3Items, setTask3Items] = useState<GridItem[]>([]);
   const [task3ActiveTargets, setTask3ActiveTargets] = useState<Set<number>>(new Set());
   const [task3StartTime, setTask3StartTime] = useState<number>(0);
+  const [task3TrialNumber, setTask3TrialNumber] = useState<number>(0);
   
   // Results tracking
   const [allResults, setAllResults] = useState<TrialResult[]>([]);
@@ -82,6 +85,8 @@ const AttentionAssessmentRun: React.FC = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const taskIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stimulusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const task3IntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const task3TimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Prevent back button during assessment
   useEffect(() => {
@@ -287,59 +292,97 @@ const AttentionAssessmentRun: React.FC = () => {
     }
   };
 
-  // Task 3 - Generate divided attention grid
-  const generateTask3Grid = () => {
-    const items: GridItem[] = [];
-    const symbols = ['●', '■', '▲'];
-    
-    for (let i = 0; i < TASK3_GRID_SIZE; i++) {
-      items.push({
-        id: i,
-        symbol: symbols[Math.floor(Math.random() * symbols.length)],
-        isTarget: false,
-        isSelected: false,
-      });
-    }
-    
-    setTask3Items(items);
-    
-    // Randomly activate targets every 3 seconds
-    const activateTargets = () => {
-      const newTargets = new Set<number>();
-      const targetCount = Math.floor(Math.random() * 3) + 1; // 1-3 targets
+  // Task 3 - Initialize grid and start target activation cycle
+  useEffect(() => {
+    if (currentPhase === 'task3' && taskState === 'running' && isRunning) {
+      console.log('🎯 Task 3 starting - initializing grid');
       
-      while (newTargets.size < targetCount) {
-        newTargets.add(Math.floor(Math.random() * TASK3_GRID_SIZE));
+      // Initialize grid
+      const items: GridItem[] = [];
+      const symbols = ['●', '■', '▲'];
+      
+      for (let i = 0; i < TASK3_GRID_SIZE; i++) {
+        items.push({
+          id: i,
+          symbol: symbols[Math.floor(Math.random() * symbols.length)],
+          isTarget: false,
+          isSelected: false,
+        });
       }
       
-      setTask3ActiveTargets(newTargets);
-      setTask3StartTime(Date.now());
+      setTask3Items(items);
+      setTask3TrialNumber(0);
       
-      // Deactivate after 2 seconds
-      setTimeout(() => {
-        setTask3ActiveTargets(new Set());
-      }, 2000);
-    };
+      // Function to activate targets
+      const activateTargets = () => {
+        console.log('🎯 Activating new targets');
+        const newTargets = new Set<number>();
+        const targetCount = Math.floor(Math.random() * 2) + 1; // 1-2 targets
+        
+        while (newTargets.size < targetCount) {
+          newTargets.add(Math.floor(Math.random() * TASK3_GRID_SIZE));
+        }
+        
+        setTask3ActiveTargets(newTargets);
+        setTask3StartTime(Date.now());
+        setTask3TrialNumber(prev => prev + 1);
+        
+        // Record missed targets after display time
+        task3TimeoutRef.current = setTimeout(() => {
+          newTargets.forEach(targetId => {
+            const result: TrialResult = {
+              taskId: 3,
+              trialNumber: task3TrialNumber + 1,
+              targetPresent: true,
+              responseGiven: false,
+              responseTime: null,
+              accuracy: false,
+              timestamp: Date.now(),
+            };
+            setCurrentTaskResults(prev => [...prev, result]);
+          });
+          
+          // Deactivate targets
+          setTask3ActiveTargets(new Set());
+          console.log('🎯 Targets deactivated');
+        }, TASK3_TARGET_DISPLAY_TIME);
+      };
 
-    if (currentPhase === 'task3' && taskState === 'running') {
-      const targetInterval = setInterval(activateTargets, 3000);
-      activateTargets(); // Start immediately
+      // Start immediately
+      activateTargets();
+      
+      // Then repeat every TASK3_TARGET_INTERVAL
+      task3IntervalRef.current = setInterval(activateTargets, TASK3_TARGET_INTERVAL);
 
-      return () => clearInterval(targetInterval);
+      // Cleanup function
+      return () => {
+        console.log('🎯 Task 3 cleanup');
+        if (task3IntervalRef.current) {
+          clearInterval(task3IntervalRef.current);
+          task3IntervalRef.current = null;
+        }
+        if (task3TimeoutRef.current) {
+          clearTimeout(task3TimeoutRef.current);
+          task3TimeoutRef.current = null;
+        }
+      };
     }
-  };
+  }, [currentPhase, taskState, isRunning]);
 
   // Task 3 - Handle item press
   const handleTask3ItemPress = (itemId: number) => {
-    if (currentPhase !== 'task3' || taskState !== 'running' || task3ActiveTargets.size === 0) return;
+    if (currentPhase !== 'task3' || taskState !== 'running' || !isRunning) return;
+    if (task3ActiveTargets.size === 0) return;
 
     const responseTime = Date.now() - task3StartTime;
     const isCorrect = task3ActiveTargets.has(itemId);
     
+    console.log('🎯 Task 3 item pressed:', { itemId, isCorrect, activeTargets: task3ActiveTargets.size });
+    
     const result: TrialResult = {
       taskId: 3,
-      trialNumber: Math.floor((TASK3_DURATION - taskTimeLeft) / 3) + 1,
-      targetPresent: task3ActiveTargets.size > 0,
+      trialNumber: task3TrialNumber,
+      targetPresent: true,
       responseGiven: true,
       responseTime,
       accuracy: isCorrect,
@@ -373,7 +416,8 @@ const AttentionAssessmentRun: React.FC = () => {
         // Task 2 stimulus presentation is handled by useEffect
         break;
       case 'task3':
-        generateTask3Grid();
+        // Task 3 is handled by useEffect
+        console.log('🎯 Task 3 start triggered');
         break;
     }
   };
@@ -382,6 +426,16 @@ const AttentionAssessmentRun: React.FC = () => {
     setTaskState('complete');
     setAllResults(prev => [...prev, ...currentTaskResults]);
     setCurrentTaskResults([]);
+    
+    // Clean up task-specific intervals
+    if (task3IntervalRef.current) {
+      clearInterval(task3IntervalRef.current);
+      task3IntervalRef.current = null;
+    }
+    if (task3TimeoutRef.current) {
+      clearTimeout(task3TimeoutRef.current);
+      task3TimeoutRef.current = null;
+    }
 
     // Move to next task
     setTimeout(() => {
@@ -407,10 +461,12 @@ const AttentionAssessmentRun: React.FC = () => {
     setIsRunning(false);
     setCurrentPhase('complete');
     
-    // Clean up intervals
+    // Clean up all intervals and timeouts
     if (intervalRef.current) clearInterval(intervalRef.current);
     if (taskIntervalRef.current) clearInterval(taskIntervalRef.current);
     if (stimulusTimeoutRef.current) clearTimeout(stimulusTimeoutRef.current);
+    if (task3IntervalRef.current) clearInterval(task3IntervalRef.current);
+    if (task3TimeoutRef.current) clearTimeout(task3TimeoutRef.current);
 
     const finalResults = [...allResults, ...currentTaskResults];
     
@@ -423,8 +479,10 @@ const AttentionAssessmentRun: React.FC = () => {
       .reduce((sum, r) => sum + (r.responseTime || 0), 0) / 
       finalResults.filter(r => r.responseTime !== null).length || 0;
 
+    console.log('📊 Assessment complete:', { totalTrials, correctResponses, accuracy });
+
     // Navigate to results
-    navigation.navigate('AttentionAssessmentResult' as any, {
+    navigation.navigate('AttentionAssessmentResult', {
       totalTime: TOTAL_TIME - timeLeft,
       results: finalResults,
       overallAccuracy: accuracy,
@@ -517,7 +575,7 @@ const AttentionAssessmentRun: React.FC = () => {
                   Task 3: Divided Attention
                 </Text>
                 <Text className="mb-6 text-lg text-center text-gray-700">
-                  Tap the glowing symbols as quickly as possible. Multiple targets may appear at once.
+                  Tap the glowing symbols as quickly as possible. Multiple targets may appear at once. They will disappear after 2 seconds.
                 </Text>
               </>
             )}
@@ -665,7 +723,7 @@ const AttentionAssessmentRun: React.FC = () => {
             </View>
 
             <Text className="mt-4 text-center text-gray-600">
-              Active targets: {task3ActiveTargets.size}
+              Active targets: {task3ActiveTargets.size} | Trial: {task3TrialNumber}
             </Text>
           </View>
         )}
