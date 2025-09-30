@@ -51,7 +51,7 @@ const games: Game[] = [
     icon: "🎯",
     description: "Focus exercises",
     difficulty: "Easy",
-    screen: "AttentionResults", // use a route that exists in your stack — adjust if needed
+    screen: "AttentionGame", 
   },
   {
     id: 4,
