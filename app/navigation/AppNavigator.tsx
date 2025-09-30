@@ -7,6 +7,10 @@ import AttentionAssessmentRun from '../screens/Assessments/AttentionAssessmentRu
 import MathAssessment from '../screens/Assessments/MathAssessment';
 import MathAssessmentResult from '../screens/Assessments/MathAssessmentResult';
 import MathAssessmentStart from '../screens/Assessments/MathAssessmentStart';
+import PuzzleAssessmentIntro from '../screens/Assessments/PuzzleAssessmentIntro';
+import PuzzleAssessmentResult from '../screens/Assessments/PuzzleAssessmentResult';
+import PuzzleAssessmentRun from '../screens/Assessments/PuzzleAssessmentRun';
+
 import MemoryTest from '../screens/Assessments/MemoryTest';
 import OnboardingScreen from '../screens/Auth/OnboardingScreen';
 import SignInScreen from '../screens/Auth/SignInScreen';
@@ -129,6 +133,21 @@ export type RootStackParamList = {
     averageReactionTime: number;
     tasksCompleted: number;
   };
+
+  // NEW Puzzle Assessment
+  PuzzleAssessmentIntro: undefined;
+  PuzzleAssessmentRun: undefined;
+  PuzzleAssessmentResult: {
+    totalTime: number;
+    results: Array<{
+      task: string;
+      correct: boolean;
+      rt: number | null;
+    }>;
+    overallAccuracy: number;
+    averageReactionTime: number;
+    tasksCompleted: number;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -180,6 +199,9 @@ const AppNavigator: React.FC = () => {
        <Stack.Screen name="AttentionAssessmentIntro" component={AttentionAssessmentIntro} />
       <Stack.Screen name="AttentionAssessmentRun" component={AttentionAssessmentRun} />
       <Stack.Screen name="AttentionAssessmentResult" component={AttentionAssessmentResult} />
+       <Stack.Screen name="PuzzleAssessmentIntro" component={PuzzleAssessmentIntro} />
+      <Stack.Screen name="PuzzleAssessmentRun" component={PuzzleAssessmentRun} />
+      <Stack.Screen name="PuzzleAssessmentResult" component={PuzzleAssessmentResult} />
     </Stack.Navigator>
   );
 };
