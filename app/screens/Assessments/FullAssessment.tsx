@@ -1,12 +1,12 @@
 import React from 'react'
 import { Text, View } from 'react-native'
 
-const FullAssessment = () => {
+const PuzzleAssessment = () => {
   return (
     <View>
-      <Text>FullAssessment</Text>
+      <Text>PuzzleAssessment</Text>
     </View>
   )
 }
 
-export default FullAssessment
+export default PuzzleAssessment
