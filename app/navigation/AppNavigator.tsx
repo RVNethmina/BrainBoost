@@ -202,6 +202,7 @@ const AppNavigator: React.FC = () => {
        <Stack.Screen name="PuzzleAssessmentIntro" component={PuzzleAssessmentIntro} />
       <Stack.Screen name="PuzzleAssessmentRun" component={PuzzleAssessmentRun} />
       <Stack.Screen name="PuzzleAssessmentResult" component={PuzzleAssessmentResult} />
+      
     </Stack.Navigator>
   );
 };
