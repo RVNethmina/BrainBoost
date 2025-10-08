@@ -1,17 +1,18 @@
 // app/src/screens/Games/MemoryMatch/MemoryPlayCards.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
+import { HapticFeedbackService } from "../../../services/HapticFeedbackService";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Vibration } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type MemoryPlayCardsNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "MemoryPlayLevel2"
 >;
 
-const INITIAL_TIME = 240; // 4 minutes
+const INITIAL_TIME = 300; // 5 minutes (increased from 4)
 const CARD_SETS = [
   ['🍎', '🍌', '🍇', '🍊', '🍓', '🥝'], // Fruits
   ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊'], // Animals
@@ -23,13 +24,6 @@ type Card = {
   symbol: string;
   isFlipped: boolean;
   isMatched: boolean;
-};
-
-type GameRound = {
-  cards: Card[];
-  pairsFound: number;
-  moves: number;
-  timeBonus: number;
 };
 
 const MemoryPlayCards: React.FC = () => {
@@ -46,22 +40,22 @@ const MemoryPlayCards: React.FC = () => {
   const [canFlip, setCanFlip] = useState<boolean>(true);
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastWarningRef = useRef<number>(0);
   const TOTAL_ROUNDS = 3;
 
-  // Create shuffled deck for current round
+  // Create shuffled deck - IMPROVED for elderly (slower progression)
   const createDeck = (round: number): Card[] => {
     const cardSet = CARD_SETS[round % CARD_SETS.length];
-    const pairsCount = Math.min(4 + round, 6); // 4-6 pairs
+    const pairsCount = Math.min(4 + Math.floor(round / 2), 5); // Max 5 pairs (was 6)
     const selectedSymbols = cardSet.slice(0, pairsCount);
     
     const deck: Card[] = [];
     selectedSymbols.forEach((symbol, index) => {
-      // Add pair of cards
       deck.push({ id: index * 2, symbol, isFlipped: false, isMatched: false });
       deck.push({ id: index * 2 + 1, symbol, isFlipped: false, isMatched: false });
     });
     
-    // Shuffle deck
+    // Shuffle
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -87,12 +81,19 @@ const MemoryPlayCards: React.FC = () => {
     }
   }, [currentRound]);
 
-  // Timer effect
+  // Timer with haptic warnings
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       intervalRef.current = setInterval(() => {
-        setTimeLeft((t) => t - 1);
+        setTimeLeft((t) => {
+          const newTime = t - 1;
+          if (newTime !== lastWarningRef.current) {
+            HapticFeedbackService.timeBasedWarning(newTime, INITIAL_TIME);
+            lastWarningRef.current = newTime;
+          }
+          return newTime;
+        });
       }, 1000);
     }
 
@@ -109,14 +110,15 @@ const MemoryPlayCards: React.FC = () => {
     };
   }, [isRunning]);
 
-  // Time up effect
+  // Time up
   useEffect(() => {
     if (timeLeft <= 0) {
+      HapticFeedbackService.gameEnd();
       endGame("time");
     }
   }, [timeLeft]);
 
-  // Check for matches when 2 cards are flipped
+  // Check matches with haptic feedback
   useEffect(() => {
     if (flippedCards.length === 2) {
       setCanFlip(false);
@@ -126,7 +128,7 @@ const MemoryPlayCards: React.FC = () => {
       
       setTimeout(() => {
         if (firstCard?.symbol === secondCard?.symbol) {
-          // Match found
+          // MATCH FOUND
           setCards(prevCards => 
             prevCards.map(card => 
               card.id === first || card.id === second 
@@ -134,25 +136,27 @@ const MemoryPlayCards: React.FC = () => {
                 : card
             )
           );
-          setScore(s => s + 2); // 2 points per match
-          Vibration.vibrate(100);
+          setScore(s => s + 2);
+          HapticFeedbackService.correctAnswer(); // Match haptic
           
-          // Check if round complete
+          // Check round complete
           const matchedCount = cards.filter(c => c.isMatched).length + 2;
           if (matchedCount === cards.length) {
             setTimeout(() => {
               if (currentRound + 1 >= TOTAL_ROUNDS) {
+                HapticFeedbackService.gameEnd();
                 endGame("finished");
               } else {
+                HapticFeedbackService.levelUp();
                 setGameState('roundComplete');
                 setTimeout(() => {
                   setCurrentRound(r => r + 1);
-                }, 1500);
+                }, 2000);
               }
             }, 500);
           }
         } else {
-          // No match - flip cards back
+          // NO MATCH
           setCards(prevCards => 
             prevCards.map(card => 
               card.id === first || card.id === second 
@@ -160,22 +164,23 @@ const MemoryPlayCards: React.FC = () => {
                 : card
             )
           );
-          Vibration.vibrate([50, 50, 50]);
+          HapticFeedbackService.wrongAnswer(); // No match haptic
         }
         
         setFlippedCards([]);
         setCanFlip(true);
-      }, 1000);
+      }, 1200); // Longer delay for elderly (was 1000)
     }
   }, [flippedCards, cards]);
 
-  // Cleanup on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      HapticFeedbackService.cancel();
     };
   }, []);
 
@@ -191,7 +196,8 @@ const MemoryPlayCards: React.FC = () => {
     const card = cards.find(c => c.id === cardId);
     if (!card || card.isFlipped || card.isMatched || flippedCards.length >= 2) return;
 
-    // Flip the card
+    HapticFeedbackService.cardFlip(); // Card flip haptic
+
     setCards(prevCards => 
       prevCards.map(c => 
         c.id === cardId ? { ...c, isFlipped: true } : c
@@ -214,10 +220,12 @@ const MemoryPlayCards: React.FC = () => {
     
     const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
     const totalPairs = cards.filter(c => c.isMatched).length / 2;
+    const percentageScore = (totalPairs / (cards.length / 2)) * 100;
+    HapticFeedbackService.scoreBasedFeedback(percentageScore);
     
     navigation.navigate("MemoryResults" as any, {
       score,
-      totalQuestions: TOTAL_ROUNDS * 6, // Max possible pairs across all rounds
+      totalQuestions: TOTAL_ROUNDS * 6,
       timeTaken,
       endedBy: reason,
       gameType: 'cards',
@@ -229,14 +237,17 @@ const MemoryPlayCards: React.FC = () => {
   const handleStart = () => {
     setIsRunning(true);
     setGameState('playing');
+    HapticFeedbackService.gameStart();
   };
 
   const handlePause = () => {
     setIsRunning(false);
+    HapticFeedbackService.buttonPress();
   };
 
   const handleResume = () => {
     setIsRunning(true);
+    HapticFeedbackService.buttonPress();
   };
 
   const progressPercent = Math.min(100, ((currentRound) / TOTAL_ROUNDS) * 100);
@@ -252,6 +263,7 @@ const MemoryPlayCards: React.FC = () => {
       >
         <TouchableOpacity
           onPress={() => {
+            HapticFeedbackService.buttonPress();
             handlePause();
             navigation.goBack();
           }}
@@ -263,16 +275,22 @@ const MemoryPlayCards: React.FC = () => {
 
         <View className="flex-row items-center gap-4">
           <View className="items-center mr-2">
-            <Text className="text-sm text-gray-600">Time</Text>
-            <Text className="text-xl font-bold">{formatTime(timeLeft)}</Text>
+            <Text className="text-base font-semibold text-gray-600">Time</Text>
+            <Text className="text-xl font-bold" style={{ color: timeLeft < 60 ? PALETTE.red : PALETTE.teal }}>
+              {formatTime(timeLeft)}
+            </Text>
           </View>
           <View className="items-center mr-2">
-            <Text className="text-sm text-gray-600">Score</Text>
-            <Text className="text-xl font-bold">{score}</Text>
+            <Text className="text-base font-semibold text-gray-600">Score</Text>
+            <Text className="text-xl font-bold" style={{ color: PALETTE.teal }}>
+              {score}
+            </Text>
           </View>
           <View className="items-center">
-            <Text className="text-sm text-gray-600">Moves</Text>
-            <Text className="text-xl font-bold">{moves}</Text>
+            <Text className="text-base font-semibold text-gray-600">Moves</Text>
+            <Text className="text-xl font-bold" style={{ color: PALETTE.orange }}>
+              {moves}
+            </Text>
           </View>
         </View>
 
@@ -297,71 +315,76 @@ const MemoryPlayCards: React.FC = () => {
       <View className="justify-center flex-1 px-5">
         {gameState === 'start' && (
           <View
-            className="p-6 mb-8 border shadow-sm rounded-2xl"
+            className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
             style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
           >
-            <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text className="mb-4 text-4xl font-bold text-center" style={{ color: PALETTE.teal }}>
               Memory Cards
             </Text>
-            <Text className="mb-6 text-lg text-center text-gray-600">
-              Find matching pairs by flipping cards. Complete 3 rounds with increasing difficulty!
+            <Text className="mb-6 text-xl text-center text-gray-700 leading-7">
+              Find matching pairs by tapping cards. Complete 3 rounds with friendly themes!
             </Text>
             <TouchableOpacity
-              className="px-8 py-4 rounded-2xl"
+              className="px-10 py-5 rounded-2xl"
               style={{ backgroundColor: PALETTE.teal }}
               onPress={handleStart}
             >
-              <Text className="text-xl font-semibold text-white text-center">Start Game</Text>
+              <Text className="text-2xl font-semibold text-white text-center">Start Game</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {gameState === 'roundComplete' && (
           <View
-            className="p-6 mb-8 border shadow-sm rounded-2xl"
+            className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
             style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
           >
-            <Text className="mb-4 text-2xl font-bold text-center" style={{ color: PALETTE.teal }}>
-              Round {currentRound + 1} Complete!
+            <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+              ✓ Round {currentRound + 1} Complete!
             </Text>
-            <Text className="text-lg text-center text-gray-600">
-              Preparing next round...
+            <Text className="text-xl text-center text-gray-600">
+              Get ready for the next round...
             </Text>
           </View>
         )}
 
         {gameState === 'playing' && (
           <View
-            className="p-4 mb-6 border shadow-sm rounded-2xl"
+            className="p-5 mb-6 border-2 shadow-sm rounded-2xl"
             style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
           >
-            <Text className="mb-4 text-xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text className="mb-4 text-2xl font-bold text-center" style={{ color: PALETTE.teal }}>
               Round {currentRound + 1} - Find {totalPairs} pairs
             </Text>
-            <Text className="mb-4 text-center text-gray-600">
+            <Text className="mb-4 text-lg text-center text-gray-600">
               Matches: {matchedPairs}/{totalPairs}
             </Text>
 
-            {/* Cards Grid */}
-            <View className="flex-row flex-wrap justify-center gap-2">
+            {/* Cards Grid - LARGER for elderly */}
+            <View className="flex-row flex-wrap justify-center gap-3">
               {cards.map((card) => {
                 const isFlipped = card.isFlipped || card.isMatched;
                 return (
                   <TouchableOpacity
                     key={card.id}
-                    className="items-center justify-center rounded-xl"
+                    className="items-center justify-center rounded-2xl"
                     style={{
                       backgroundColor: isFlipped ? PALETTE.lightTeal : PALETTE.orange,
-                      borderWidth: 2,
+                      borderWidth: 3,
                       borderColor: card.isMatched ? PALETTE.teal : PALETTE.orange,
-                      width: 70,
-                      height: 70,
+                      width: 80, // Larger (was 70)
+                      height: 80, // Larger (was 70)
                       margin: 4,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 3,
+                      elevation: 3,
                     }}
                     onPress={() => handleCardPress(card.id)}
                     disabled={!canFlip || !isRunning}
                   >
-                    <Text className="text-3xl">
+                    <Text className="text-4xl">
                       {isFlipped ? card.symbol : '?'}
                     </Text>
                   </TouchableOpacity>
@@ -373,7 +396,7 @@ const MemoryPlayCards: React.FC = () => {
 
         {/* Progress */}
         <View className="items-center">
-          <Text className="mb-2 text-lg text-gray-600">
+          <Text className="mb-3 text-xl font-semibold text-gray-600">
             Round:{" "}
             <Text className="font-bold" style={{ color: PALETTE.teal }}>
               {Math.min(currentRound + 1, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
@@ -398,7 +421,7 @@ export default MemoryPlayCards;
 const styles = StyleSheet.create({
   progressTrack: {
     width: "100%",
-    height: 12,
+    height: 16,
     backgroundColor: "#E5E7EB",
     borderRadius: 8,
     overflow: "hidden",
