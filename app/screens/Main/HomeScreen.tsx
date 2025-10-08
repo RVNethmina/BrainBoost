@@ -1,4 +1,4 @@
-// app/src/screens/HomeScreen.tsx
+// app/src/screens/Main/HomeScreen.tsx
 import { PALETTE } from "@/app/design/colors";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -10,17 +10,33 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext";
 
 export default function HomeScreen({ navigation }: any) {
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#96B5B5';
+  const textColor = isDark ? '#fff' : '#2C3E3E';
+  const cardBg = isDark ? '#2a2a2a' : '#E6F1F1';
+  const subtitleColor = isDark ? '#ff6b6b' : '#D9534F';
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header with Profile button */}
       <View style={styles.headerRow}>
         <View style={styles.headerTextWrap}>
-          <Text accessibilityRole={"header" as AccessibilityRole} style={styles.greeting}>
+          <Text 
+            accessibilityRole={"header" as AccessibilityRole}
+            style={[styles.greeting, { fontSize: 30 * fontScale, color: textColor }]}
+          >
             Good Morning!
           </Text>
-          <Text style={styles.subtitle}>Ready to exercise your brain?</Text>
+          <Text style={[styles.subtitle, { fontSize: 18 * fontScale, color: subtitleColor }]}>
+            Ready to exercise your brain?
+          </Text>
         </View>
 
         <TouchableOpacity
@@ -32,7 +48,9 @@ export default function HomeScreen({ navigation }: any) {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="person-circle-outline" size={48} color={PALETTE.teal} />
-          <Text style={styles.profileBtnText}>Profile</Text>
+          <Text style={[styles.profileBtnText, { fontSize: 12 * fontScale, color: textColor }]}>
+            Profile
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -41,50 +59,66 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.grid}>
           <TouchableOpacity
             onPress={() => navigation.navigate("BrainGames")}
-            style={styles.card}
+            style={[styles.card, { backgroundColor: cardBg }]}
             accessibilityLabel="Open Brain Games"
             accessible
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name={"extension-puzzle-outline" as any} size={40} color={PALETTE.red} style={styles.icon} />
-            <Text style={styles.cardTitle}>Brain Games</Text>
-            <Text style={styles.cardText}>Fun puzzles</Text>
+            <Text style={[styles.cardTitle, { fontSize: 18 * fontScale, color: textColor }]}>
+              Brain Games
+            </Text>
+            <Text style={[styles.cardText, { fontSize: 15 * fontScale, color: textColor }]}>
+              Fun puzzles
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.navigate("Assessment")}
-            style={styles.card}
+            style={[styles.card, { backgroundColor: cardBg }]}
             accessibilityLabel="Open Assessment"
             accessible
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name={"stats-chart-outline" as any} size={40} color={PALETTE.orange} style={styles.icon} />
-            <Text style={styles.cardTitle}>Assessment</Text>
-            <Text style={styles.cardText}>Test progress</Text>
+            <Text style={[styles.cardTitle, { fontSize: 18 * fontScale, color: textColor }]}>
+              Assessment
+            </Text>
+            <Text style={[styles.cardText, { fontSize: 15 * fontScale, color: textColor }]}>
+              Test progress
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.navigate("Progress")}
-            style={styles.card}
+            style={[styles.card, { backgroundColor: cardBg }]}
             accessibilityLabel="Open Progress"
             accessible
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name={"bar-chart-outline" as any} size={40} color={PALETTE.teal} style={styles.icon} />
-            <Text style={styles.cardTitle}>Progress</Text>
-            <Text style={styles.cardText}>View stats</Text>
+            <Text style={[styles.cardTitle, { fontSize: 18 * fontScale, color: textColor }]}>
+              Progress
+            </Text>
+            <Text style={[styles.cardText, { fontSize: 15 * fontScale, color: textColor }]}>
+              View stats
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.navigate("Insights")}
-            style={styles.card}
+            style={[styles.card, { backgroundColor: cardBg }]}
             accessibilityLabel="Open Insights"
             accessible
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name={"bulb-outline" as any} size={40} color={PALETTE.red} style={styles.icon} />
-            <Text style={styles.cardTitle}>Insights</Text>
-            <Text style={styles.cardText}>Learn more</Text>
+            <Text style={[styles.cardTitle, { fontSize: 18 * fontScale, color: textColor }]}>
+              Insights
+            </Text>
+            <Text style={[styles.cardText, { fontSize: 15 * fontScale, color: textColor }]}>
+              Learn more
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -96,7 +130,9 @@ export default function HomeScreen({ navigation }: any) {
             accessibilityLabel="Open reminders"
             accessible
           >
-            <Text style={[styles.footerText, { color: "#D9534F" }]}>Reminders</Text>
+            <Text style={[styles.footerText, { fontSize: 18 * fontScale, color: "#D9534F" }]}>
+              Reminders
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -105,7 +141,9 @@ export default function HomeScreen({ navigation }: any) {
             accessibilityLabel="Open settings"
             accessible
           >
-            <Text style={[styles.footerText, { color: "#fff" }]}>Settings</Text>
+            <Text style={[styles.footerText, { fontSize: 18 * fontScale, color: "#fff" }]}>
+              Settings
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -116,7 +154,6 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#96B5B5", // keep your background
   },
   headerRow: {
     flexDirection: "row",
@@ -137,24 +174,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   profileBtnText: {
-    fontSize: 12,
     marginTop: -4,
-    color: "#2C3E3E",
   },
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
   },
   greeting: {
-    fontSize: 30,
     fontWeight: "800",
-    color: "#2C3E3E",
     marginBottom: 6,
   },
-  subtitle: {
-    fontSize: 18,
-    color: "#D9534F",
-  },
+  subtitle: {},
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -168,22 +198,17 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: 18,
     alignItems: "center",
-    backgroundColor: "#E6F1F1",
     minHeight: 140,
   },
   icon: {
     marginBottom: 14,
   },
   cardTitle: {
-    fontSize: 18,
     fontWeight: "700",
-    color: "#2C3E3E",
     marginBottom: 6,
     textAlign: "center",
   },
   cardText: {
-    fontSize: 15,
-    color: "#2C3E3E",
     opacity: 0.8,
     textAlign: "center",
   },
@@ -202,7 +227,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   footerText: {
-    fontSize: 18,
     fontWeight: "700",
   },
 });
