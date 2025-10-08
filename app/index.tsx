@@ -1,11 +1,13 @@
 import "../global.css";
 import AppNavigator from "./navigation/AppNavigator";
+import { SettingsProvider } from "./contexts/SettingsContext";
 
-
-const index = () => {
+const Index = () => {
   return (
+    <SettingsProvider>
       <AppNavigator />
+    </SettingsProvider>
   );
 };
 
-export default index;
+export default Index;
