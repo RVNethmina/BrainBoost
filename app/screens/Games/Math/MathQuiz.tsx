@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSettings } from '@/app/contexts/SettingsContext';
 
 type MathQuizScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -15,7 +16,20 @@ type MathPlayRoute = 'MathPlayAddition' | 'MathPlayMultiplication' | 'MathPlayMi
 
 const MathQuiz: React.FC = () => {
   const navigation = useNavigation<MathQuizScreenNavigationProp>();
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#FFFFFF';
+  const textColor = isDark ? '#fff' : '#1F2937';
+  const secondaryTextColor = isDark ? '#ccc' : '#6B7280';
+  const cardBg = isDark ? '#2a2a2a' : '#FFFFFF';
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  const featuresBg = isDark ? '#3a3a3a' : '#F9FAFB';
+  const borderColor = isDark ? '#444' : '#F3F4F6';
 
   const difficulties = [
     {
@@ -23,12 +37,12 @@ const MathQuiz: React.FC = () => {
       name: 'Easy',
       description: 'Addition & Subtraction',
       difficulty: 'Easy',
-      color: '#E8F4F8',
+      color: isDark ? '#2a4a4a' : '#E8F4F8',
       borderColor: PALETTE.lightTeal,
-      textColor: '#065F46',
-      selectedBackground: PALETTE.lightTeal,
+      textColor: PALETTE.teal,
+      selectedBackground: isDark ? '#3a5a5a' : PALETTE.lightTeal,
       selectedBorder: PALETTE.lightTeal,
-      selectedTextColor: '#065F46',
+      selectedTextColor: PALETTE.teal,
       route: 'MathPlayAddition' as MathPlayRoute,
       icon: '➕',
       details: '10 questions • 2 minutes',
@@ -39,10 +53,10 @@ const MathQuiz: React.FC = () => {
       name: 'Medium',
       description: 'Multiplication Tables',
       difficulty: 'Medium',
-      color: '#FFF4E6',
-      borderColor: '#FFE7C8',
+      color: isDark ? '#4a3a2a' : '#FFF4E6',
+      borderColor: isDark ? '#5a4a3a' : '#FFE7C8',
       textColor: PALETTE.orange,
-      selectedBackground: '#FFE7C8',
+      selectedBackground: isDark ? '#5a4a3a' : '#FFE7C8',
       selectedBorder: PALETTE.orange,
       selectedTextColor: PALETTE.orange,
       route: 'MathPlayMultiplication' as MathPlayRoute,
@@ -55,10 +69,10 @@ const MathQuiz: React.FC = () => {
       name: 'Hard',
       description: 'Mixed Operations',
       difficulty: 'Hard',
-      color: '#FFF0F0',
-      borderColor: '#FFE0E0',
+      color: isDark ? '#4a2a2a' : '#FFF0F0',
+      borderColor: isDark ? '#5a3a3a' : '#FFE0E0',
       textColor: PALETTE.red,
-      selectedBackground: '#FFE0E0',
+      selectedBackground: isDark ? '#5a3a3a' : '#FFE0E0',
       selectedBorder: PALETTE.red,
       selectedTextColor: PALETTE.red,
       route: 'MathPlayMixed' as MathPlayRoute,
@@ -102,17 +116,17 @@ const MathQuiz: React.FC = () => {
   const selectedGame = difficulties.find(d => d.id === selectedId);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: headerBg }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: isDark ? '#3a3a3a' : '#FFFFFF' }]}
           activeOpacity={0.7}
         >
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={[styles.backIcon, { color: PALETTE.orange }]}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Math Practice</Text>
+        <Text style={[styles.headerTitle, { color: PALETTE.orange }]}>Math Practice</Text>
         <View style={{ width: 56 }} />
       </View>
 
@@ -124,18 +138,23 @@ const MathQuiz: React.FC = () => {
       >
         {/* Hero Section */}
         <View style={styles.heroSection}>
-          <View style={styles.iconContainer}>
+          <View style={[styles.iconContainer, { backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightPink }]}>
             <Text style={styles.heroIcon}>🧮</Text>
           </View>
-          <Text style={styles.mainTitle}>Math Training</Text>
-          <Text style={styles.mainSubtitle}>
+          <Text style={[styles.mainTitle, { color: PALETTE.orange }]}>
+            Math Training
+          </Text>
+          <Text style={[styles.mainSubtitle, { color: textColor }]}>
             Keep your mind sharp with fun math challenges
           </Text>
         </View>
 
         {/* Games Container */}
-        <View style={styles.gamesContainer}>
-          <Text style={styles.sectionTitle}>
+        <View style={[styles.gamesContainer, { 
+          backgroundColor: cardBg, 
+          borderColor: borderColor 
+        }]}>
+          <Text style={[styles.sectionTitle, { color: textColor }]}>
             Choose Your Level
           </Text>
 
@@ -163,7 +182,10 @@ const MathQuiz: React.FC = () => {
                         <Text
                           style={[
                             styles.gameTitle,
-                            { color: difficulty.textColor }
+                            { 
+                              fontSize: 22 * fontScale,
+                              color: difficulty.textColor 
+                            }
                           ]}
                         >
                           {difficulty.name}
@@ -172,6 +194,7 @@ const MathQuiz: React.FC = () => {
                           style={[
                             styles.gameDescription,
                             { 
+                              fontSize: 16 * fontScale,
                               color: difficulty.textColor,
                               opacity: 0.8 
                             }
@@ -186,6 +209,7 @@ const MathQuiz: React.FC = () => {
                       style={[
                         styles.gameDetails,
                         { 
+                          fontSize: 15 * fontScale,
                           color: difficulty.textColor,
                           opacity: 0.7
                         }
@@ -219,13 +243,19 @@ const MathQuiz: React.FC = () => {
             ]}>
               <Text style={[
                 styles.previewTitle,
-                { color: selectedGame.textColor }
+                { 
+                  fontSize: 18 * fontScale,
+                  color: selectedGame.textColor 
+                }
               ]}>
                 💡 About {selectedGame.name} Level
               </Text>
               <Text style={[
                 styles.previewText,
-                { color: selectedGame.textColor }
+                { 
+                  fontSize: 16 * fontScale,
+                  color: selectedGame.textColor 
+                }
               ]}>
                 {selectedGame.description2}
               </Text>
@@ -233,48 +263,91 @@ const MathQuiz: React.FC = () => {
           )}
 
           {/* Features Section */}
-          <View style={styles.featuresContainer}>
-            <Text style={styles.featuresTitle}>
+          <View style={[styles.featuresContainer, { backgroundColor: featuresBg }]}>
+            <Text style={[styles.featuresTitle, { 
+              fontSize: 18 * fontScale,
+              color: textColor 
+            }]}>
               ✨ Practice Features
             </Text>
             <View style={styles.featuresList}>
               <View style={styles.featureItem}>
-                <View style={styles.featureIconBox}>
+                <View style={[styles.featureIconBox, { backgroundColor: isDark ? '#4a4a4a' : '#FFFFFF' }]}>
                   <Text style={styles.featureIcon}>🔊</Text>
                 </View>
                 <View style={styles.featureTextBox}>
-                  <Text style={styles.featureTitle}>Voice Support</Text>
-                  <Text style={styles.featureText}>Hear questions read aloud & speak your answers</Text>
+                  <Text style={[styles.featureTitle, { 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }]}>
+                    Voice Support
+                  </Text>
+                  <Text style={[styles.featureText, { 
+                    fontSize: 15 * fontScale,
+                    color: secondaryTextColor 
+                  }]}>
+                    Hear questions read aloud & speak your answers
+                  </Text>
                 </View>
               </View>
 
               <View style={styles.featureItem}>
-                <View style={styles.featureIconBox}>
+                <View style={[styles.featureIconBox, { backgroundColor: isDark ? '#4a4a4a' : '#FFFFFF' }]}>
                   <Text style={styles.featureIcon}>⏱️</Text>
                 </View>
                 <View style={styles.featureTextBox}>
-                  <Text style={styles.featureTitle}>Flexible Timing</Text>
-                  <Text style={styles.featureText}>Take your time - pause anytime you need</Text>
+                  <Text style={[styles.featureTitle, { 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }]}>
+                    Flexible Timing
+                  </Text>
+                  <Text style={[styles.featureText, { 
+                    fontSize: 15 * fontScale,
+                    color: secondaryTextColor 
+                  }]}>
+                    Take your time - pause anytime you need
+                  </Text>
                 </View>
               </View>
 
               <View style={styles.featureItem}>
-                <View style={styles.featureIconBox}>
+                <View style={[styles.featureIconBox, { backgroundColor: isDark ? '#4a4a4a' : '#FFFFFF' }]}>
                   <Text style={styles.featureIcon}>✅</Text>
                 </View>
                 <View style={styles.featureTextBox}>
-                  <Text style={styles.featureTitle}>Instant Feedback</Text>
-                  <Text style={styles.featureText}>See if your answer is correct right away</Text>
+                  <Text style={[styles.featureTitle, { 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }]}>
+                    Instant Feedback
+                  </Text>
+                  <Text style={[styles.featureText, { 
+                    fontSize: 15 * fontScale,
+                    color: secondaryTextColor 
+                  }]}>
+                    See if your answer is correct right away
+                  </Text>
                 </View>
               </View>
 
               <View style={styles.featureItem}>
-                <View style={styles.featureIconBox}>
+                <View style={[styles.featureIconBox, { backgroundColor: isDark ? '#4a4a4a' : '#FFFFFF' }]}>
                   <Text style={styles.featureIcon}>📊</Text>
                 </View>
                 <View style={styles.featureTextBox}>
-                  <Text style={styles.featureTitle}>Track Progress</Text>
-                  <Text style={styles.featureText}>View your score and improvement over time</Text>
+                  <Text style={[styles.featureTitle, { 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }]}>
+                    Track Progress
+                  </Text>
+                  <Text style={[styles.featureText, { 
+                    fontSize: 15 * fontScale,
+                    color: secondaryTextColor 
+                  }]}>
+                    View your score and improvement over time
+                  </Text>
                 </View>
               </View>
             </View>
@@ -297,7 +370,9 @@ const MathQuiz: React.FC = () => {
           activeOpacity={0.8}
         >
           <Text style={styles.startButtonIcon}>🚀</Text>
-          <Text style={styles.startButtonText}>Start Practice</Text>
+          <Text style={[styles.startButtonText, { fontSize: 22 * fontScale }]}>
+            Start Practice
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.bottomSpacer} />
@@ -310,8 +385,7 @@ export default MathQuiz;
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1, 
-    backgroundColor: "#FFFFFF"
+    flex: 1,
   },
   header: {
     flexDirection: "row",
@@ -320,7 +394,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: PALETTE.lightPink,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -332,7 +405,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 56,
     height: 56,
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -342,13 +414,11 @@ const styles = StyleSheet.create({
   },
   backIcon: { 
     fontSize: 28,
-    color: PALETTE.orange,
     fontWeight: '600',
   },
   headerTitle: { 
     fontSize: 24, 
-    fontWeight: "700", 
-    color: PALETTE.orange,
+    fontWeight: "700",
   },
   scroll: { 
     flex: 1,
@@ -368,7 +438,6 @@ const styles = StyleSheet.create({
     height: 120,
     marginBottom: 20,
     borderRadius: 60,
-    backgroundColor: PALETTE.lightPink,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -382,14 +451,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 32,
     fontWeight: "700",
-    color: PALETTE.orange,
     textAlign: "center",
   },
   mainSubtitle: {
     marginBottom: 8,
     fontSize: 18,
     textAlign: "center",
-    color: "#374151",
     lineHeight: 26,
     paddingHorizontal: 20,
   },
@@ -397,9 +464,7 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 20,
     borderRadius: 24,
-    backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#F3F4F6',
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -411,7 +476,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     textAlign: "center",
-    color: "#1F2937",
   },
   gamesList: {
     gap: 16,
@@ -441,16 +505,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   gameTitle: {
-    fontSize: 22,
     fontWeight: "700",
     letterSpacing: 0.3,
   },
   gameDescription: {
-    fontSize: 16,
     fontWeight: "500",
   },
   gameDetails: {
-    fontSize: 15,
     fontWeight: "500",
     marginTop: 4,
   },
@@ -482,11 +543,9 @@ const styles = StyleSheet.create({
   },
   previewTitle: {
     marginBottom: 12,
-    fontSize: 18,
     fontWeight: "700",
   },
   previewText: {
-    fontSize: 16,
     lineHeight: 24,
     fontWeight: "500",
   },
@@ -494,13 +553,10 @@ const styles = StyleSheet.create({
     padding: 20,
     marginTop: 20,
     borderRadius: 16,
-    backgroundColor: '#F9FAFB',
   },
   featuresTitle: {
     marginBottom: 16,
-    fontSize: 18,
     fontWeight: "700",
-    color: "#1F2937",
   },
   featuresList: {
     gap: 16,
@@ -516,7 +572,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -531,13 +586,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   featureTitle: {
-    fontSize: 16,
     fontWeight: "600",
-    color: '#1F2937',
   },
   featureText: {
-    fontSize: 15,
-    color: '#6B7280',
     lineHeight: 21,
   },
   startButton: {
@@ -558,7 +609,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   startButtonText: {
-    fontSize: 22,
     fontWeight: "700",
     color: 'white',
     letterSpacing: 0.3,
