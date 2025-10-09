@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useSettings } from '@/app/contexts/SettingsContext';
 
 type AttentionQuizScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -18,7 +19,16 @@ type AttentionPlayRoute =
 
 const AttentionQuiz: React.FC = () => {
   const navigation = useNavigation<AttentionQuizScreenNavigationProp>();
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // Dynamic colors
+  const bgColor = isDark ? '#1a1a1a' : PALETTE.lightPink;
+  const textColor = isDark ? '#fff' : PALETTE.teal;
+  const cardBg = isDark ? '#2a2a2a' : '#FFFFFF';
 
   const attentionGames = [
     {
@@ -26,7 +36,7 @@ const AttentionQuiz: React.FC = () => {
       name: 'Symbol Search',
       description: 'Find target symbols quickly',
       difficulty: 'Easy',
-      color: PALETTE.lightTeal,
+      color: isDark ? '#2a4a4a' : PALETTE.lightTeal,
       borderColor: PALETTE.teal,
       textColor: PALETTE.teal,
       selectedBackground: PALETTE.teal,
@@ -42,7 +52,7 @@ const AttentionQuiz: React.FC = () => {
       name: 'Color Focus',
       description: 'Spot colors while ignoring distractors',
       difficulty: 'Medium',
-      color: '#FFEDCC',
+      color: isDark ? '#4a3a2a' : '#FFEDCC',
       borderColor: PALETTE.orange,
       textColor: PALETTE.orange,
       selectedBackground: PALETTE.orange,
@@ -58,7 +68,7 @@ const AttentionQuiz: React.FC = () => {
       name: 'Speed Challenge',
       description: 'Fast-paced target detection',
       difficulty: 'Hard',
-      color: '#FFE0E0',
+      color: isDark ? '#4a2a2a' : '#FFE0E0',
       borderColor: PALETTE.red,
       textColor: PALETTE.red,
       selectedBackground: PALETTE.red,
@@ -86,20 +96,22 @@ const AttentionQuiz: React.FC = () => {
   const selectedGame = attentionGames.find(g => g.id === selectedId);
 
   return (
-    <View className="flex-1" style={{ backgroundColor: PALETTE.lightPink }}>
+    <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header */}
       <View
         className="flex-row items-center justify-between px-5 pt-12 pb-6"
-        style={{ backgroundColor: PALETTE.teal }}
+        style={{ backgroundColor: isDark ? '#2a2a2a' : PALETTE.teal }}
       >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="items-center justify-center w-14 h-14 rounded-xl"
           style={{ backgroundColor: '#FFFFFF' }}
         >
-          <Text className="text-3xl" style={{ color: PALETTE.teal }}>←</Text>
+          <Text style={{ fontSize: 30 * fontScale, color: PALETTE.teal }}>←</Text>
         </TouchableOpacity>
-        <Text className="text-3xl font-bold text-white">Attention Games</Text>
+        <Text style={{ fontSize: 30 * fontScale, fontWeight: 'bold', color: '#fff' }}>
+          Attention Games
+        </Text>
         <View className="w-14" />
       </View>
 
@@ -112,17 +124,31 @@ const AttentionQuiz: React.FC = () => {
           >
             <Text className="text-7xl">👁️</Text>
           </View>
-          <Text className="mb-4 text-4xl font-bold" style={{ color: PALETTE.teal }}>Attention Training</Text>
-          <Text className="mb-8 text-2xl text-center" style={{ color: PALETTE.teal }}>
+          <Text style={{ fontSize: 32 * fontScale, fontWeight: 'bold', color: textColor, marginBottom: 16 }}>
+            Attention Training
+          </Text>
+          <Text style={{ fontSize: 20 * fontScale, textAlign: 'center', color: textColor, marginBottom: 32 }}>
             Sharpen your focus & concentration
           </Text>
         </View>
 
         <View
           className="p-6 mb-8 rounded-3xl"
-          style={{ backgroundColor: '#FFFFFF', elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 }}
+          style={{ 
+            backgroundColor: cardBg, 
+            elevation: 5, 
+            shadowColor: '#000', 
+            shadowOpacity: 0.1, 
+            shadowRadius: 10 
+          }}
         >
-          <Text className="mb-6 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+          <Text style={{ 
+            fontSize: 28 * fontScale, 
+            fontWeight: 'bold', 
+            textAlign: 'center', 
+            color: PALETTE.teal,
+            marginBottom: 24
+          }}>
             Choose Your Challenge
           </Text>
 
@@ -137,17 +163,21 @@ const AttentionQuiz: React.FC = () => {
                     backgroundColor: isSelected ? game.selectedBackground : game.color,
                     borderWidth: 3,
                     borderColor: isSelected ? game.selectedBorder : game.borderColor,
+                    marginBottom: 20
                   }}
                   onPress={() => setSelectedId(game.id)}
                 >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center flex-1">
-                      <Text className="mr-4 text-3xl">{game.icon}</Text>
+                      <Text style={{ fontSize: 30 * fontScale, marginRight: 16 }}>{game.icon}</Text>
                       <View className="flex-1">
                         <View className="flex-row items-center gap-2 mb-1">
                           <Text
-                            className="text-2xl font-bold"
-                            style={{ color: isSelected ? game.selectedTextColor : game.textColor }}
+                            style={{ 
+                              fontSize: 22 * fontScale, 
+                              fontWeight: 'bold',
+                              color: isSelected ? game.selectedTextColor : game.textColor 
+                            }}
                           >
                             {game.name}
                           </Text>
@@ -158,22 +188,28 @@ const AttentionQuiz: React.FC = () => {
                             }}
                           >
                             <Text
-                              className="text-xs font-semibold"
-                              style={{ color: isSelected ? game.selectedTextColor : game.textColor }}
+                              style={{ 
+                                fontSize: 11 * fontScale, 
+                                fontWeight: '600',
+                                color: isSelected ? game.selectedTextColor : game.textColor 
+                              }}
                             >
                               {game.difficulty}
                             </Text>
                           </View>
                         </View>
                         <Text
-                          className="text-lg mb-1"
-                          style={{ color: isSelected ? game.selectedTextColor : game.textColor }}
+                          style={{ 
+                            fontSize: 16 * fontScale, 
+                            marginBottom: 4,
+                            color: isSelected ? game.selectedTextColor : game.textColor 
+                          }}
                         >
                           {game.description}
                         </Text>
                         <Text
-                          className="text-sm"
                           style={{ 
+                            fontSize: 13 * fontScale,
                             color: isSelected ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)' 
                           }}
                         >
@@ -187,7 +223,7 @@ const AttentionQuiz: React.FC = () => {
                         className="items-center justify-center w-8 h-8 rounded-full"
                         style={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
                       >
-                        <Text className="text-lg text-white">✓</Text>
+                        <Text style={{ fontSize: 18 * fontScale, color: '#fff' }}>✓</Text>
                       </View>
                     )}
                   </View>
@@ -200,14 +236,23 @@ const AttentionQuiz: React.FC = () => {
           {selectedGame && (
             <View 
               className="p-4 mt-6 rounded-2xl"
-              style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
+              style={{ backgroundColor: isDark ? '#3a3a3a' : 'rgba(0,0,0,0.05)' }}
             >
-              <Text className="mb-2 text-lg font-semibold" style={{ color: PALETTE.teal }}>
+              <Text style={{ 
+                fontSize: 17 * fontScale, 
+                fontWeight: '600', 
+                color: PALETTE.teal,
+                marginBottom: 8
+              }}>
                 About {selectedGame.name}:
               </Text>
               <View className="flex-row items-start gap-2">
-                <Text className="text-base text-gray-700">•</Text>
-                <Text className="flex-1 text-base text-gray-700">
+                <Text style={{ fontSize: 15 * fontScale, color: isDark ? '#ccc' : '#374151' }}>•</Text>
+                <Text style={{ 
+                  flex: 1, 
+                  fontSize: 15 * fontScale, 
+                  color: isDark ? '#ccc' : '#374151' 
+                }}>
                   {selectedGame.description2}
                 </Text>
               </View>
@@ -217,28 +262,34 @@ const AttentionQuiz: React.FC = () => {
           {/* Helpful Tips Section */}
           <View 
             className="p-4 mt-6 rounded-2xl"
-            style={{ backgroundColor: '#F0F9FF' }}
+            style={{ backgroundColor: isDark ? '#2a3a4a' : '#F0F9FF' }}
           >
-            <Text className="mb-2 text-lg font-semibold" style={{ color: PALETTE.teal }}>
+            <Text style={{ 
+              fontSize: 17 * fontScale, 
+              fontWeight: '600', 
+              color: PALETTE.teal,
+              marginBottom: 8
+            }}>
               💡 Attention Training Tips:
             </Text>
             <View className="space-y-2">
-              <View className="flex-row items-start gap-2">
-                <Text className="text-sm text-gray-700">•</Text>
-                <Text className="flex-1 text-sm text-gray-700">Focus on accuracy first, speed will come naturally</Text>
-              </View>
-              <View className="flex-row items-start gap-2">
-                <Text className="text-sm text-gray-700">•</Text>
-                <Text className="flex-1 text-sm text-gray-700">Take a moment to understand the target before starting</Text>
-              </View>
-              <View className="flex-row items-start gap-2">
-                <Text className="text-sm text-gray-700">•</Text>
-                <Text className="flex-1 text-sm text-gray-700">Practice regularly - consistency improves concentration</Text>
-              </View>
-              <View className="flex-row items-start gap-2">
-                <Text className="text-sm text-gray-700">•</Text>
-                <Text className="flex-1 text-sm text-gray-700">Don't worry about mistakes - learning from them helps focus</Text>
-              </View>
+              {[
+                'Focus on accuracy first, speed will come naturally',
+                'Take a moment to understand the target before starting',
+                'Practice regularly - consistency improves concentration',
+                'Don\'t worry about mistakes - learning from them helps focus'
+              ].map((tip, index) => (
+                <View key={index} className="flex-row items-start gap-2" style={{ marginBottom: 8 }}>
+                  <Text style={{ fontSize: 13 * fontScale, color: isDark ? '#ccc' : '#374151' }}>•</Text>
+                  <Text style={{ 
+                    flex: 1, 
+                    fontSize: 13 * fontScale, 
+                    color: isDark ? '#ccc' : '#374151' 
+                  }}>
+                    {tip}
+                  </Text>
+                </View>
+              ))}
             </View>
           </View>
         </View>
@@ -255,8 +306,10 @@ const AttentionQuiz: React.FC = () => {
           onPress={onStart}
           disabled={!selectedId}
         >
-          <Text className="mr-3 text-3xl">👁️</Text>
-          <Text className="text-2xl font-semibold text-white">Start Training</Text>
+          <Text style={{ fontSize: 28 * fontScale, marginRight: 12 }}>👁️</Text>
+          <Text style={{ fontSize: 22 * fontScale, fontWeight: '600', color: '#fff' }}>
+            Start Training
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
