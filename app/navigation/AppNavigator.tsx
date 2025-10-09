@@ -47,7 +47,7 @@ import HomeScreen from '../screens/Main/HomeScreen';
 import InsightsScreen from '../screens/Main/InsightsScreen';
 import ProfileScreen from '../screens/Main/ProfileScreen';
 import ProgressScreen from '../screens/Main/ProgressScreen';
-import ReminderScreen from '../screens/Main/RemainderScreen';
+import ReminderScreen from '../screens/Main/ReminderScreen';
 import SettingsScreen from '../screens/Main/SettingsScreen';
 import { AssessmentResultPayload } from '../types/assessment';
 
