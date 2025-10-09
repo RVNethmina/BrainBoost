@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSettings } from '@/app/contexts/SettingsContext'; // Add this import
 
 type MemoryQuizScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -19,7 +20,19 @@ type MemoryPlayRoute =
 
 const MemoryQuiz: React.FC = () => {
   const navigation = useNavigation<MemoryQuizScreenNavigationProp>();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+  
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : PALETTE.teal;
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.teal;
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
 
   const memoryGames = [
     {
@@ -27,11 +40,11 @@ const MemoryQuiz: React.FC = () => {
       name: 'Pattern Memory',
       description: 'Watch & repeat color patterns',
       difficulty: 'Easy',
-      color: '#E6F1F1', // Home page card color
-      borderColor: '#96B5B5', // Home page teal
-      textColor: '#2C3E3E', // Home page dark text
-      selectedBackground: '#96B5B5', // Home page teal
-      selectedBorder: '#96B5B5',
+      color: isDark ? '#2a4a4a' : '#E6F1F1', // Theme-aware colors
+      borderColor: PALETTE.teal,
+      textColor: isDark ? '#fff' : '#2C3E3E',
+      selectedBackground: PALETTE.teal,
+      selectedBorder: PALETTE.teal,
       selectedTextColor: '#FFFFFF',
       route: 'MemoryPlayLevel1' as MemoryPlayRoute,
       icon: '🎨',
@@ -43,11 +56,11 @@ const MemoryQuiz: React.FC = () => {
       name: 'Memory Cards',
       description: 'Find matching card pairs',
       difficulty: 'Easy',
-      color: '#E6F1F1',
-      borderColor: '#96B5B5',
-      textColor: '#2C3E3E',
-      selectedBackground: '#96B5B5',
-      selectedBorder: '#96B5B5',
+      color: isDark ? '#2a4a4a' : '#E6F1F1',
+      borderColor: PALETTE.teal,
+      textColor: isDark ? '#fff' : '#2C3E3E',
+      selectedBackground: PALETTE.teal,
+      selectedBorder: PALETTE.teal,
       selectedTextColor: '#FFFFFF',
       route: 'MemoryPlayLevel2' as MemoryPlayRoute,
       icon: '🃏',
@@ -59,11 +72,11 @@ const MemoryQuiz: React.FC = () => {
       name: 'Number Memory',
       description: 'Remember number sequences',
       difficulty: 'Medium',
-      color: '#FFE6CC', // Light orange tint
-      borderColor: '#FEC84D', // Home page orange
-      textColor: '#2C3E3E',
-      selectedBackground: '#FEC84D',
-      selectedBorder: '#FEC84D',
+      color: isDark ? '#4a3a2a' : '#FFE6CC',
+      borderColor: PALETTE.orange,
+      textColor: isDark ? '#fff' : '#2C3E3E',
+      selectedBackground: PALETTE.orange,
+      selectedBorder: PALETTE.orange,
       selectedTextColor: '#FFFFFF',
       route: 'MemoryPlayLevel3' as MemoryPlayRoute,
       icon: '🔢',
@@ -75,11 +88,11 @@ const MemoryQuiz: React.FC = () => {
       name: 'Picture Memory',
       description: 'Remember everyday objects',
       difficulty: 'Hard',
-      color: '#FFE6E6', // Light red tint
-      borderColor: '#D9534F', // Home page red
-      textColor: '#2C3E3E',
-      selectedBackground: '#D9534F',
-      selectedBorder: '#D9534F',
+      color: isDark ? '#4a2a2a' : '#FFE6E6',
+      borderColor: PALETTE.red,
+      textColor: isDark ? '#fff' : '#2C3E3E',
+      selectedBackground: PALETTE.red,
+      selectedBorder: PALETTE.red,
       selectedTextColor: '#FFFFFF',
       route: 'MemoryPlayLevel4' as MemoryPlayRoute,
       icon: '🖼️',
@@ -103,16 +116,20 @@ const MemoryQuiz: React.FC = () => {
   const selectedGame = memoryGames.find(g => g.id === selectedId);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: headerBg }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={[styles.backButton, { 
+            backgroundColor: isDark ? '#3a3a3a' : '#E6F1F1' 
+          }]}
         >
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={[styles.backIcon, { color: textColor }]}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Memory Games</Text>
+        <Text style={[styles.headerTitle, { color: textColor }]}>
+          Memory Games
+        </Text>
         <View style={{ width: 48 }} />
       </View>
 
@@ -120,18 +137,29 @@ const MemoryQuiz: React.FC = () => {
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
         <View style={styles.heroSection}>
-          <View style={styles.brainIcon}>
+          <View style={[styles.brainIcon, { 
+            backgroundColor: isDark ? '#3a3a3a' : '#2C3E3E' 
+          }]}>
             <Text style={styles.brainEmoji}>🧠</Text>
           </View>
-          <Text style={styles.mainTitle}>Memory Training</Text>
-          <Text style={styles.mainSubtitle}>
+          <Text style={[styles.mainTitle, { color: textColor }]}>
+            Memory Training
+          </Text>
+          <Text style={[styles.mainSubtitle, { color: textColor }]}>
             Fun & engaging brain exercises
           </Text>
         </View>
 
         {/* Games Container */}
-        <View style={styles.gamesContainer}>
-          <Text style={styles.sectionTitle}>
+        <View style={[styles.gamesContainer, { 
+          backgroundColor: cardBg,
+          shadowColor: '#000',
+          shadowOpacity: isDark ? 0.3 : 0.1,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 3,
+        }]}>
+          <Text style={[styles.sectionTitle, { color: textColor }]}>
             Choose Your Challenge
           </Text>
 
@@ -158,7 +186,10 @@ const MemoryQuiz: React.FC = () => {
                           <Text
                             style={[
                               styles.gameTitle,
-                              { color: isSelected ? game.selectedTextColor : game.textColor }
+                              { 
+                                color: isSelected ? game.selectedTextColor : game.textColor,
+                                fontSize: 16 * fontScale
+                              }
                             ]}
                           >
                             {game.name}
@@ -174,7 +205,10 @@ const MemoryQuiz: React.FC = () => {
                             <Text
                               style={[
                                 styles.difficultyText,
-                                { color: isSelected ? game.selectedTextColor : game.textColor }
+                                { 
+                                  color: isSelected ? game.selectedTextColor : game.textColor,
+                                  fontSize: 10 * fontScale
+                                }
                               ]}
                             >
                               {game.difficulty}
@@ -184,7 +218,10 @@ const MemoryQuiz: React.FC = () => {
                         <Text
                           style={[
                             styles.gameDescription,
-                            { color: isSelected ? game.selectedTextColor : game.textColor }
+                            { 
+                              color: isSelected ? game.selectedTextColor : game.textColor,
+                              fontSize: 14 * fontScale
+                            }
                           ]}
                         >
                           {game.description}
@@ -193,7 +230,8 @@ const MemoryQuiz: React.FC = () => {
                           style={[
                             styles.gameDetails,
                             { 
-                              color: isSelected ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)' 
+                              color: isSelected ? 'rgba(255,255,255,0.8)' : (isDark ? '#aaa' : 'rgba(0,0,0,0.6)'),
+                              fontSize: 12 * fontScale
                             }
                           ]}
                         >
@@ -204,7 +242,7 @@ const MemoryQuiz: React.FC = () => {
                     
                     {isSelected && (
                       <View style={styles.selectedIndicator}>
-                        <Text style={styles.checkMark}>✓</Text>
+                        <Text style={[styles.checkMark, { fontSize: 14 * fontScale }]}>✓</Text>
                       </View>
                     )}
                   </View>
@@ -215,13 +253,24 @@ const MemoryQuiz: React.FC = () => {
 
           {/* Game Preview */}
           {selectedGame && (
-            <View style={styles.previewContainer}>
-              <Text style={styles.previewTitle}>
+            <View style={[styles.previewContainer, { 
+              backgroundColor: isDark ? '#3a3a3a' : 'rgba(0,0,0,0.05)' 
+            }]}>
+              <Text style={[styles.previewTitle, { 
+                color: textColor,
+                fontSize: 14 * fontScale
+              }]}>
                 About {selectedGame.name}:
               </Text>
               <View style={styles.previewContent}>
-                <Text style={styles.bulletPoint}>•</Text>
-                <Text style={styles.previewText}>
+                <Text style={[styles.bulletPoint, { 
+                  color: secondaryTextColor,
+                  fontSize: 12 * fontScale
+                }]}>•</Text>
+                <Text style={[styles.previewText, { 
+                  color: secondaryTextColor,
+                  fontSize: 13 * fontScale
+                }]}>
                   {selectedGame.description2}
                 </Text>
               </View>
@@ -229,26 +278,63 @@ const MemoryQuiz: React.FC = () => {
           )}
 
           {/* Tips Section */}
-          <View style={styles.tipsContainer}>
-            <Text style={styles.tipsTitle}>
+          <View style={[styles.tipsContainer, { 
+            backgroundColor: isDark ? '#2a3a4a' : '#F0F9FF' 
+          }]}>
+            <Text style={[styles.tipsTitle, { 
+              color: textColor,
+              fontSize: 14 * fontScale
+            }]}>
               💡 Memory Training Tips:
             </Text>
             <View style={styles.tipsList}>
               <View style={styles.tipItem}>
-                <Text style={styles.bulletPoint}>•</Text>
-                <Text style={styles.tipText}>Start with easier games and work your way up</Text>
+                <Text style={[styles.bulletPoint, { 
+                  color: secondaryTextColor,
+                  fontSize: 12 * fontScale
+                }]}>•</Text>
+                <Text style={[styles.tipText, { 
+                  color: secondaryTextColor,
+                  fontSize: 12 * fontScale
+                }]}>
+                  Start with easier games and work your way up
+                </Text>
               </View>
               <View style={styles.tipItem}>
-                <Text style={styles.bulletPoint}>•</Text>
-                <Text style={styles.tipText}>Take breaks between rounds to stay focused</Text>
+                <Text style={[styles.bulletPoint, { 
+                  color: secondaryTextColor,
+                  fontSize: 12 * fontScale
+                }]}>•</Text>
+                <Text style={[styles.tipText, { 
+                  color: secondaryTextColor,
+                  fontSize: 12 * fontScale
+                }]}>
+                  Take breaks between rounds to stay focused
+                </Text>
               </View>
               <View style={styles.tipItem}>
-                <Text style={styles.bulletPoint}>•</Text>
-                <Text style={styles.tipText}>Play regularly for best results - even 10 minutes helps!</Text>
+                <Text style={[styles.bulletPoint, { 
+                  color: secondaryTextColor,
+                  fontSize: 12 * fontScale
+                }]}>•</Text>
+                <Text style={[styles.tipText, { 
+                  color: secondaryTextColor,
+                  fontSize: 12 * fontScale
+                }]}>
+                  Play regularly for best results - even 10 minutes helps!
+                </Text>
               </View>
               <View style={styles.tipItem}>
-                <Text style={styles.bulletPoint}>•</Text>
-                <Text style={styles.tipText}>Don't worry about perfect scores - improvement is the goal</Text>
+                <Text style={[styles.bulletPoint, { 
+                  color: secondaryTextColor,
+                  fontSize: 12 * fontScale
+                }]}>•</Text>
+                <Text style={[styles.tipText, { 
+                  color: secondaryTextColor,
+                  fontSize: 12 * fontScale
+                }]}>
+                  Don't worry about perfect scores - improvement is the goal
+                </Text>
               </View>
             </View>
           </View>
@@ -259,14 +345,21 @@ const MemoryQuiz: React.FC = () => {
           style={[
             styles.startButton,
             { 
-              backgroundColor: selectedId ? '#96B5B5' : '#CCCCCC' // Home page teal when active
+              backgroundColor: selectedId ? PALETTE.teal : '#CCCCCC',
+              shadowColor: '#000',
+              shadowOpacity: isDark ? 0.4 : 0.2,
+              shadowRadius: 5,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 3,
             }
           ]}
           onPress={onStart}
           disabled={!selectedId}
         >
-          <Text style={styles.startButtonIcon}>🧠</Text>
-          <Text style={styles.startButtonText}>Start Training</Text>
+          <Text style={[styles.startButtonIcon, { fontSize: 20 * fontScale }]}>🧠</Text>
+          <Text style={[styles.startButtonText, { fontSize: 18 * fontScale }]}>
+            Start Training
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -277,34 +370,29 @@ export default MemoryQuiz;
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1, 
-    backgroundColor: "#96B5B5" // Home page background
+    flex: 1
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 60, // Increased for mobile spacing
+    paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: "#96B5B5", // Match background
   },
   backButton: {
     alignItems: "center",
     justifyContent: "center",
     width: 48,
     height: 48,
-    backgroundColor: "#E6F1F1", // Home page card color
     borderRadius: 12,
   },
   backIcon: { 
-    fontSize: 20,
-    color: "#2C3E3E" // Home page text color
+    fontSize: 20
   },
   headerTitle: { 
     fontSize: 20, 
-    fontWeight: "700", 
-    color: "#2C3E3E" // Home page text color
+    fontWeight: "700"
   },
   scroll: { 
     flex: 1, 
@@ -312,59 +400,49 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     alignItems: "center",
-    marginVertical: 30, // Reduced from large margins
+    marginVertical: 30,
   },
   brainIcon: {
     alignItems: "center",
     justifyContent: "center",
-    width: 120, // Reduced from 160
-    height: 120, // Reduced from 160
-    marginBottom: 20, // Reduced from 24
+    width: 120,
+    height: 120,
+    marginBottom: 20,
     borderRadius: 60,
-    backgroundColor: "#2C3E3E", // Dark teal from home page
   },
   brainEmoji: {
-    fontSize: 50, // Reduced from 70
+    fontSize: 50,
   },
   mainTitle: {
-    marginBottom: 8, // Reduced from 16
-    fontSize: 28, // Reduced from 32
+    marginBottom: 8,
+    fontSize: 28,
     fontWeight: "700",
-    color: "#2C3E3E", // Home page text color
     textAlign: "center",
   },
   mainSubtitle: {
-    marginBottom: 20, // Reduced from 32
-    fontSize: 16, // Reduced from 18
+    marginBottom: 20,
+    fontSize: 16,
     textAlign: "center",
-    color: "#2C3E3E", // Home page text color
     opacity: 0.8,
   },
   gamesContainer: {
-    padding: 20, // Reduced from 24
-    marginBottom: 20, // Reduced from 32
-    borderRadius: 20, // Reduced from 24
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    padding: 20,
+    marginBottom: 20,
+    borderRadius: 20,
   },
   sectionTitle: {
-    marginBottom: 20, // Reduced from 24
-    fontSize: 20, // Reduced from 24
+    marginBottom: 20,
+    fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
-    color: "#2C3E3E", // Home page text color
   },
   gamesList: {
-    gap: 12, // Reduced from 20
+    gap: 12,
   },
   gameCard: {
-    paddingVertical: 16, // Reduced from 20
+    paddingVertical: 16,
     paddingHorizontal: 16,
-    borderRadius: 16, // Reduced from 20
+    borderRadius: 16,
     borderWidth: 2,
   },
   gameCardContent: {
@@ -378,8 +456,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gameIcon: {
-    marginRight: 12, // Reduced from 16
-    fontSize: 24, // Reduced from 30
+    marginRight: 12,
+    fontSize: 24,
   },
   gameInfo: {
     flex: 1,
@@ -391,48 +469,40 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   gameTitle: {
-    fontSize: 16, // Reduced from 18
-    fontWeight: "600", // Changed from 700 to match home page
+    fontWeight: "600",
   },
   difficultyBadge: {
-    paddingHorizontal: 8, // Reduced from 10
-    paddingVertical: 3, // Reduced from 4
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 12,
   },
   difficultyText: {
-    fontSize: 10, // Reduced from 12
     fontWeight: "600",
   },
   gameDescription: {
-    fontSize: 14, // Reduced from 16
     marginBottom: 4,
   },
   gameDetails: {
-    fontSize: 12, // Reduced from 14
   },
   selectedIndicator: {
     alignItems: "center",
     justifyContent: "center",
-    width: 24, // Reduced from 32
-    height: 24, // Reduced from 32
+    width: 24,
+    height: 24,
     borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
   checkMark: {
-    fontSize: 14, // Reduced from 18
     color: 'white',
   },
   previewContainer: {
-    padding: 16, // Reduced from 20
-    marginTop: 20, // Reduced from 24
+    padding: 16,
+    marginTop: 20,
     borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   previewTitle: {
     marginBottom: 8,
-    fontSize: 14, // Reduced from 16
     fontWeight: "600",
-    color: "#2C3E3E", // Home page text color
   },
   previewContent: {
     flexDirection: "row",
@@ -441,23 +511,18 @@ const styles = StyleSheet.create({
   },
   previewText: {
     flex: 1,
-    fontSize: 13, // Reduced from 14
-    color: '#666',
   },
   tipsContainer: {
-    padding: 16, // Reduced from 20
-    marginTop: 20, // Reduced from 24
+    padding: 16,
+    marginTop: 20,
     borderRadius: 16,
-    backgroundColor: '#F0F9FF',
   },
   tipsTitle: {
-    marginBottom: 12, // Reduced from 16
-    fontSize: 14, // Reduced from 16
+    marginBottom: 12,
     fontWeight: "600",
-    color: "#2C3E3E", // Home page text color
   },
   tipsList: {
-    gap: 8, // Reduced from 12
+    gap: 8,
   },
   tipItem: {
     flexDirection: "row",
@@ -466,32 +531,21 @@ const styles = StyleSheet.create({
   },
   tipText: {
     flex: 1,
-    fontSize: 12, // Reduced from 13
-    color: '#666',
   },
   bulletPoint: {
-    fontSize: 12,
-    color: '#666',
   },
   startButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16, // Reduced from 24
-    marginBottom: 30, // Reduced from 40
-    borderRadius: 16, // Reduced from 24
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    paddingVertical: 16,
+    marginBottom: 30,
+    borderRadius: 16,
   },
   startButtonIcon: {
-    marginRight: 8, // Reduced from 12
-    fontSize: 20, // Reduced from 24
+    marginRight: 8,
   },
   startButtonText: {
-    fontSize: 18, // Reduced from 20
     fontWeight: "600",
     color: 'white',
   },

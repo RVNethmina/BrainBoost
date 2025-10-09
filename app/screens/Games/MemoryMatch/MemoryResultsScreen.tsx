@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useRef, useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { auth } from '@/config/firebaseConfig'; // ✅ Import auth
+import { useSettings } from '@/app/contexts/SettingsContext'; // Add this import
 
 type MemoryResultsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -30,6 +31,11 @@ type SaveMemoryResultResponse =
 const MemoryResultsScreen: React.FC = () => {
   const navigation = useNavigation<MemoryResultsScreenNavigationProp>();
   const route = useRoute();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+  
   const {
     score = 0,
     totalQuestions = 0,
@@ -42,6 +48,13 @@ const MemoryResultsScreen: React.FC = () => {
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const savedRef = useRef(false);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
+  const lightCardBg = isDark ? '#3a3a3a' : PALETTE.lightTeal;
 
   // Calculate percentage score
   const percentageScore = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
@@ -152,7 +165,7 @@ const MemoryResultsScreen: React.FC = () => {
   }, [score, totalQuestions, timeTaken, level, endedBy, gameType, difficulty]);
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Content */}
       <View className="items-center justify-center flex-1 p-5">
         <View
@@ -162,7 +175,13 @@ const MemoryResultsScreen: React.FC = () => {
           <Text className="text-6xl">{getTrophyEmoji()}</Text>
         </View>
 
-        <Text className="mb-4 text-4xl font-bold" style={{ color: PALETTE.teal }}>
+        <Text 
+          className="mb-4 text-4xl font-bold" 
+          style={{ 
+            fontSize: 36 * fontScale,
+            color: PALETTE.teal 
+          }}
+        >
           {percentageScore >= 80
             ? 'Excellent!'
             : percentageScore >= 60
@@ -170,55 +189,148 @@ const MemoryResultsScreen: React.FC = () => {
             : 'Keep Practicing!'}
         </Text>
 
-        <Text className="mb-2 text-xl text-center text-gray-600">{getEndMessage()}</Text>
-        <Text className="mb-2 text-lg text-center text-gray-600">{getPerformanceMessage()}</Text>
+        <Text 
+          className="mb-2 text-xl text-center"
+          style={{ 
+            fontSize: 20 * fontScale,
+            color: textColor 
+          }}
+        >
+          {getEndMessage()}
+        </Text>
+        <Text 
+          className="mb-2 text-lg text-center"
+          style={{ 
+            fontSize: 18 * fontScale,
+            color: textColor 
+          }}
+        >
+          {getPerformanceMessage()}
+        </Text>
         <Text
           className="mb-8 text-lg font-semibold text-center"
-          style={{ color: getDifficultyColor() }}
+          style={{ 
+            fontSize: 18 * fontScale,
+            color: getDifficultyColor() 
+          }}
         >
           {getGameTypeName()} - Level {level}
         </Text>
 
         {/* Save Status Indicator */}
         {saveStatus === 'saving' && (
-          <Text className="mb-2 text-sm text-gray-500">Saving your results...</Text>
+          <Text 
+            className="mb-2 text-sm"
+            style={{ 
+              fontSize: 14 * fontScale,
+              color: secondaryTextColor 
+            }}
+          >
+            Saving your results...
+          </Text>
         )}
         {saveStatus === 'error' && (
-          <Text className="mb-2 text-sm text-red-500">Couldn't save results (offline?)</Text>
+          <Text 
+            className="mb-2 text-sm text-red-500"
+            style={{ fontSize: 14 * fontScale }}
+          >
+            Couldn't save results (offline?)
+          </Text>
         )}
 
         <View className="w-full mb-8 space-y-4">
-          <View className="p-5 rounded-2xl" style={{ backgroundColor: PALETTE.lightTeal }}>
+          <View 
+            className="p-5 rounded-2xl" 
+            style={{ backgroundColor: lightCardBg }}
+          >
             <View className="flex-row justify-between">
               <View className="items-center flex-1">
-                <Text className="text-2xl font-bold" style={{ color: PALETTE.teal }}>
+                <Text 
+                  className="text-2xl font-bold" 
+                  style={{ 
+                    fontSize: 24 * fontScale,
+                    color: PALETTE.teal 
+                  }}
+                >
                   {formatTime(timeTaken)}
                 </Text>
-                <Text className="text-gray-600">Time</Text>
+                <Text 
+                  className="text-gray-600"
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: secondaryTextColor 
+                  }}
+                >
+                  Time
+                </Text>
               </View>
               <View className="items-center flex-1">
-                <Text className="text-2xl font-bold" style={{ color: PALETTE.teal }}>
+                <Text 
+                  className="text-2xl font-bold" 
+                  style={{ 
+                    fontSize: 24 * fontScale,
+                    color: PALETTE.teal 
+                  }}
+                >
                   {score}
                 </Text>
-                <Text className="text-gray-600">Score</Text>
+                <Text 
+                  className="text-gray-600"
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: secondaryTextColor 
+                  }}
+                >
+                  Score
+                </Text>
               </View>
               <View className="items-center flex-1">
-                <Text className="text-2xl font-bold" style={{ color: PALETTE.teal }}>
+                <Text 
+                  className="text-2xl font-bold" 
+                  style={{ 
+                    fontSize: 24 * fontScale,
+                    color: PALETTE.teal 
+                  }}
+                >
                   {percentageScore}%
                 </Text>
-                <Text className="text-gray-600">Accuracy</Text>
+                <Text 
+                  className="text-gray-600"
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: secondaryTextColor 
+                  }}
+                >
+                  Accuracy
+                </Text>
               </View>
             </View>
           </View>
 
           {/* Achievements */}
           {percentageScore >= 90 && (
-            <View className="p-4 rounded-2xl" style={{ backgroundColor: '#FEF3C7' }}>
+            <View 
+              className="p-4 rounded-2xl" 
+              style={{ backgroundColor: isDark ? '#4a3a00' : '#FEF3C7' }}
+            >
               <View className="flex-row items-center gap-3">
                 <Text className="text-2xl">⭐</Text>
                 <View>
-                  <Text className="font-bold">Memory Master!</Text>
-                  <Text className="text-gray-700">
+                  <Text 
+                    className="font-bold"
+                    style={{ 
+                      fontSize: 16 * fontScale,
+                      color: textColor 
+                    }}
+                  >
+                    Memory Master!
+                  </Text>
+                  <Text 
+                    style={{ 
+                      fontSize: 14 * fontScale,
+                      color: secondaryTextColor 
+                    }}
+                  >
                     Outstanding performance on {difficulty} level!
                   </Text>
                 </View>
@@ -227,24 +339,58 @@ const MemoryResultsScreen: React.FC = () => {
           )}
 
           {percentageScore >= 80 && percentageScore < 90 && (
-            <View className="p-4 rounded-2xl" style={{ backgroundColor: PALETTE.lightPink }}>
+            <View 
+              className="p-4 rounded-2xl" 
+              style={{ backgroundColor: isDark ? '#3a2a4a' : PALETTE.lightPink }}
+            >
               <View className="flex-row items-center gap-3">
                 <Text className="text-2xl">🧠</Text>
                 <View>
-                  <Text className="font-bold">Sharp Memory!</Text>
-                  <Text className="text-gray-700">Your memory skills are impressive!</Text>
+                  <Text 
+                    className="font-bold"
+                    style={{ 
+                      fontSize: 16 * fontScale,
+                      color: textColor 
+                    }}
+                  >
+                    Sharp Memory!
+                  </Text>
+                  <Text 
+                    style={{ 
+                      fontSize: 14 * fontScale,
+                      color: secondaryTextColor 
+                    }}
+                  >
+                    Your memory skills are impressive!
+                  </Text>
                 </View>
               </View>
             </View>
           )}
 
           {difficulty === 'expert' && percentageScore >= 70 && (
-            <View className="p-4 rounded-2xl" style={{ backgroundColor: '#E0E7FF' }}>
+            <View 
+              className="p-4 rounded-2xl" 
+              style={{ backgroundColor: isDark ? '#2a3a4a' : '#E0E7FF' }}
+            >
               <View className="flex-row items-center gap-3">
                 <Text className="text-2xl">💎</Text>
                 <View>
-                  <Text className="font-bold">Expert Challenge Complete!</Text>
-                  <Text className="text-gray-700">
+                  <Text 
+                    className="font-bold"
+                    style={{ 
+                      fontSize: 16 * fontScale,
+                      color: textColor 
+                    }}
+                  >
+                    Expert Challenge Complete!
+                  </Text>
+                  <Text 
+                    style={{ 
+                      fontSize: 14 * fontScale,
+                      color: secondaryTextColor 
+                    }}
+                  >
                     You tackled the hardest memory challenge!
                   </Text>
                 </View>
@@ -279,7 +425,12 @@ const MemoryResultsScreen: React.FC = () => {
           }}
         >
           <Text className="mr-2 text-2xl">🎯</Text>
-          <Text className="text-xl font-semibold text-white">Play Same Game</Text>
+          <Text 
+            className="text-xl font-semibold text-white"
+            style={{ fontSize: 20 * fontScale }}
+          >
+            Play Same Game
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -288,25 +439,46 @@ const MemoryResultsScreen: React.FC = () => {
           onPress={() => navigation.navigate('MemoryQuiz')}
         >
           <Text className="mr-2 text-2xl">🔄</Text>
-          <Text className="text-xl font-semibold text-white">Try Different Level</Text>
+          <Text 
+            className="text-xl font-semibold text-white"
+            style={{ fontSize: 20 * fontScale }}
+          >
+            Try Different Level
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: PALETTE.lightTeal }}
+          style={{ backgroundColor: lightCardBg }}
           onPress={() => navigation.navigate('BrainGames')}
         >
           <Text className="mr-2 text-2xl">🎮</Text>
-          <Text className="text-xl font-semibold text-white">More Games</Text>
+          <Text 
+            className="text-xl font-semibold"
+            style={{ 
+              fontSize: 20 * fontScale,
+              color: textColor 
+            }}
+          >
+            More Games
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: PALETTE.lightTeal }}
+          style={{ backgroundColor: lightCardBg }}
           onPress={() => navigation.navigate('Home')}
         >
           <Text className="mr-2 text-2xl">🏠</Text>
-          <Text className="text-xl font-semibold text-white">Home</Text>
+          <Text 
+            className="text-xl font-semibold"
+            style={{ 
+              fontSize: 20 * fontScale,
+              color: textColor 
+            }}
+          >
+            Home
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
