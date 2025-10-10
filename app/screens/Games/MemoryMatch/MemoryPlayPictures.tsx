@@ -6,6 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, ScrollView, Alert } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type MemoryPlayPicturesNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -67,6 +68,10 @@ type PictureItem = {
 
 const MemoryPlayPictures: React.FC = () => {
   const navigation = useNavigation<MemoryPlayPicturesNavigationProp>();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
   
   const [timeLeft, setTimeLeft] = useState<number>(INITIAL_TIME);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -82,6 +87,13 @@ const MemoryPlayPictures: React.FC = () => {
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const studyIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
 
   // Generate round content
   const generateRound = (round: number) => {
@@ -339,11 +351,11 @@ const MemoryPlayPictures: React.FC = () => {
   const currentThemeData = PICTURE_THEMES[currentTheme as keyof typeof PICTURE_THEMES];
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header - Larger touch targets */}
       <View
         className="flex-row items-center justify-between px-5 pt-12 pb-5"
-        style={{ backgroundColor: PALETTE.lightPink }}
+        style={{ backgroundColor: headerBg }}
       >
         <TouchableOpacity
           onPress={handleBack}
@@ -351,25 +363,58 @@ const MemoryPlayPictures: React.FC = () => {
           style={{ backgroundColor: PALETTE.lightTeal, width: 56, height: 56 }}
           activeOpacity={0.7}
         >
-          <Text className="text-3xl">←</Text>
+          <Text className="text-3xl" style={{ color: textColor }}>←</Text>
         </TouchableOpacity>
 
         <View className="flex-row items-center gap-4">
           <View className="items-center">
-            <Text className="text-base font-semibold text-gray-600">Time</Text>
-            <Text className="text-xl font-bold" style={{ 
-              color: timeLeft < 60 ? PALETTE.red : PALETTE.teal 
-            }}>
+            <Text 
+              className="text-base font-semibold"
+              style={{ fontSize: 16 * fontScale, color: secondaryTextColor }}
+            >
+              Time
+            </Text>
+            <Text 
+              className="text-xl font-bold"
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: timeLeft < 60 ? PALETTE.red : PALETTE.teal 
+              }}
+            >
               {formatTime(timeLeft)}
             </Text>
           </View>
           <View className="items-center">
-            <Text className="text-base font-semibold text-gray-600">Score</Text>
-            <Text className="text-xl font-bold" style={{ color: PALETTE.teal }}>{score}</Text>
+            <Text 
+              className="text-base font-semibold"
+              style={{ fontSize: 16 * fontScale, color: secondaryTextColor }}
+            >
+              Score
+            </Text>
+            <Text 
+              className="text-xl font-bold" 
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
+              {score}
+            </Text>
           </View>
           <View className="items-center">
-            <Text className="text-base font-semibold text-gray-600">Round</Text>
-            <Text className="text-xl font-bold" style={{ color: PALETTE.orange }}>
+            <Text 
+              className="text-base font-semibold"
+              style={{ fontSize: 16 * fontScale, color: secondaryTextColor }}
+            >
+              Round
+            </Text>
+            <Text 
+              className="text-xl font-bold" 
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: PALETTE.orange 
+              }}
+            >
               {currentRound + 1}/{TOTAL_ROUNDS}
             </Text>
           </View>
@@ -412,12 +457,32 @@ const MemoryPlayPictures: React.FC = () => {
         {gameState === 'start' && (
           <View
             className="p-8 mt-8 mb-8 border-2 shadow-sm rounded-3xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: PALETTE.lightTeal,
+              elevation: 5,
+              shadowColor: '#000',
+              shadowOpacity: 0.1,
+              shadowRadius: 10
+            }}
           >
-            <Text className="mb-4 text-4xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-4 text-4xl font-bold text-center" 
+              style={{ 
+                fontSize: 36 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               📸 Picture Memory
             </Text>
-            <Text className="mb-8 text-xl text-center text-gray-700" style={{ lineHeight: 30 }}>
+            <Text 
+              className="mb-8 text-xl text-center leading-7"
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: textColor,
+                lineHeight: 30 * fontScale
+              }}
+            >
               Study pictures, then identify which ones you saw. Great for visual memory!
             </Text>
             <TouchableOpacity
@@ -426,7 +491,12 @@ const MemoryPlayPictures: React.FC = () => {
               onPress={handleStart}
               activeOpacity={0.8}
             >
-              <Text className="text-2xl font-bold text-white text-center">Start Game</Text>
+              <Text 
+                className="text-2xl font-bold text-white text-center"
+                style={{ fontSize: 24 * fontScale }}
+              >
+                Start Game
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -434,15 +504,40 @@ const MemoryPlayPictures: React.FC = () => {
         {gameState === 'studying' && (
           <View
             className="p-8 mt-8 mb-8 border-2 shadow-sm rounded-3xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: PALETTE.lightTeal,
+              elevation: 5,
+              shadowColor: '#000',
+              shadowOpacity: 0.1,
+              shadowRadius: 10
+            }}
           >
-            <Text className="mb-3 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-3 text-3xl font-bold text-center" 
+              style={{ 
+                fontSize: 32 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               👀 Study These Items
             </Text>
-            <Text className="mb-3 text-xl text-center text-gray-600">
+            <Text 
+              className="mb-3 text-xl text-center"
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: textColor 
+              }}
+            >
               Theme: {currentThemeData?.name}
             </Text>
-            <Text className="mb-8 text-3xl font-bold text-center" style={{ color: PALETTE.orange }}>
+            <Text 
+              className="mb-8 text-3xl font-bold text-center" 
+              style={{ 
+                fontSize: 32 * fontScale,
+                color: PALETTE.orange 
+              }}
+            >
               ⏱️ {studyTimeLeft}s
             </Text>
             
@@ -457,7 +552,10 @@ const MemoryPlayPictures: React.FC = () => {
                   <Text className="mb-3 text-5xl">{item.emoji}</Text>
                   <Text 
                     className="text-base font-bold text-center"
-                    style={{ color: PALETTE.teal }}
+                    style={{ 
+                      fontSize: 16 * fontScale,
+                      color: PALETTE.teal 
+                    }}
                   >
                     {item.name}
                   </Text>
@@ -465,7 +563,13 @@ const MemoryPlayPictures: React.FC = () => {
               ))}
             </View>
             
-            <Text className="text-xl text-center font-semibold text-gray-700">
+            <Text 
+              className="text-xl text-center font-semibold"
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: textColor 
+              }}
+            >
               Remember these {studyItems.length} items!
             </Text>
           </View>
@@ -474,15 +578,40 @@ const MemoryPlayPictures: React.FC = () => {
         {gameState === 'recall' && (
           <View
             className="p-8 mt-8 mb-8 border-2 shadow-sm rounded-3xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: PALETTE.lightTeal,
+              elevation: 5,
+              shadowColor: '#000',
+              shadowOpacity: 0.1,
+              shadowRadius: 10
+            }}
           >
-            <Text className="mb-3 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-3 text-3xl font-bold text-center" 
+              style={{ 
+                fontSize: 32 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               🎯 Select What You Saw
             </Text>
-            <Text className="mb-8 text-xl text-center text-gray-600">
+            <Text 
+              className="mb-8 text-xl text-center"
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: textColor 
+              }}
+            >
               Tap the items you remember
             </Text>
-            <Text className="mb-6 text-2xl font-bold text-center" style={{ color: PALETTE.orange }}>
+            <Text 
+              className="mb-6 text-2xl font-bold text-center" 
+              style={{ 
+                fontSize: 24 * fontScale,
+                color: PALETTE.orange 
+              }}
+            >
               {selectedItems.length} selected
             </Text>
             
@@ -495,9 +624,9 @@ const MemoryPlayPictures: React.FC = () => {
                     key={item.id}
                     className="items-center p-5 rounded-3xl"
                     style={{
-                      backgroundColor: isSelected ? PALETTE.teal : '#F9FAFB',
+                      backgroundColor: isSelected ? PALETTE.teal : (isDark ? '#3a3a3a' : '#F9FAFB'),
                       borderWidth: 3,
-                      borderColor: isSelected ? PALETTE.teal : '#E5E7EB',
+                      borderColor: isSelected ? PALETTE.teal : (isDark ? '#555' : '#E5E7EB'),
                       width: 125,
                       height: 125,
                     }}
@@ -507,15 +636,26 @@ const MemoryPlayPictures: React.FC = () => {
                     <Text className="mb-2 text-4xl">{item.emoji}</Text>
                     <Text 
                       className="text-sm font-bold text-center"
-                      style={{ color: isSelected ? 'white' : PALETTE.teal }}
+                      style={{ 
+                        fontSize: 14 * fontScale,
+                        color: isSelected ? 'white' : PALETTE.teal 
+                      }}
                     >
                       {item.name}
                     </Text>
                     {isSelected && (
-                      <View className="absolute -top-2 -right-2 bg-white rounded-full w-8 h-8 items-center justify-center border-2"
-                        style={{ borderColor: PALETTE.teal }}
+                      <View className="absolute -top-2 -right-2 rounded-full w-8 h-8 items-center justify-center border-2"
+                        style={{ 
+                          backgroundColor: isDark ? '#2a2a2a' : 'white',
+                          borderColor: PALETTE.teal 
+                        }}
                       >
-                        <Text className="text-lg font-bold" style={{ color: PALETTE.teal }}>✓</Text>
+                        <Text 
+                          className="text-lg font-bold" 
+                          style={{ color: PALETTE.teal }}
+                        >
+                          ✓
+                        </Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -532,7 +672,10 @@ const MemoryPlayPictures: React.FC = () => {
               disabled={selectedItems.length === 0}
               activeOpacity={0.8}
             >
-              <Text className="text-2xl font-bold text-white text-center">
+              <Text 
+                className="text-2xl font-bold text-white text-center"
+                style={{ fontSize: 24 * fontScale }}
+              >
                 Submit Answer
               </Text>
             </TouchableOpacity>
@@ -542,12 +685,23 @@ const MemoryPlayPictures: React.FC = () => {
         {gameState === 'feedback' && (
           <View
             className="p-8 mt-8 mb-8 border-2 shadow-sm rounded-3xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: PALETTE.lightTeal,
+              elevation: 5,
+              shadowColor: '#000',
+              shadowOpacity: 0.1,
+              shadowRadius: 10
+            }}
           >
-            <Text className="mb-5 text-3xl font-bold text-center" style={{ 
-              color: feedback.correct.length === studyItems.length && feedback.incorrect.length === 0 
-                ? PALETTE.teal : PALETTE.orange 
-            }}>
+            <Text 
+              className="mb-5 text-3xl font-bold text-center" 
+              style={{ 
+                fontSize: 32 * fontScale,
+                color: feedback.correct.length === studyItems.length && feedback.incorrect.length === 0 
+                  ? PALETTE.teal : PALETTE.orange 
+              }}
+            >
               {feedback.correct.length === studyItems.length && feedback.incorrect.length === 0 
                 ? "🎉 Perfect!" 
                 : feedback.correct.length >= studyItems.length * 0.7 
@@ -555,12 +709,24 @@ const MemoryPlayPictures: React.FC = () => {
                 : "💪 Keep Practicing!"}
             </Text>
             
-            <Text className="mb-6 text-2xl text-center font-bold" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-6 text-2xl text-center font-bold" 
+              style={{ 
+                fontSize: 24 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               {feedback.correct.length} out of {studyItems.length} correct
             </Text>
 
             {/* Show correct items */}
-            <Text className="mb-4 text-xl font-bold" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-4 text-xl font-bold" 
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               Items to remember:
             </Text>
             <View className="flex-row flex-wrap justify-center gap-3 mb-6">
@@ -578,7 +744,13 @@ const MemoryPlayPictures: React.FC = () => {
                     }}
                   >
                     <Text className="mb-2 text-3xl">{item.emoji}</Text>
-                    <Text className="text-xs text-center font-bold text-gray-700">
+                    <Text 
+                      className="text-xs text-center font-bold"
+                      style={{ 
+                        fontSize: 12 * fontScale,
+                        color: isDark ? '#1a1a1a' : '#374151'
+                      }}
+                    >
                       {item.name}
                     </Text>
                     <Text className="text-lg font-bold text-center mt-1">
@@ -591,7 +763,13 @@ const MemoryPlayPictures: React.FC = () => {
 
             {feedback.incorrect.length > 0 && (
               <>
-                <Text className="mb-4 text-xl font-bold" style={{ color: PALETTE.red }}>
+                <Text 
+                  className="mb-4 text-xl font-bold" 
+                  style={{ 
+                    fontSize: 20 * fontScale,
+                    color: PALETTE.red 
+                  }}
+                >
                   Wrong selections:
                 </Text>
                 <View className="flex-row flex-wrap justify-center gap-3">
@@ -610,7 +788,13 @@ const MemoryPlayPictures: React.FC = () => {
                         }}
                       >
                         <Text className="mb-2 text-3xl">{item.emoji}</Text>
-                        <Text className="text-xs text-center font-bold text-gray-700">
+                        <Text 
+                          className="text-xs text-center font-bold"
+                          style={{ 
+                            fontSize: 12 * fontScale,
+                            color: isDark ? '#1a1a1a' : '#374151'
+                          }}
+                        >
                           {item.name}
                         </Text>
                         <Text className="text-lg font-bold text-center mt-1">✗</Text>
@@ -625,7 +809,13 @@ const MemoryPlayPictures: React.FC = () => {
 
         {/* Progress - Larger visual */}
         <View className="items-center mb-10">
-          <Text className="mb-3 text-2xl font-bold text-gray-700">
+          <Text 
+            className="mb-3 text-2xl font-bold"
+            style={{ 
+              fontSize: 24 * fontScale,
+              color: textColor 
+            }}
+          >
             Round {Math.min(currentRound + 1, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
           </Text>
           <View style={styles.progressTrack}>

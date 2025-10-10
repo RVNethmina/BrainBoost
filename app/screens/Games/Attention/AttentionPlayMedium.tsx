@@ -5,6 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Vibration } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext";
 
 type AttentionPlayMediumNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -37,6 +38,9 @@ type GridItem = {
 
 const AttentionPlayMedium: React.FC = () => {
   const navigation = useNavigation<AttentionPlayMediumNavigationProp>();
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
   
   const [timeLeft, setTimeLeft] = useState<number>(INITIAL_TIME);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -52,6 +56,13 @@ const AttentionPlayMedium: React.FC = () => {
   const [totalSelections, setTotalSelections] = useState<number>(0);
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
 
   // Generate grid for current round
   const generateGrid = (round: number): { items: GridItem[], target: typeof COLOR_SHAPES[0] } => {
@@ -264,11 +275,11 @@ const AttentionPlayMedium: React.FC = () => {
   const accuracy = totalSelections > 0 ? Math.round((correctSelections / totalSelections) * 100) : 0;
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header */}
       <View
         className="flex-row items-center justify-between px-5 pt-10 pb-4"
-        style={{ backgroundColor: PALETTE.lightPink }}
+        style={{ backgroundColor: headerBg }}
       >
         <TouchableOpacity
           onPress={() => {
@@ -278,21 +289,69 @@ const AttentionPlayMedium: React.FC = () => {
           className="items-center justify-center w-12 h-12 rounded-xl"
           style={{ backgroundColor: PALETTE.lightTeal }}
         >
-          <Text className="text-2xl">←</Text>
+          <Text className="text-2xl" style={{ color: PALETTE.darkGray }}>←</Text>
         </TouchableOpacity>
 
         <View className="flex-row items-center gap-4">
           <View className="items-center">
-            <Text className="text-sm text-gray-600">Time</Text>
-            <Text className="text-lg font-bold">{formatTime(timeLeft)}</Text>
+            <Text 
+              className="text-sm" 
+              style={{ 
+                fontSize: 12 * fontScale,
+                color: secondaryTextColor 
+              }}
+            >
+              Time
+            </Text>
+            <Text 
+              className="font-bold" 
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              {formatTime(timeLeft)}
+            </Text>
           </View>
           <View className="items-center">
-            <Text className="text-sm text-gray-600">Score</Text>
-            <Text className="text-lg font-bold">{score}</Text>
+            <Text 
+              className="text-sm" 
+              style={{ 
+                fontSize: 12 * fontScale,
+                color: secondaryTextColor 
+              }}
+            >
+              Score
+            </Text>
+            <Text 
+              className="font-bold" 
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              {score}
+            </Text>
           </View>
           <View className="items-center">
-            <Text className="text-sm text-gray-600">Round</Text>
-            <Text className="text-lg font-bold">{currentRound + 1}/{TOTAL_ROUNDS}</Text>
+            <Text 
+              className="text-sm" 
+              style={{ 
+                fontSize: 12 * fontScale,
+                color: secondaryTextColor 
+              }}
+            >
+              Round
+            </Text>
+            <Text 
+              className="font-bold" 
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              {currentRound + 1}/{TOTAL_ROUNDS}
+            </Text>
           </View>
         </View>
 
@@ -317,13 +376,28 @@ const AttentionPlayMedium: React.FC = () => {
       <View className="justify-center flex-1 px-5">
         {gameState === 'start' && (
           <View
-            className="p-6 mb-8 border shadow-sm rounded-2xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+            className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: PALETTE.lightTeal 
+            }}
           >
-            <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-4 font-bold text-center" 
+              style={{ 
+                fontSize: 28 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               Color Focus
             </Text>
-            <Text className="mb-6 text-lg text-center text-gray-600">
+            <Text 
+              className="mb-6 text-center" 
+              style={{ 
+                fontSize: 18 * fontScale,
+                color: textColor 
+              }}
+            >
               Find all items that match the target color and shape. Ignore similar distractors!
             </Text>
             <TouchableOpacity
@@ -331,20 +405,40 @@ const AttentionPlayMedium: React.FC = () => {
               style={{ backgroundColor: PALETTE.teal }}
               onPress={handleStart}
             >
-              <Text className="text-xl font-semibold text-white text-center">Start Game</Text>
+              <Text 
+                className="font-semibold text-center text-white" 
+                style={{ fontSize: 20 * fontScale }}
+              >
+                Start Game
+              </Text>
             </TouchableOpacity>
           </View>
         )}
 
         {gameState === 'showing' && (
           <View
-            className="p-6 mb-8 border shadow-sm rounded-2xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+            className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: PALETTE.lightTeal 
+            }}
           >
-            <Text className="mb-4 text-2xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-4 font-bold text-center" 
+              style={{ 
+                fontSize: 24 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               Round {currentRound + 1}
             </Text>
-            <Text className="mb-4 text-lg text-center text-gray-600">
+            <Text 
+              className="mb-4 text-center" 
+              style={{ 
+                fontSize: 18 * fontScale,
+                color: textColor 
+              }}
+            >
               Find all instances of this target:
             </Text>
             
@@ -356,13 +450,25 @@ const AttentionPlayMedium: React.FC = () => {
                 <Text style={{ fontSize: 60, color: targetShape.color }}>
                   {targetShape.shape}
                 </Text>
-                <Text className="mt-2 text-lg font-semibold" style={{ color: PALETTE.teal }}>
+                <Text 
+                  className="mt-2 font-semibold" 
+                  style={{ 
+                    fontSize: 18 * fontScale,
+                    color: PALETTE.teal 
+                  }}
+                >
                   {targetShape.name}
                 </Text>
               </View>
             )}
             
-            <Text className="text-center text-gray-600">
+            <Text 
+              className="text-center" 
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
               Look for {TARGET_COUNT} of these items
             </Text>
           </View>
@@ -370,12 +476,21 @@ const AttentionPlayMedium: React.FC = () => {
 
         {gameState === 'playing' && (
           <View
-            className="p-4 mb-6 border shadow-sm rounded-2xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+            className="p-4 mb-6 border-2 shadow-sm rounded-2xl"
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: PALETTE.lightTeal 
+            }}
           >
             <View className="flex-row items-center justify-between mb-4">
               <View className="flex-row items-center gap-2">
-                <Text className="text-lg font-bold" style={{ color: PALETTE.teal }}>
+                <Text 
+                  className="font-bold" 
+                  style={{ 
+                    fontSize: 18 * fontScale,
+                    color: PALETTE.teal 
+                  }}
+                >
                   Find:
                 </Text>
                 {targetShape && (
@@ -383,13 +498,24 @@ const AttentionPlayMedium: React.FC = () => {
                     <Text style={{ fontSize: 24, color: targetShape.color }}>
                       {targetShape.shape}
                     </Text>
-                    <Text className="text-sm" style={{ color: PALETTE.teal }}>
+                    <Text 
+                      className="text-sm" 
+                      style={{ 
+                        fontSize: 14 * fontScale,
+                        color: PALETTE.teal 
+                      }}
+                    >
                       ({targetShape.name})
                     </Text>
                   </View>
                 )}
               </View>
-              <Text className="text-lg text-gray-600">
+              <Text 
+                style={{ 
+                  fontSize: 18 * fontScale,
+                  color: secondaryTextColor 
+                }}
+              >
                 Found: {targetsFound}/{TARGET_COUNT}
               </Text>
             </View>
@@ -409,13 +535,13 @@ const AttentionPlayMedium: React.FC = () => {
                         ? '#D1FAE5' 
                         : isWrongSelection 
                         ? '#FEE2E2' 
-                        : '#F9FAFB',
+                        : isDark ? '#3a3a3a' : '#F9FAFB',
                       borderWidth: 2,
                       borderColor: isCorrectTarget 
                         ? '#059669' 
                         : isWrongSelection 
                         ? '#DC2626' 
-                        : '#E5E7EB',
+                        : isDark ? '#555' : '#E5E7EB',
                       width: 65,
                       height: 65,
                       margin: 1,
@@ -440,8 +566,17 @@ const AttentionPlayMedium: React.FC = () => {
             </View>
 
             {totalSelections > 0 && (
-              <View className="mt-4 p-3 rounded-xl" style={{ backgroundColor: '#F9FAFB' }}>
-                <Text className="text-center text-gray-600">
+              <View 
+                className="mt-4 p-3 rounded-xl" 
+                style={{ backgroundColor: isDark ? '#3a3a3a' : '#F9FAFB' }}
+              >
+                <Text 
+                  className="text-center" 
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }}
+                >
                   Accuracy: {accuracy}% ({correctSelections}/{totalSelections})
                 </Text>
               </View>
@@ -451,16 +586,29 @@ const AttentionPlayMedium: React.FC = () => {
 
         {gameState === 'feedback' && (
           <View
-            className="p-6 mb-8 border shadow-sm rounded-2xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+            className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: PALETTE.lightTeal 
+            }}
           >
-            <Text className="mb-4 text-2xl font-bold text-center" style={{ 
-              color: targetsFound === TARGET_COUNT ? PALETTE.teal : PALETTE.orange 
-            }}>
+            <Text 
+              className="mb-4 font-bold text-center" 
+              style={{ 
+                fontSize: 24 * fontScale,
+                color: targetsFound === TARGET_COUNT ? PALETTE.teal : PALETTE.orange 
+              }}
+            >
               {targetsFound === TARGET_COUNT ? "Excellent Focus!" : `Found ${targetsFound}/${TARGET_COUNT}`}
             </Text>
             
-            <Text className="text-center text-gray-600">
+            <Text 
+              className="text-center" 
+              style={{ 
+                fontSize: 18 * fontScale,
+                color: textColor 
+              }}
+            >
               {targetsFound === TARGET_COUNT 
                 ? "Your attention skills are sharp!" 
                 : "Keep training your focus abilities!"}
@@ -470,14 +618,23 @@ const AttentionPlayMedium: React.FC = () => {
 
         {/* Progress */}
         <View className="items-center">
-          <Text className="mb-2 text-lg text-gray-600">
+          <Text 
+            className="mb-2" 
+            style={{ 
+              fontSize: 18 * fontScale,
+              color: textColor 
+            }}
+          >
             Round: {Math.min(currentRound + 1, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
           </Text>
           <View style={styles.progressTrack}>
             <View
               style={[
                 styles.progressFill,
-                { width: `${progressPercent}%`, backgroundColor: PALETTE.orange },
+                { 
+                  width: `${progressPercent}%`, 
+                  backgroundColor: PALETTE.orange 
+                },
               ]}
             />
           </View>

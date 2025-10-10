@@ -6,6 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type MemoryPlayPatternNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -18,6 +19,10 @@ const COLORS = [PALETTE.teal, PALETTE.orange, PALETTE.red, '#9333EA', '#059669',
 
 const MemoryPlayPattern: React.FC = () => {
   const navigation = useNavigation<MemoryPlayPatternNavigationProp>();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
   
   const [timeLeft, setTimeLeft] = useState<number>(INITIAL_TIME);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -31,6 +36,12 @@ const MemoryPlayPattern: React.FC = () => {
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastWarningRef = useRef<number>(0);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
 
   // Generate pattern - IMPROVED for elderly (slower progression)
   const generatePattern = (round: number): number[] => {
@@ -223,11 +234,11 @@ const MemoryPlayPattern: React.FC = () => {
   const isPatternComplete = JSON.stringify(userInput) === JSON.stringify(currentPattern);
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header */}
       <View
         className="flex-row items-center justify-between px-5 pt-10 pb-4"
-        style={{ backgroundColor: PALETTE.lightPink }}
+        style={{ backgroundColor: headerBg }}
       >
         <TouchableOpacity
           onPress={() => {
@@ -238,19 +249,41 @@ const MemoryPlayPattern: React.FC = () => {
           className="items-center justify-center w-12 h-12 rounded-xl"
           style={{ backgroundColor: PALETTE.lightTeal }}
         >
-          <Text className="text-2xl">←</Text>
+          <Text className="text-2xl" style={{ color: textColor }}>←</Text>
         </TouchableOpacity>
 
         <View className="flex-row items-center gap-4">
           <View className="items-center mr-4">
-            <Text className="text-base font-semibold text-gray-600">Time</Text>
-            <Text className="text-2xl font-bold" style={{ color: timeLeft < 30 ? PALETTE.red : PALETTE.teal }}>
+            <Text 
+              className="text-base font-semibold"
+              style={{ fontSize: 16 * fontScale, color: isDark ? '#ccc' : PALETTE.darkGray }}
+            >
+              Time
+            </Text>
+            <Text 
+              className="text-2xl font-bold" 
+              style={{ 
+                fontSize: 24 * fontScale,
+                color: timeLeft < 30 ? PALETTE.red : PALETTE.teal 
+              }}
+            >
               {formatTime(timeLeft)}
             </Text>
           </View>
           <View className="items-center">
-            <Text className="text-base font-semibold text-gray-600">Score</Text>
-            <Text className="text-2xl font-bold" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="text-base font-semibold"
+              style={{ fontSize: 16 * fontScale, color: isDark ? '#ccc' : PALETTE.darkGray }}
+            >
+              Score
+            </Text>
+            <Text 
+              className="text-2xl font-bold" 
+              style={{ 
+                fontSize: 24 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               {score}
             </Text>
           </View>
@@ -277,14 +310,33 @@ const MemoryPlayPattern: React.FC = () => {
       <View className="justify-center flex-1 px-5">
         <View
           className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
-          style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
+          style={{ 
+            backgroundColor: cardBg, 
+            borderColor: PALETTE.lightTeal,
+            elevation: 5,
+            shadowColor: '#000',
+            shadowOpacity: 0.1,
+            shadowRadius: 10
+          }}
         >
           {gameState === 'start' && (
             <View className="items-center">
-              <Text className="mb-4 text-4xl font-bold text-center" style={{ color: PALETTE.teal }}>
+              <Text 
+                className="mb-4 text-4xl font-bold text-center" 
+                style={{ 
+                  fontSize: 36 * fontScale,
+                  color: PALETTE.teal 
+                }}
+              >
                 Pattern Memory
               </Text>
-              <Text className="mb-6 text-xl text-center text-gray-700 leading-7">
+              <Text 
+                className="mb-6 text-xl text-center leading-7"
+                style={{ 
+                  fontSize: 20 * fontScale,
+                  color: textColor 
+                }}
+              >
                 Watch the colors light up, then tap them in the same order!
               </Text>
               <TouchableOpacity
@@ -292,17 +344,34 @@ const MemoryPlayPattern: React.FC = () => {
                 style={{ backgroundColor: PALETTE.teal }}
                 onPress={handleStart}
               >
-                <Text className="text-2xl font-semibold text-white">Start Game</Text>
+                <Text 
+                  className="text-2xl font-semibold text-white"
+                  style={{ fontSize: 24 * fontScale }}
+                >
+                  Start Game
+                </Text>
               </TouchableOpacity>
             </View>
           )}
 
           {gameState === 'showing' && (
             <View className="items-center">
-              <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+              <Text 
+                className="mb-4 text-3xl font-bold text-center" 
+                style={{ 
+                  fontSize: 32 * fontScale,
+                  color: PALETTE.teal 
+                }}
+              >
                 👀 Watch Carefully
               </Text>
-              <Text className="mb-6 text-xl text-center text-gray-600">
+              <Text 
+                className="mb-6 text-xl text-center"
+                style={{ 
+                  fontSize: 20 * fontScale,
+                  color: textColor 
+                }}
+              >
                 Pattern Length: {patternLength} colors
               </Text>
             </View>
@@ -310,10 +379,22 @@ const MemoryPlayPattern: React.FC = () => {
 
           {gameState === 'input' && (
             <View className="items-center">
-              <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
+              <Text 
+                className="mb-4 text-3xl font-bold text-center" 
+                style={{ 
+                  fontSize: 32 * fontScale,
+                  color: PALETTE.teal 
+                }}
+              >
                 ✋ Your Turn
               </Text>
-              <Text className="mb-6 text-xl text-center text-gray-600">
+              <Text 
+                className="mb-6 text-xl text-center"
+                style={{ 
+                  fontSize: 20 * fontScale,
+                  color: textColor 
+                }}
+              >
                 {userInput.length}/{patternLength} {attempt > 0 && "⚠️ (Second Try)"}
               </Text>
             </View>
@@ -321,9 +402,13 @@ const MemoryPlayPattern: React.FC = () => {
 
           {gameState === 'feedback' && (
             <View className="items-center">
-              <Text className="mb-4 text-3xl font-bold text-center" style={{ 
-                color: isPatternComplete ? PALETTE.teal : PALETTE.orange 
-              }}>
+              <Text 
+                className="mb-4 text-3xl font-bold text-center" 
+                style={{ 
+                  fontSize: 32 * fontScale,
+                  color: isPatternComplete ? PALETTE.teal : PALETTE.orange 
+                }}
+              >
                 {isPatternComplete ? "✓ Correct!" : "↻ Try Again!"}
               </Text>
             </View>
@@ -340,7 +425,7 @@ const MemoryPlayPattern: React.FC = () => {
                   key={index}
                   className="items-center justify-center rounded-3xl"
                   style={{
-                    backgroundColor: isFlashing ? '#FFFFFF' : color,
+                    backgroundColor: isFlashing ? (isDark ? '#1a1a1a' : '#FFFFFF') : color,
                     borderWidth: isFlashing ? 6 : 3,
                     borderColor: color,
                     height: 100, // Larger (was 80)
@@ -366,7 +451,13 @@ const MemoryPlayPattern: React.FC = () => {
 
         {/* Progress - LARGER text */}
         <View className="items-center">
-          <Text className="mb-3 text-xl font-semibold text-gray-600">
+          <Text 
+            className="mb-3 text-xl font-semibold"
+            style={{ 
+              fontSize: 20 * fontScale,
+              color: textColor 
+            }}
+          >
             Round:{" "}
             <Text className="font-bold" style={{ color: PALETTE.teal }}>
               {Math.min(currentRound + 1, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
