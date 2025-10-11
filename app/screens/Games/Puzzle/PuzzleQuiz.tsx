@@ -138,10 +138,10 @@ import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 type Nav = NativeStackNavigationProp<RootStackParamList, "BrainGames">;
 
 const games = [
-  { key: "odd",   name: "Find Odd One",      icon: "🔍", route: "OddPlay" as const },
-  { key: "seq",   name: "Next Number Game",  icon: "🔢", route: "SeqPlay" as const },
-  { key: "arrow", name: "Follow The Arrow",  icon: "↕️", route: "ArrowPlay" as const },
-  { key: "comp",  name: "Find Largest",      icon: "🔺", route: "CompPlay" as const },
+  // { key: "odd",   name: "Find Odd One",      icon: "🔍", route: "OddPlay" as const },
+  // { key: "seq",   name: "Next Number Game",  icon: "🔢", route: "SeqPlay" as const },
+  // { key: "arrow", name: "Follow The Arrow",  icon: "↕️", route: "ArrowPlay" as const },
+  // { key: "comp",  name: "Find Largest",      icon: "🔺", route: "CompPlay" as const },
   { key: "jigsaw", name: "Jigsaw",           icon: "🧩", route: "JigsawPlay" as const },
   { key: "sudoku", name: "Sudoku",           icon: "🧮", route: "SudokuPlay" as const },
   { key: "target", name: "Target Number",    icon: "🎯", route: "TargetNumberPlay" as const },
