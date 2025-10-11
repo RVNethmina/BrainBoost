@@ -1,27 +1,25 @@
-// app/src/screens/Games/MemoryMatch/MemoryPlayNumbers.tsx
+// app/screens/Games/MemoryMatch/MemoryPlayNumbers.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { HapticFeedbackService } from "../../../services/HapticFeedbackService";
+import { generateDailySeed, SeededRandom } from "../../../utils/SeededRandom";
+import { auth } from '@/config/firebaseConfig';
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSettings } from "@/app/contexts/SettingsContext";
 
 type MemoryPlayNumbersNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "MemoryPlayLevel3"
 >;
 
-const INITIAL_TIME = 300; // 5 minutes (increased from 4)
-const TOTAL_ROUNDS = 8; // Reduced from 10 for elderly
-const SHOW_TIME = 4000; // 4 seconds (increased from 3)
+const INITIAL_TIME = 300;
+const TOTAL_ROUNDS = 8;
+const SHOW_TIME = 4000;
 
 const MemoryPlayNumbers: React.FC = () => {
   const navigation = useNavigation<MemoryPlayNumbersNavigationProp>();
-  const { theme, getFontScale } = useSettings();
-  const fontScale = getFontScale();
-  const isDark = theme === 'dark';
   
   const [timeLeft, setTimeLeft] = useState<number>(INITIAL_TIME);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -35,36 +33,33 @@ const MemoryPlayNumbers: React.FC = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const showIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastWarningRef = useRef<number>(0);
+  const randomGen = useRef<SeededRandom | null>(null);
 
-  // Dynamic colors based on theme
-  const bgColor = isDark ? '#1a1a1a' : '#fff';
-  const textColor = isDark ? '#fff' : PALETTE.darkGray;
-  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
-  const cardBg = isDark ? '#2a2a2a' : '#fff';
-  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
-  const inputBg = isDark ? '#3a3a3a' : '#F9FAFB';
-  const feedbackBg = isDark ? '#3a3a3a' : '#F9FAFB';
-  const errorBg = isDark ? '#4a2a2a' : '#FEE2E2';
+  useEffect(() => {
+    const userId = auth.currentUser?.uid || 'guest';
+    const seed = generateDailySeed(userId);
+    randomGen.current = new SeededRandom(seed);
+    console.log(`Numbers game initialized with seed for user: ${userId}`);
+  }, []);
 
-  // Generate numbers - IMPROVED for elderly (slower progression)
   const generateNumbers = (round: number): number[] => {
-    const digitCount = Math.min(3 + Math.floor(round / 3), 6); // Slower: 3->4->5->6 max
+    const digitCount = Math.min(3 + Math.floor(round / 3), 6);
     const numbers: number[] = [];
+    const rng = randomGen.current!;
     
     for (let i = 0; i < digitCount; i++) {
       if (i === 0) {
-        numbers.push(Math.floor(Math.random() * 9) + 1);
+        numbers.push(rng.nextInt(9) + 1);
       } else {
-        numbers.push(Math.floor(Math.random() * 10));
+        numbers.push(rng.nextInt(10));
       }
     }
     
     return numbers;
   };
 
-  // Initialize round
   useEffect(() => {
-    if (currentRound < TOTAL_ROUNDS) {
+    if (currentRound < TOTAL_ROUNDS && randomGen.current) {
       const numbers = generateNumbers(currentRound);
       setCurrentNumbers(numbers);
       setUserInput('');
@@ -78,7 +73,6 @@ const MemoryPlayNumbers: React.FC = () => {
     }
   }, [currentRound]);
 
-  // Timer with haptic warnings
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -107,15 +101,14 @@ const MemoryPlayNumbers: React.FC = () => {
     };
   }, [isRunning]);
 
-  // Show timer
   useEffect(() => {
-    if (gameState === 'showing' && showTimeLeft > 0) {
+    if (gameState === 'showing' && showTimeLeft > 0 && isRunning) {
       if (showIntervalRef.current) clearInterval(showIntervalRef.current);
       showIntervalRef.current = setInterval(() => {
         setShowTimeLeft((t) => {
           if (t <= 1) {
             setGameState('input');
-            HapticFeedbackService.buttonPress(); // Ready signal
+            HapticFeedbackService.buttonPress();
             return 0;
           }
           return t - 1;
@@ -123,7 +116,7 @@ const MemoryPlayNumbers: React.FC = () => {
       }, 1000);
     }
 
-    if (gameState !== 'showing' && showIntervalRef.current) {
+    if ((gameState !== 'showing' || !isRunning) && showIntervalRef.current) {
       clearInterval(showIntervalRef.current);
       showIntervalRef.current = null;
     }
@@ -134,9 +127,8 @@ const MemoryPlayNumbers: React.FC = () => {
         showIntervalRef.current = null;
       }
     };
-  }, [gameState, showTimeLeft]);
+  }, [gameState, showTimeLeft, isRunning]);
 
-  // Time up
   useEffect(() => {
     if (timeLeft <= 0) {
       HapticFeedbackService.gameEnd();
@@ -144,7 +136,6 @@ const MemoryPlayNumbers: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Cleanup
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
@@ -168,7 +159,7 @@ const MemoryPlayNumbers: React.FC = () => {
   const handleNumberInput = (digit: string) => {
     if (gameState !== 'input' || !isRunning) return;
     
-    HapticFeedbackService.selection(); // Haptic on keypress
+    HapticFeedbackService.selection();
     
     if (digit === 'clear') {
       setUserInput('');
@@ -194,9 +185,9 @@ const MemoryPlayNumbers: React.FC = () => {
     if (isCorrect) {
       const points = currentNumbers.length * 10;
       setScore(s => s + points);
-      HapticFeedbackService.correctAnswer(); // Success haptic
+      HapticFeedbackService.correctAnswer();
     } else {
-      HapticFeedbackService.wrongAnswer(); // Wrong haptic
+      HapticFeedbackService.wrongAnswer();
     }
     
     setGameState('feedback');
@@ -209,36 +200,32 @@ const MemoryPlayNumbers: React.FC = () => {
         HapticFeedbackService.levelUp();
         setCurrentRound(r => r + 1);
       }
-    }, 2500); // Longer feedback time for elderly
+    }, 2500);
   };
 
-  const endGame = (reason: "time" | "finished") => {
-    setIsRunning(false);
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (showIntervalRef.current) {
-      clearInterval(showIntervalRef.current);
-      showIntervalRef.current = null;
-    }
-    
-    const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
-    const maxPossibleScore = TOTAL_ROUNDS * 60; // Approximate max
-    const percentageScore = (score / maxPossibleScore) * 100;
-    HapticFeedbackService.scoreBasedFeedback(percentageScore);
-    
-    navigation.navigate("MemoryResults" as any, {
-      score,
-      totalQuestions: TOTAL_ROUNDS,
-      timeTaken,
-      endedBy: reason,
-      gameType: 'numbers',
-      level: 3,
-      difficulty: 'hard'
-    } as any);
-  };
-
+const endGame = (reason: "time" | "finished") => {
+  setIsRunning(false);
+  if (intervalRef.current) {
+    clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }
+  if (showIntervalRef.current) {
+    clearInterval(showIntervalRef.current);
+    showIntervalRef.current = null;
+  }
+  
+  const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
+  
+  navigation.navigate("MemoryResults" as any, {
+    score,                      // Raw score (10-60 points per correct answer)
+    totalQuestions: TOTAL_ROUNDS,  // 8 rounds total
+    timeTaken,
+    endedBy: reason,
+    gameType: 'numbers',
+    level: 3,
+    difficulty: 'hard'
+  } as any);
+}; 
   const handleStart = () => {
     setIsRunning(true);
     setGameState('showing');
@@ -261,11 +248,10 @@ const MemoryPlayNumbers: React.FC = () => {
   const isCorrect = userInput === correctAnswer;
 
   return (
-    <View className="flex-1" style={{ backgroundColor: bgColor }}>
-      {/* Header */}
+    <View className="flex-1 bg-white">
       <View
         className="flex-row items-center justify-between px-5 pt-10 pb-4"
-        style={{ backgroundColor: headerBg }}
+        style={{ backgroundColor: PALETTE.lightPink }}
       >
         <TouchableOpacity
           onPress={() => {
@@ -276,67 +262,25 @@ const MemoryPlayNumbers: React.FC = () => {
           className="items-center justify-center w-12 h-12 rounded-xl"
           style={{ backgroundColor: PALETTE.lightTeal }}
         >
-          <Text className="text-2xl" style={{ color: PALETTE.darkGray }}>←</Text>
+          <Text className="text-2xl">←</Text>
         </TouchableOpacity>
 
         <View className="flex-row items-center gap-4">
           <View className="items-center">
-            <Text 
-              className="font-semibold" 
-              style={{ 
-                fontSize: 14 * fontScale,
-                color: secondaryTextColor 
-              }}
-            >
-              Time
-            </Text>
-            <Text 
-              className="font-bold" 
-              style={{ 
-                fontSize: 18 * fontScale,
-                color: timeLeft < 60 ? PALETTE.red : PALETTE.teal 
-              }}
-            >
+            <Text className="text-base font-semibold text-gray-600">Time</Text>
+            <Text className="text-xl font-bold" style={{ color: timeLeft < 60 ? PALETTE.red : PALETTE.teal }}>
               {formatTime(timeLeft)}
             </Text>
           </View>
           <View className="items-center">
-            <Text 
-              className="font-semibold" 
-              style={{ 
-                fontSize: 14 * fontScale,
-                color: secondaryTextColor 
-              }}
-            >
-              Score
-            </Text>
-            <Text 
-              className="font-bold" 
-              style={{ 
-                fontSize: 18 * fontScale,
-                color: PALETTE.teal 
-              }}
-            >
+            <Text className="text-base font-semibold text-gray-600">Score</Text>
+            <Text className="text-xl font-bold" style={{ color: PALETTE.teal }}>
               {score}
             </Text>
           </View>
           <View className="items-center">
-            <Text 
-              className="font-semibold" 
-              style={{ 
-                fontSize: 14 * fontScale,
-                color: secondaryTextColor 
-              }}
-            >
-              Round
-            </Text>
-            <Text 
-              className="font-bold" 
-              style={{ 
-                fontSize: 18 * fontScale,
-                color: PALETTE.orange 
-              }}
-            >
+            <Text className="text-base font-semibold text-gray-600">Round</Text>
+            <Text className="text-xl font-bold" style={{ color: PALETTE.orange }}>
               {currentRound + 1}/{TOTAL_ROUNDS}
             </Text>
           </View>
@@ -344,9 +288,7 @@ const MemoryPlayNumbers: React.FC = () => {
 
         <View style={{ width: 44 }}>
           {gameState === 'start' ? (
-            <TouchableOpacity onPress={handleStart}>
-              <Text className="text-2xl">▶️</Text>
-            </TouchableOpacity>
+            <View style={{ width: 44 }} />
           ) : isRunning ? (
             <TouchableOpacity onPress={handlePause}>
               <Text className="text-2xl">⏸️</Text>
@@ -359,30 +301,17 @@ const MemoryPlayNumbers: React.FC = () => {
         </View>
       </View>
 
-      {/* Game Area */}
       <View className="justify-center flex-1 px-5">
         <View
           className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
-          style={{ backgroundColor: cardBg, borderColor: PALETTE.lightTeal }}
+          style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
         >
           {gameState === 'start' && (
             <View className="items-center">
-              <Text 
-                className="mb-4 font-bold text-center" 
-                style={{ 
-                  fontSize: 32 * fontScale,
-                  color: PALETTE.teal 
-                }}
-              >
+              <Text className="mb-4 text-4xl font-bold text-center" style={{ color: PALETTE.teal }}>
                 Number Memory
               </Text>
-              <Text 
-                className="mb-6 text-center leading-7" 
-                style={{ 
-                  fontSize: 20 * fontScale,
-                  color: textColor 
-                }}
-              >
+              <Text className="mb-6 text-xl text-center text-gray-700 leading-7">
                 Study the numbers carefully, then type them back in the correct order!
               </Text>
               <TouchableOpacity
@@ -390,61 +319,33 @@ const MemoryPlayNumbers: React.FC = () => {
                 style={{ backgroundColor: PALETTE.teal }}
                 onPress={handleStart}
               >
-                <Text 
-                  className="font-semibold text-white" 
-                  style={{ fontSize: 24 * fontScale }}
-                >
-                  Start Game
-                </Text>
+                <Text className="text-2xl font-semibold text-white">Start Game</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {gameState === 'showing' && (
             <View className="items-center">
-              <Text 
-                className="mb-4 font-bold text-center" 
-                style={{ 
-                  fontSize: 28 * fontScale,
-                  color: PALETTE.teal 
-                }}
-              >
+              <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
                 👀 Study These Numbers
               </Text>
-              <Text 
-                className="mb-4 text-center font-semibold" 
-                style={{ 
-                  fontSize: 20 * fontScale,
-                  color: PALETTE.orange 
-                }}
-              >
+              <Text className="mb-4 text-xl text-center font-semibold" style={{ color: PALETTE.orange }}>
                 Time left: {showTimeLeft}s
               </Text>
               
-              {/* Large number display */}
               <View 
                 className="items-center justify-center p-8 mb-6 rounded-2xl"
-                style={{ backgroundColor: isDark ? '#3a5a5a' : PALETTE.lightTeal, minHeight: 140 }}
+                style={{ backgroundColor: PALETTE.lightTeal, minHeight: 140 }}
               >
                 <Text 
                   className="font-bold text-center"
-                  style={{ 
-                    fontSize: 56 * fontScale, 
-                    color: PALETTE.teal, 
-                    letterSpacing: 12 
-                  }}
+                  style={{ fontSize: 56, color: PALETTE.teal, letterSpacing: 12 }}
                 >
                   {currentNumbers.join(' ')}
                 </Text>
               </View>
               
-              <Text 
-                className="text-center" 
-                style={{ 
-                  fontSize: 20 * fontScale,
-                  color: secondaryTextColor 
-                }}
-              >
+              <Text className="text-xl text-center text-gray-600">
                 {currentNumbers.length} digit{currentNumbers.length !== 1 ? 's' : ''} to remember
               </Text>
             </View>
@@ -452,35 +353,22 @@ const MemoryPlayNumbers: React.FC = () => {
 
           {gameState === 'input' && (
             <View className="items-center">
-              <Text 
-                className="mb-4 font-bold text-center" 
-                style={{ 
-                  fontSize: 28 * fontScale,
-                  color: PALETTE.teal 
-                }}
-              >
+              <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
                 ✏️ Enter the Numbers
               </Text>
-              <Text 
-                className="mb-4 text-center" 
-                style={{ 
-                  fontSize: 20 * fontScale,
-                  color: secondaryTextColor 
-                }}
-              >
+              <Text className="mb-4 text-xl text-center text-gray-600">
                 Type what you remember ({userInput.length}/{currentNumbers.length})
               </Text>
               
-              {/* Input display - LARGER */}
               <View 
                 className="items-center justify-center p-6 mb-6 rounded-2xl"
-                style={{ backgroundColor: inputBg, minHeight: 100, width: '100%' }}
+                style={{ backgroundColor: '#F9FAFB', minHeight: 100, width: '100%' }}
               >
                 <Text 
                   className="font-bold text-center"
                   style={{ 
-                    fontSize: 44 * fontScale, 
-                    color: userInput.length > 0 ? PALETTE.teal : (isDark ? '#6B7280' : '#9CA3AF'),
+                    fontSize: 44, 
+                    color: userInput.length > 0 ? PALETTE.teal : '#9CA3AF',
                     letterSpacing: 8
                   }}
                 >
@@ -488,27 +376,16 @@ const MemoryPlayNumbers: React.FC = () => {
                 </Text>
               </View>
 
-              {/* Number pad - LARGER buttons */}
               <View className="w-full mb-4">
                 <View className="flex-row justify-center gap-3 mb-3">
                   {[1, 2, 3].map(num => (
                     <TouchableOpacity
                       key={num}
                       className="items-center justify-center rounded-2xl"
-                      style={{ 
-                        backgroundColor: isDark ? '#3a5a5a' : PALETTE.lightTeal, 
-                        width: 80, 
-                        height: 70 
-                      }}
+                      style={{ backgroundColor: PALETTE.lightTeal, width: 80, height: 70 }}
                       onPress={() => handleNumberInput(num.toString())}
                     >
-                      <Text 
-                        className="font-bold" 
-                        style={{ 
-                          fontSize: 28 * fontScale,
-                          color: PALETTE.teal 
-                        }}
-                      >
+                      <Text className="text-3xl font-bold" style={{ color: PALETTE.teal }}>
                         {num}
                       </Text>
                     </TouchableOpacity>
@@ -520,20 +397,10 @@ const MemoryPlayNumbers: React.FC = () => {
                     <TouchableOpacity
                       key={num}
                       className="items-center justify-center rounded-2xl"
-                      style={{ 
-                        backgroundColor: isDark ? '#3a5a5a' : PALETTE.lightTeal, 
-                        width: 80, 
-                        height: 70 
-                      }}
+                      style={{ backgroundColor: PALETTE.lightTeal, width: 80, height: 70 }}
                       onPress={() => handleNumberInput(num.toString())}
                     >
-                      <Text 
-                        className="font-bold" 
-                        style={{ 
-                          fontSize: 28 * fontScale,
-                          color: PALETTE.teal 
-                        }}
-                      >
+                      <Text className="text-3xl font-bold" style={{ color: PALETTE.teal }}>
                         {num}
                       </Text>
                     </TouchableOpacity>
@@ -545,20 +412,10 @@ const MemoryPlayNumbers: React.FC = () => {
                     <TouchableOpacity
                       key={num}
                       className="items-center justify-center rounded-2xl"
-                      style={{ 
-                        backgroundColor: isDark ? '#3a5a5a' : PALETTE.lightTeal, 
-                        width: 80, 
-                        height: 70 
-                      }}
+                      style={{ backgroundColor: PALETTE.lightTeal, width: 80, height: 70 }}
                       onPress={() => handleNumberInput(num.toString())}
                     >
-                      <Text 
-                        className="font-bold" 
-                        style={{ 
-                          fontSize: 28 * fontScale,
-                          color: PALETTE.teal 
-                        }}
-                      >
+                      <Text className="text-3xl font-bold" style={{ color: PALETTE.teal }}>
                         {num}
                       </Text>
                     </TouchableOpacity>
@@ -571,30 +428,15 @@ const MemoryPlayNumbers: React.FC = () => {
                     style={{ backgroundColor: PALETTE.orange, width: 80, height: 70 }}
                     onPress={() => handleNumberInput('clear')}
                   >
-                    <Text 
-                      className="font-bold text-white" 
-                      style={{ fontSize: 16 * fontScale }}
-                    >
-                      Clear
-                    </Text>
+                    <Text className="text-base font-bold text-white">Clear</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
                     className="items-center justify-center rounded-2xl"
-                    style={{ 
-                      backgroundColor: isDark ? '#3a5a5a' : PALETTE.lightTeal, 
-                      width: 80, 
-                      height: 70 
-                    }}
+                    style={{ backgroundColor: PALETTE.lightTeal, width: 80, height: 70 }}
                     onPress={() => handleNumberInput('0')}
                   >
-                    <Text 
-                      className="font-bold" 
-                      style={{ 
-                        fontSize: 28 * fontScale,
-                        color: PALETTE.teal 
-                      }}
-                    >
+                    <Text className="text-3xl font-bold" style={{ color: PALETTE.teal }}>
                       0
                     </Text>
                   </TouchableOpacity>
@@ -604,12 +446,7 @@ const MemoryPlayNumbers: React.FC = () => {
                     style={{ backgroundColor: PALETTE.red, width: 80, height: 70 }}
                     onPress={() => handleNumberInput('backspace')}
                   >
-                    <Text 
-                      className="font-bold text-white" 
-                      style={{ fontSize: 20 * fontScale }}
-                    >
-                      ←
-                    </Text>
+                    <Text className="text-xl font-bold text-white">←</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -617,16 +454,13 @@ const MemoryPlayNumbers: React.FC = () => {
               <TouchableOpacity
                 className="px-8 py-5 rounded-2xl"
                 style={{ 
-                  backgroundColor: userInput.length > 0 ? PALETTE.teal : (isDark ? '#555' : '#CCCCCC'),
+                  backgroundColor: userInput.length > 0 ? PALETTE.teal : '#CCCCCC',
                   width: '100%'
                 }}
                 onPress={submitAnswer}
                 disabled={userInput.length === 0}
               >
-                <Text 
-                  className="font-semibold text-center text-white" 
-                  style={{ fontSize: 24 * fontScale }}
-                >
+                <Text className="text-2xl font-semibold text-white text-center">
                   Submit Answer
                 </Text>
               </TouchableOpacity>
@@ -635,62 +469,28 @@ const MemoryPlayNumbers: React.FC = () => {
 
           {gameState === 'feedback' && (
             <View className="items-center">
-              <Text 
-                className="mb-4 font-bold text-center" 
-                style={{ 
-                  fontSize: 28 * fontScale,
-                  color: isCorrect ? PALETTE.teal : PALETTE.red 
-                }}
-              >
+              <Text className="mb-4 text-3xl font-bold text-center" style={{ 
+                color: isCorrect ? PALETTE.teal : PALETTE.red 
+              }}>
                 {isCorrect ? "✓ Correct!" : "✗ Not Quite!"}
               </Text>
               
-              <View 
-                className="p-5 mb-4 rounded-2xl" 
-                style={{ backgroundColor: feedbackBg, width: '100%' }}
-              >
-                <Text 
-                  className="mb-2 text-center" 
-                  style={{ 
-                    fontSize: 18 * fontScale,
-                    color: secondaryTextColor 
-                  }}
-                >
-                  Correct answer:
-                </Text>
+              <View className="p-5 mb-4 rounded-2xl" style={{ backgroundColor: '#F9FAFB', width: '100%' }}>
+                <Text className="mb-2 text-lg text-center text-gray-600">Correct answer:</Text>
                 <Text 
                   className="font-bold text-center"
-                  style={{ 
-                    fontSize: 40 * fontScale, 
-                    color: PALETTE.teal, 
-                    letterSpacing: 8 
-                  }}
+                  style={{ fontSize: 40, color: PALETTE.teal, letterSpacing: 8 }}
                 >
                   {correctAnswer}
                 </Text>
               </View>
               
               {userInput !== correctAnswer && (
-                <View 
-                  className="p-5 rounded-2xl" 
-                  style={{ backgroundColor: errorBg, width: '100%' }}
-                >
-                  <Text 
-                    className="mb-2 text-center" 
-                    style={{ 
-                      fontSize: 18 * fontScale,
-                      color: secondaryTextColor 
-                    }}
-                  >
-                    Your answer:
-                  </Text>
+                <View className="p-5 rounded-2xl" style={{ backgroundColor: '#FEE2E2', width: '100%' }}>
+                  <Text className="mb-2 text-lg text-center text-gray-600">Your answer:</Text>
                   <Text 
                     className="font-bold text-center"
-                    style={{ 
-                      fontSize: 40 * fontScale, 
-                      color: PALETTE.red, 
-                      letterSpacing: 8 
-                    }}
+                    style={{ fontSize: 40, color: PALETTE.red, letterSpacing: 8 }}
                   >
                     {userInput || 'No answer'}
                   </Text>
@@ -700,7 +500,6 @@ const MemoryPlayNumbers: React.FC = () => {
           )}
         </View>
 
-        {/* Progress */}
         <View className="items-center">
           <View style={styles.progressTrack}>
             <View
