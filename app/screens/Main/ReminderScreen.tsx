@@ -100,9 +100,18 @@ const ReminderScreen = () => {
         );
         
         if (scheduled.length > 0) {
+          // Verify the scheduled notifications
+          const verification = await NotificationService.verifyScheduledNotifications();
+          
           Alert.alert(
             '✅ Reminders Saved!',
-            `Your reminders are set for ${reminderTime} on ${selectedDays.join(', ')}`,
+            `Your reminders are set for ${reminderTime} on:\n${selectedDays.join(', ')}\n\nScheduled: ${verification?.actualCount} notifications`,
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert(
+            '⚠️ Warning',
+            'No reminders were scheduled. Please try again.',
             [{ text: 'OK' }]
           );
         }
@@ -124,6 +133,20 @@ const ReminderScreen = () => {
 
   const handleTestNotification = async () => {
     await NotificationService.testNotification();
+  };
+
+  const handleDebug = async () => {
+    const verification = await NotificationService.verifyScheduledNotifications();
+    if (verification) {
+      Alert.alert(
+        '🐛 Debug Info',
+        `Saved IDs: ${verification.savedCount}\nActually Scheduled: ${verification.actualCount}\n\nNotifications:\n${JSON.stringify(verification.notifications.map(n => ({
+          id: n.identifier,
+          trigger: n.trigger
+        })), null, 2)}`,
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -152,12 +175,20 @@ const ReminderScreen = () => {
         <Text style={[styles.headerTitle, { fontSize: 24 * fontScale, color: textColor }]}>
           Reminders
         </Text>
-        <TouchableOpacity 
-          onPress={handleTestNotification}
-          style={[styles.backButton, { backgroundColor: PALETTE.teal }]}
-        >
-          <Text style={{ fontSize: 20 * fontScale }}>🔔</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity 
+            onPress={handleTestNotification}
+            style={[styles.backButton, { backgroundColor: PALETTE.teal }]}
+          >
+            <Text style={{ fontSize: 20 * fontScale }}>🔔</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={handleDebug}
+            style={[styles.backButton, { backgroundColor: PALETTE.lightPink }]}
+          >
+            <Text style={{ fontSize: 18 * fontScale }}>🐛</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Content */}
