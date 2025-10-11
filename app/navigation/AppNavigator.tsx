@@ -1,9 +1,14 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
-import AttentionAssessmentIntro from '../screens/Assessments/AttentionAssessmentIntro';
-import AttentionAssessmentResult from '../screens/Assessments/AttentionAssessmentResult';
-import AttentionAssessmentRun from '../screens/Assessments/AttentionAssessmentRun';
+// Remove these old Attention Assessment imports:
+// import AttentionAssessmentIntro from '../screens/Assessments/AttentionAssessmentIntro';
+// import AttentionAssessmentResult from '../screens/Assessments/AttentionAssessmentResult';
+// import AttentionAssessmentRun from '../screens/Assessments/AttentionAssessmentRun';
+
+// Add the new consolidated Attention Assessment import:
+import AttentionAssessment from '../screens/Assessments/AttentionAssessment'; // Add this import
+
 import MathAssessment from '../screens/Assessments/MathAssessment';
 import MathAssessmentResult from '../screens/Assessments/MathAssessmentResult';
 import MathAssessmentStart from '../screens/Assessments/MathAssessmentStart';
@@ -115,24 +120,27 @@ export type RootStackParamList = {
     savedId: string | null;
   } | undefined;
 
+  // Updated: Single Attention Assessment route (no params needed since it's self-contained)
+  AttentionAssessment: undefined;
 
-  AttentionAssessmentIntro: undefined;
-  AttentionAssessmentRun: undefined;
-  AttentionAssessmentResult: {
-    totalTime: number;
-    results: Array<{
-      taskId: number;
-      trialNumber: number;
-      targetPresent: boolean;
-      responseGiven: boolean;
-      responseTime: number | null;
-      accuracy: boolean;
-      timestamp: number;
-    }>;
-    overallAccuracy: number;
-    averageReactionTime: number;
-    tasksCompleted: number;
-  };
+  // Remove these old Attention Assessment routes:
+  // AttentionAssessmentIntro: undefined;
+  // AttentionAssessmentRun: undefined;
+  // AttentionAssessmentResult: {
+  //   totalTime: number;
+  //   results: Array<{
+  //     taskId: number;
+  //     trialNumber: number;
+  //     targetPresent: boolean;
+  //     responseGiven: boolean;
+  //     responseTime: number | null;
+  //     accuracy: boolean;
+  //     timestamp: number;
+  //   }>;
+  //   overallAccuracy: number;
+  //   averageReactionTime: number;
+  //   tasksCompleted: number;
+  // };
 
   // NEW Puzzle Assessment
   PuzzleAssessmentIntro: undefined;
@@ -176,6 +184,10 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="MemoryPlayLevel4" component={MemoryPlayPictures} />
       <Stack.Screen name="MemoryResults" component={MemoryResultsScreen} />
       <Stack.Screen name="MemoryTest" component={MemoryTest} />
+      
+      {/* Updated: Single Attention Assessment screen */}
+      <Stack.Screen name="AttentionAssessment" component={AttentionAssessment} />
+      
       <Stack.Screen name="Reminder" component={ReminderScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
@@ -196,13 +208,15 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="MathAssessment" component={MathAssessment} />
       <Stack.Screen name="MathAssessmentStart" component={MathAssessmentStart} />
       <Stack.Screen name="MathAssessmentResult" component={MathAssessmentResult} />
-       <Stack.Screen name="AttentionAssessmentIntro" component={AttentionAssessmentIntro} />
-      <Stack.Screen name="AttentionAssessmentRun" component={AttentionAssessmentRun} />
-      <Stack.Screen name="AttentionAssessmentResult" component={AttentionAssessmentResult} />
-       <Stack.Screen name="PuzzleAssessmentIntro" component={PuzzleAssessmentIntro} />
+      
+      {/* Remove these old Attention Assessment screens: */}
+      {/* <Stack.Screen name="AttentionAssessmentIntro" component={AttentionAssessmentIntro} /> */}
+      {/* <Stack.Screen name="AttentionAssessmentRun" component={AttentionAssessmentRun} /> */}
+      {/* <Stack.Screen name="AttentionAssessmentResult" component={AttentionAssessmentResult} /> */}
+      
+      <Stack.Screen name="PuzzleAssessmentIntro" component={PuzzleAssessmentIntro} />
       <Stack.Screen name="PuzzleAssessmentRun" component={PuzzleAssessmentRun} />
       <Stack.Screen name="PuzzleAssessmentResult" component={PuzzleAssessmentResult} />
-      
     </Stack.Navigator>
   );
 };

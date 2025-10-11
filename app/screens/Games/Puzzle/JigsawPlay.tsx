@@ -404,6 +404,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "MathResults">;
 type Diff = "easy" | "medium" | "hard";
@@ -435,10 +436,22 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
   const nav = useNavigation<Nav>();
   const route = useRoute<any>();
   // Use 'medium' difficulty for assessment if no route param is passed
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+  
   const diff: Diff = assessmentMode ? "medium" : (route.params?.difficulty || "easy");
   const N = gridSizeFor(diff);
   const initialTime = diff === "easy" ? 150 : diff === "medium" ? 120 : 120;
   const WRONG_LIMIT = 5;
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
 
   // solved reference [1..N*N]
   const solved = useMemo(
@@ -595,24 +608,28 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: PALETTE.lightPink }]}>
+      <View style={[styles.header, { backgroundColor: headerBg }]}>
         <TouchableOpacity
           onPress={() => {
             setRunning(false);
             // In assessment mode, exiting means treating it as timeUp
             assessmentMode ? end("timeUp") : nav.goBack();
           }}
-          style={[styles.iconBtn, { backgroundColor: PALETTE.lightTeal }]}
+          style={[styles.iconBtn, { 
+            backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightTeal 
+          }]}
           accessibilityRole="button"
         >
-          <Text style={styles.iconText}>←</Text>
+          <Text style={[styles.iconText, { color: textColor }]}>←</Text>
         </TouchableOpacity>
 
         <View style={styles.centerHeader}>
-          <Text style={styles.headerSub}>Jigsaw</Text>
-          <Text style={styles.headerMain}>
+          <Text style={[styles.headerSub, { color: secondaryTextColor }]}>
+            Jigsaw
+          </Text>
+          <Text style={[styles.headerMain, { color: textColor }]}>
             {formatTime(timeLeft)} · {moves} moves · {mistakes}/{WRONG_LIMIT} ❌
           </Text>
         </View>
@@ -643,9 +660,15 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
           <View style={styles.actionsRow}>
             <TouchableOpacity
               onPress={showRules}
-              style={[styles.smallBtn, { backgroundColor: "#FFF" }]}
+              style={[styles.smallBtn, { 
+              backgroundColor: isDark ? '#3a3a3a' : "#FFF",
+              borderColor: PALETTE.teal 
+            }]}
             >
-              <Text style={[styles.smallBtnText, { color: PALETTE.teal }]}>
+              <Text style={[styles.smallBtnText, { 
+              color: PALETTE.teal,
+              fontSize: 14 * fontScale
+            }]}>
                 Rules
               </Text>
             </TouchableOpacity>
@@ -654,13 +677,21 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
               onPress={resetGame}
               style={[styles.smallBtn, { backgroundColor: PALETTE.teal }]}
             >
-              <Text style={[styles.smallBtnText, { color: "white" }]}>Reset</Text>
+              <Text style={[styles.smallBtnText, { 
+              color: "white",
+              fontSize: 14 * fontScale
+            }]}>
+              Reset
+            </Text>
             </TouchableOpacity>
           </View>
         )}
 
         <View style={{ alignItems: "center", marginBottom: 8 }}>
-          <Text style={{ fontSize: 18, color: PALETTE.neutralMuted }}>
+          <Text style={{ 
+            fontSize: 18 * fontScale, 
+            color: secondaryTextColor 
+          }}>
             Tap two tiles to swap · Place all in order
           </Text>
         </View>
@@ -683,8 +714,8 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
                     backgroundColor: isSel
                       ? PALETTE.teal
                       : isFlashWrong
-                      ? "#FEE2E2"
-                      : "#FFFFFF",
+                      ? (isDark ? '#4a2a2a' : "#FEE2E2")
+                      : (isDark ? '#3a3a3a' : "#FFFFFF"),
                     borderColor: isCorrect ? PALETTE.lightTeal : PALETTE.teal,
                     shadowOpacity: isSel ? 0.25 : 0.12,
                   },
@@ -693,12 +724,21 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
                 <Text
                   style={[
                     styles.tileText,
-                    { color: isSel ? "white" : PALETTE.teal },
+                    { 
+                      color: isSel ? "white" : (isDark ? '#fff' : PALETTE.teal),
+                      fontSize: 26 * fontScale
+                    },
                   ]}
                 >
                   {num}
                 </Text>
-                {isCorrect && <Text style={styles.tinyCheck}>✓</Text>}
+                {isCorrect && (
+                  <Text style={[styles.tinyCheck, { 
+                    color: isDark ? PALETTE.lightTeal : PALETTE.teal 
+                  }]}>
+                    ✓
+                  </Text>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -713,15 +753,24 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
                 onPress={() => setRunning(true)}
                 accessibilityRole="button"
               >
-                <Text style={styles.ctaText}>Start</Text>
+                <Text style={[styles.ctaText, { fontSize: 18 * fontScale }]}>
+                Start
+              </Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={[styles.cta, { backgroundColor: PALETTE.lightPink }]}
+                style={[styles.cta, { 
+                backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightPink 
+              }]}
                 onPress={() => setRunning(false)}
                 accessibilityRole="button"
               >
-                <Text style={styles.ctaText}>Pause</Text>
+                <Text style={[styles.ctaText, { 
+                color: isDark ? '#fff' : 'white',
+                fontSize: 18 * fontScale 
+              }]}>
+                Pause
+              </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -732,7 +781,7 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "white" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -750,7 +799,7 @@ const styles = StyleSheet.create({
   },
   iconText: { fontSize: 24 },
   centerHeader: { alignItems: "center" },
-  headerSub: { fontSize: 14, color: "#6B7280" },
+  headerSub: { fontSize: 14 },
   headerMain: { fontSize: 18, fontWeight: "700" },
 
   body: { flex: 1, paddingHorizontal: 20, paddingTop: 12 },
@@ -764,9 +813,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: PALETTE.teal,
   },
-  smallBtnText: { fontSize: 14, fontWeight: "700" },
+  smallBtnText: { fontWeight: "700" },
 
   gridWrap: {
     flexDirection: "row",
@@ -787,13 +835,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-  tileText: { fontSize: 26, fontWeight: "800" },
+  tileText: { fontWeight: "800" },
   tinyCheck: {
     position: "absolute",
     bottom: 8,
     right: 10,
     fontSize: 14,
-    color: PALETTE.teal,
     opacity: 0.75,
     fontWeight: "700",
   },
@@ -802,5 +849,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 16,
   },
-  ctaText: { color: "white", fontSize: 18, fontWeight: "700" },
+  ctaText: { fontWeight: "700" },
 });
