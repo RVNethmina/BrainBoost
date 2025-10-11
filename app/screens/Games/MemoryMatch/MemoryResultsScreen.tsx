@@ -1,488 +1,324 @@
-// app/src/screens/Games/MemoryMatch/MemoryResultsScreen.tsx
-import { PALETTE } from '@/app/design/colors';
-import { RootStackParamList } from '@/app/navigation/AppNavigator';
-import { saveMemoryResult } from '@/app/services/memoryResultsService';
-import { useNavigation, useRoute } from '@react-navigation/native';
+// screens/Games/MemoryMatch/MemoryResultsScreen.tsx
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useRef, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { auth } from '@/config/firebaseConfig'; // ✅ Import auth
-import { useSettings } from '@/app/contexts/SettingsContext'; // Add this import
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { RootStackParamList } from '../../../navigation/AppNavigator';
+import { saveMemoryResult } from '../../../services/memoryResultsService';
 
-type MemoryResultsScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'MemoryResults'
->;
-
-type MemoryResultsRouteParams = {
-  score: number;
-  totalQuestions: number;
-  timeTaken: number;
-  endedBy: string;
-  gameType: 'pattern' | 'cards' | 'sequence' | 'spatial';
-  level: number;
-  difficulty: 'easy' | 'medium' | 'hard' | 'expert';
-};
-
-type SaveMemoryResultResponse =
-  | { success: true; id: string }
-  | { success: false; error: unknown };
+type MemoryResultsRouteProp = RouteProp<RootStackParamList, 'MemoryResults'>;
+type MemoryResultsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'MemoryResults'>;
 
 const MemoryResultsScreen: React.FC = () => {
-  const navigation = useNavigation<MemoryResultsScreenNavigationProp>();
-  const route = useRoute();
-  // Add settings hook
-  const { theme, getFontScale } = useSettings();
-  const fontScale = getFontScale();
-  const isDark = theme === 'dark';
-  
-  const {
-    score = 0,
-    totalQuestions = 0,
-    timeTaken = 0,
-    endedBy = 'completed',
-    gameType = 'pattern',
-    level = 1,
-    difficulty = 'easy',
-  } = (route.params as MemoryResultsRouteParams) || {};
+  const route = useRoute<MemoryResultsRouteProp>();
+  const navigation = useNavigation<MemoryResultsNavigationProp>();
+  const [saving, setSaving] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const savedRef = useRef(false);
+  const { score, totalQuestions, timeTaken, endedBy, gameType, level, difficulty } = route.params;
 
-  // Dynamic colors based on theme
-  const bgColor = isDark ? '#1a1a1a' : '#fff';
-  const textColor = isDark ? '#fff' : PALETTE.darkGray;
-  const cardBg = isDark ? '#2a2a2a' : '#fff';
-  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
-  const lightCardBg = isDark ? '#3a3a3a' : PALETTE.lightTeal;
+  // Calculate percentage
+  const percentage = totalQuestions > 0
+    ? Math.min(100, Math.round((score / totalQuestions) * 100))
+    : 0;
 
-  // Calculate percentage score
-  const percentageScore = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+  useEffect(() => {
+    const saveResult = async () => {
+      try {
+        setSaving(true);
+        setSaveError(null);
 
-  // Format time taken (seconds to mm:ss)
+        const result = await saveMemoryResult({
+          score,
+          totalQuestions,
+          timeTaken,
+          level,
+          endedBy,
+          gameType,
+          difficulty,
+        });
+
+        if (result.success) {
+          console.log('✅ Memory result saved successfully:', result.id);
+        } else {
+          console.error('❌ Failed to save memory result:', result.error);
+          setSaveError('Failed to save result');
+        }
+      } catch (error) {
+        console.error('💥 Error saving memory result:', error);
+        setSaveError('Error saving result');
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    saveResult();
+  }, [score, totalQuestions, timeTaken, level, endedBy, gameType, difficulty]);
+
+  const getPerformanceMessage = () => {
+    if (percentage >= 90) return 'Outstanding! 🌟';
+    if (percentage >= 75) return 'Great job! 🎉';
+    if (percentage >= 60) return 'Good effort! 👍';
+    if (percentage >= 40) return 'Keep practicing! 💪';
+    return 'Try again! 🎯';
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   };
 
-  // Get game type display name
-  const getGameTypeName = () => {
-    switch (gameType) {
-      case 'pattern':
-        return 'Pattern Memory';
-      case 'cards':
-        return 'Memory Cards';
-      case 'sequence':
-        return 'Sequence Memory';
-      case 'spatial':
-        return 'Spatial Memory';
-      default:
-        return 'Memory Game';
-    }
+  const getGameTypeLabel = () => {
+    const labels: Record<string, string> = {
+      pattern: 'Pattern Memory',
+      cards: 'Card Matching',
+      numbers: 'Number Memory',
+      pictures: 'Picture Memory',
+    };
+    return labels[gameType] || 'Memory Game';
   };
-
-  // Get appropriate message based on performance and how the quiz ended
-  const getEndMessage = () => {
-    if (endedBy === 'time') return "Time's up!";
-    if (endedBy === 'finished') return 'Game completed!';
-    if (endedBy === 'lives') return 'No more lives left';
-    if (endedBy === 'quit') return 'You finished early';
-    return 'Game ended';
-  };
-
-  // Get performance message
-  const getPerformanceMessage = () => {
-    if (percentageScore >= 90) return 'Outstanding memory skills!';
-    if (percentageScore >= 80) return 'Excellent memory performance!';
-    if (percentageScore >= 70) return 'Good memory work!';
-    if (percentageScore >= 60) return 'Your memory is improving!';
-    return 'Keep practicing your memory!';
-  };
-
-  // Trophy emoji helper
-  const getTrophyEmoji = () => {
-    if (percentageScore >= 90) return '🏆';
-    if (percentageScore >= 80) return '🥈';
-    if (percentageScore >= 70) return '🥉';
-    if (percentageScore >= 60) return '🎯';
-    return '💪';
-  };
-
-  // Get difficulty color
-  const getDifficultyColor = () => {
-    switch (difficulty) {
-      case 'easy':
-        return PALETTE.teal;
-      case 'medium':
-        return PALETTE.orange;
-      case 'hard':
-        return PALETTE.red;
-      case 'expert':
-        return '#9333EA';
-      default:
-        return PALETTE.teal;
-    }
-  };
-
-  // ✅ Log auth state
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      console.log(
-        'Auth state changed:',
-        user ? `${user.uid} (${user.email})` : 'Not authenticated'
-      );
-    });
-
-    return unsubscribe;
-  }, []);
-
-  // ✅ Save results once
-  useEffect(() => {
-    if (savedRef.current) return;
-    savedRef.current = true;
-
-    (async () => {
-      setSaveStatus('saving');
-      const res = (await saveMemoryResult({
-        score,
-        totalQuestions,
-        timeTaken,
-        level,
-        endedBy,
-        gameType,
-        difficulty,
-      })) as SaveMemoryResultResponse;
-
-      if (res.success) {
-        console.log('Memory result saved, id:', res.id);
-        setSaveStatus('saved');
-      } else {
-        console.error('Failed to save memory result', res.error);
-        setSaveStatus('error');
-      }
-    })();
-  }, [score, totalQuestions, timeTaken, level, endedBy, gameType, difficulty]);
 
   return (
-    <View className="flex-1" style={{ backgroundColor: bgColor }}>
-      {/* Content */}
-      <View className="items-center justify-center flex-1 p-5">
-        <View
-          className="items-center justify-center w-32 h-32 mb-6 rounded-full"
-          style={{ backgroundColor: getDifficultyColor() }}
-        >
-          <Text className="text-6xl">{getTrophyEmoji()}</Text>
-        </View>
-
-        <Text 
-          className="mb-4 text-4xl font-bold" 
-          style={{ 
-            fontSize: 36 * fontScale,
-            color: PALETTE.teal 
-          }}
-        >
-          {percentageScore >= 80
-            ? 'Excellent!'
-            : percentageScore >= 60
-            ? 'Good Job!'
-            : 'Keep Practicing!'}
-        </Text>
-
-        <Text 
-          className="mb-2 text-xl text-center"
-          style={{ 
-            fontSize: 20 * fontScale,
-            color: textColor 
-          }}
-        >
-          {getEndMessage()}
-        </Text>
-        <Text 
-          className="mb-2 text-lg text-center"
-          style={{ 
-            fontSize: 18 * fontScale,
-            color: textColor 
-          }}
-        >
-          {getPerformanceMessage()}
-        </Text>
-        <Text
-          className="mb-8 text-lg font-semibold text-center"
-          style={{ 
-            fontSize: 18 * fontScale,
-            color: getDifficultyColor() 
-          }}
-        >
-          {getGameTypeName()} - Level {level}
-        </Text>
-
-        {/* Save Status Indicator */}
-        {saveStatus === 'saving' && (
-          <Text 
-            className="mb-2 text-sm"
-            style={{ 
-              fontSize: 14 * fontScale,
-              color: secondaryTextColor 
-            }}
-          >
-            Saving your results...
-          </Text>
-        )}
-        {saveStatus === 'error' && (
-          <Text 
-            className="mb-2 text-sm text-red-500"
-            style={{ fontSize: 14 * fontScale }}
-          >
-            Couldn't save results (offline?)
-          </Text>
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Game Complete!</Text>
+        
+        {saving ? (
+          <View style={styles.savingContainer}>
+            <ActivityIndicator size="large" color="#4A90E2" />
+            <Text style={styles.savingText}>Saving your result...</Text>
+          </View>
+        ) : saveError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>⚠️ {saveError}</Text>
+            <Text style={styles.errorSubtext}>Your score is displayed below</Text>
+          </View>
+        ) : (
+          <View style={styles.savedContainer}>
+            <Text style={styles.savedText}>✓ Result saved successfully</Text>
+          </View>
         )}
 
-        <View className="w-full mb-8 space-y-4">
-          <View 
-            className="p-5 rounded-2xl" 
-            style={{ backgroundColor: lightCardBg }}
-          >
-            <View className="flex-row justify-between">
-              <View className="items-center flex-1">
-                <Text 
-                  className="text-2xl font-bold" 
-                  style={{ 
-                    fontSize: 24 * fontScale,
-                    color: PALETTE.teal 
-                  }}
-                >
-                  {formatTime(timeTaken)}
-                </Text>
-                <Text 
-                  className="text-gray-600"
-                  style={{ 
-                    fontSize: 16 * fontScale,
-                    color: secondaryTextColor 
-                  }}
-                >
-                  Time
-                </Text>
-              </View>
-              <View className="items-center flex-1">
-                <Text 
-                  className="text-2xl font-bold" 
-                  style={{ 
-                    fontSize: 24 * fontScale,
-                    color: PALETTE.teal 
-                  }}
-                >
-                  {score}
-                </Text>
-                <Text 
-                  className="text-gray-600"
-                  style={{ 
-                    fontSize: 16 * fontScale,
-                    color: secondaryTextColor 
-                  }}
-                >
-                  Score
-                </Text>
-              </View>
-              <View className="items-center flex-1">
-                <Text 
-                  className="text-2xl font-bold" 
-                  style={{ 
-                    fontSize: 24 * fontScale,
-                    color: PALETTE.teal 
-                  }}
-                >
-                  {percentageScore}%
-                </Text>
-                <Text 
-                  className="text-gray-600"
-                  style={{ 
-                    fontSize: 16 * fontScale,
-                    color: secondaryTextColor 
-                  }}
-                >
-                  Accuracy
-                </Text>
-              </View>
-            </View>
+        <View style={styles.statsContainer}>
+          <View style={styles.statBox}>
+            <Text style={styles.statLabel}>Game Type</Text>
+            <Text style={styles.statValue}>{getGameTypeLabel()}</Text>
           </View>
 
-          {/* Achievements */}
-          {percentageScore >= 90 && (
-            <View 
-              className="p-4 rounded-2xl" 
-              style={{ backgroundColor: isDark ? '#4a3a00' : '#FEF3C7' }}
-            >
-              <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">⭐</Text>
-                <View>
-                  <Text 
-                    className="font-bold"
-                    style={{ 
-                      fontSize: 16 * fontScale,
-                      color: textColor 
-                    }}
-                  >
-                    Memory Master!
-                  </Text>
-                  <Text 
-                    style={{ 
-                      fontSize: 14 * fontScale,
-                      color: secondaryTextColor 
-                    }}
-                  >
-                    Outstanding performance on {difficulty} level!
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
+          <View style={styles.statBox}>
+            <Text style={styles.statLabel}>Level</Text>
+            <Text style={styles.statValue}>{level}</Text>
+          </View>
 
-          {percentageScore >= 80 && percentageScore < 90 && (
-            <View 
-              className="p-4 rounded-2xl" 
-              style={{ backgroundColor: isDark ? '#3a2a4a' : PALETTE.lightPink }}
-            >
-              <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">🧠</Text>
-                <View>
-                  <Text 
-                    className="font-bold"
-                    style={{ 
-                      fontSize: 16 * fontScale,
-                      color: textColor 
-                    }}
-                  >
-                    Sharp Memory!
-                  </Text>
-                  <Text 
-                    style={{ 
-                      fontSize: 14 * fontScale,
-                      color: secondaryTextColor 
-                    }}
-                  >
-                    Your memory skills are impressive!
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
-
-          {difficulty === 'expert' && percentageScore >= 70 && (
-            <View 
-              className="p-4 rounded-2xl" 
-              style={{ backgroundColor: isDark ? '#2a3a4a' : '#E0E7FF' }}
-            >
-              <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">💎</Text>
-                <View>
-                  <Text 
-                    className="font-bold"
-                    style={{ 
-                      fontSize: 16 * fontScale,
-                      color: textColor 
-                    }}
-                  >
-                    Expert Challenge Complete!
-                  </Text>
-                  <Text 
-                    style={{ 
-                      fontSize: 14 * fontScale,
-                      color: secondaryTextColor 
-                    }}
-                  >
-                    You tackled the hardest memory challenge!
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
+          <View style={styles.statBox}>
+            <Text style={styles.statLabel}>Difficulty</Text>
+            <Text style={styles.statValue}>{difficulty.toUpperCase()}</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Action Buttons */}
-      <View className="p-5 space-y-4">
-        <TouchableOpacity
-          className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: getDifficultyColor() }}
-          onPress={() => {
-            switch (gameType) {
-              case 'pattern':
-                navigation.navigate('MemoryPlayLevel1');
-                break;
-              case 'cards':
-                navigation.navigate('MemoryPlayLevel2');
-                break;
-              case 'sequence':
-                navigation.navigate('MemoryPlayLevel3');
-                break;
-              case 'spatial':
-                navigation.navigate('MemoryPlayLevel4');
-                break;
-              default:
-                navigation.navigate('MemoryQuiz');
-            }
-          }}
-        >
-          <Text className="mr-2 text-2xl">🎯</Text>
-          <Text 
-            className="text-xl font-semibold text-white"
-            style={{ fontSize: 20 * fontScale }}
-          >
-            Play Same Game
+        <View style={styles.scoreContainer}>
+          <Text style={styles.performanceText}>{getPerformanceMessage()}</Text>
+          <Text style={styles.scoreText}>{percentage}%</Text>
+          <Text style={styles.scoreDetail}>
+            {score} / {totalQuestions} correct
           </Text>
-        </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: PALETTE.teal }}
-          onPress={() => navigation.navigate('MemoryQuiz')}
-        >
-          <Text className="mr-2 text-2xl">🔄</Text>
-          <Text 
-            className="text-xl font-semibold text-white"
-            style={{ fontSize: 20 * fontScale }}
-          >
-            Try Different Level
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.detailsContainer}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Time Taken:</Text>
+            <Text style={styles.detailValue}>{formatTime(timeTaken)}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Ended By:</Text>
+            <Text style={styles.detailValue}>{endedBy}</Text>
+          </View>
+        </View>
 
-        <TouchableOpacity
-          className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: lightCardBg }}
-          onPress={() => navigation.navigate('BrainGames')}
-        >
-          <Text className="mr-2 text-2xl">🎮</Text>
-          <Text 
-            className="text-xl font-semibold"
-            style={{ 
-              fontSize: 20 * fontScale,
-              color: textColor 
-            }}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, styles.primaryButton]}
+            onPress={() => navigation.navigate('MemoryQuiz')}
           >
-            More Games
-          </Text>
-        </TouchableOpacity>
+            <Text style={styles.buttonText}>Play Again</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: lightCardBg }}
-          onPress={() => navigation.navigate('Home')}
-        >
-          <Text className="mr-2 text-2xl">🏠</Text>
-          <Text 
-            className="text-xl font-semibold"
-            style={{ 
-              fontSize: 20 * fontScale,
-              color: textColor 
-            }}
+          <TouchableOpacity
+            style={[styles.button, styles.secondaryButton]}
+            onPress={() => navigation.navigate('Home')}
           >
-            Home
-          </Text>
-        </TouchableOpacity>
+            <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+              Back to Home
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F7FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 30,
+    width: '100%',
+    maxWidth: 500,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  savingContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  savingText: {
+    marginTop: 10,
+    color: '#7F8C8D',
+    fontSize: 14,
+  },
+  errorContainer: {
+    backgroundColor: '#FFF3CD',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FFC107',
+  },
+  errorText: {
+    color: '#856404',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  errorSubtext: {
+    color: '#856404',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  savedContainer: {
+    backgroundColor: '#D4EDDA',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#C3E6CB',
+  },
+  savedText: {
+    color: '#155724',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 25,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 12,
+    borderRadius: 10,
+    marginHorizontal: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#7F8C8D',
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+  },
+  scoreContainer: {
+    alignItems: 'center',
+    marginBottom: 25,
+    paddingVertical: 20,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 15,
+  },
+  performanceText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#4A90E2',
+    marginBottom: 10,
+  },
+  scoreText: {
+    fontSize: 56,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+    marginBottom: 5,
+  },
+  scoreDetail: {
+    fontSize: 16,
+    color: '#7F8C8D',
+  },
+  detailsContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 25,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#7F8C8D',
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#2C3E50',
+    fontWeight: '600',
+  },
+  buttonContainer: {
+    gap: 12,
+  },
+  button: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  primaryButton: {
+    backgroundColor: '#4A90E2',
+  },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  secondaryButtonText: {
+    color: '#4A90E2',
+  },
+});
 
 export default MemoryResultsScreen;

@@ -1,28 +1,25 @@
-// app/src/screens/Games/MemoryMatch/MemoryPlayPattern.tsx
+// app/screens/Games/MemoryMatch/MemoryPlayPattern.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { HapticFeedbackService } from "../../../services/HapticFeedbackService";
+import { generateDailySeed, SeededRandom } from "../../../utils/SeededRandom";
+import { auth } from '@/config/firebaseConfig';
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type MemoryPlayPatternNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "MemoryPlayLevel1"
 >;
 
-const INITIAL_TIME = 240; // 4 minutes (increased from 3)
+const INITIAL_TIME = 240;
 const TOTAL_ROUNDS = 8;
 const COLORS = [PALETTE.teal, PALETTE.orange, PALETTE.red, '#9333EA', '#059669', '#DC2626'];
 
 const MemoryPlayPattern: React.FC = () => {
   const navigation = useNavigation<MemoryPlayPatternNavigationProp>();
-  // Add settings hook
-  const { theme, getFontScale } = useSettings();
-  const fontScale = getFontScale();
-  const isDark = theme === 'dark';
   
   const [timeLeft, setTimeLeft] = useState<number>(INITIAL_TIME);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -36,42 +33,51 @@ const MemoryPlayPattern: React.FC = () => {
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastWarningRef = useRef<number>(0);
+  const randomGen = useRef<SeededRandom | null>(null);
 
-  // Dynamic colors based on theme
-  const bgColor = isDark ? '#1a1a1a' : '#fff';
-  const textColor = isDark ? '#fff' : PALETTE.darkGray;
-  const cardBg = isDark ? '#2a2a2a' : '#fff';
-  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  // Initialize seeded random generator with user ID
+  useEffect(() => {
+    const userId = auth.currentUser?.uid || 'guest';
+    const seed = generateDailySeed(userId);
+    randomGen.current = new SeededRandom(seed);
+    console.log(`Pattern game initialized with seed for user: ${userId}`);
+  }, []);
 
-  // Generate pattern - IMPROVED for elderly (slower progression)
+  // Generate pattern with seeded randomness
   const generatePattern = (round: number): number[] => {
-    const length = Math.min(3 + Math.floor(round / 3), 6); // Slower: 3->4->5->6 max
+    const length = Math.min(3 + Math.floor(round / 3), 6);
     const pattern: number[] = [];
+    const rng = randomGen.current!;
+    
     for (let i = 0; i < length; i++) {
-      pattern.push(Math.floor(Math.random() * 6));
+      pattern.push(rng.nextInt(6));
     }
     return pattern;
   };
 
-  // Initialize game
+  // Initialize game - auto-start removed
   useEffect(() => {
-    if (currentRound < TOTAL_ROUNDS) {
+    if (currentRound < TOTAL_ROUNDS && randomGen.current) {
       const pattern = generatePattern(currentRound);
       setCurrentPattern(pattern);
       setUserInput([]);
-      setGameState('showing');
       setAttempt(0);
+      
+      if (currentRound === 0) {
+        setGameState('start');
+      } else {
+        setGameState('showing');
+      }
     }
   }, [currentRound]);
 
-  // Timer effect with haptic warnings
+  // Timer effect
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       intervalRef.current = setInterval(() => {
         setTimeLeft((t) => {
           const newTime = t - 1;
-          // Haptic time warnings for elderly users
           if (newTime !== lastWarningRef.current) {
             HapticFeedbackService.timeBasedWarning(newTime, INITIAL_TIME);
             lastWarningRef.current = newTime;
@@ -102,33 +108,33 @@ const MemoryPlayPattern: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Show pattern sequence - IMPROVED with haptic
+  // Show pattern sequence
   useEffect(() => {
-    if (gameState === 'showing') {
+    if (gameState === 'showing' && isRunning) {
       let index = 0;
       const showNext = () => {
         if (index < currentPattern.length) {
           setFlashingIndex(currentPattern[index]);
-          HapticFeedbackService.cardFlip(); // Haptic for each pattern step
+          HapticFeedbackService.cardFlip();
           setTimeout(() => {
             setFlashingIndex(-1);
             setTimeout(() => {
               index++;
               showNext();
-            }, 400); // Slower for elderly (was 300)
-          }, 700); // Longer flash (was 600)
+            }, 400);
+          }, 700);
         } else {
           setTimeout(() => {
             setGameState('input');
-            HapticFeedbackService.buttonPress(); // Ready signal
+            HapticFeedbackService.buttonPress();
           }, 600);
         }
       };
       showNext();
     }
-  }, [gameState, currentPattern]);
+  }, [gameState, currentPattern, isRunning]);
 
-  // Cleanup on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
@@ -148,17 +154,16 @@ const MemoryPlayPattern: React.FC = () => {
   const handleColorPress = (colorIndex: number) => {
     if (gameState !== 'input' || !isRunning) return;
 
-    HapticFeedbackService.selection(); // Haptic on press
+    HapticFeedbackService.selection();
     const newInput = [...userInput, colorIndex];
     setUserInput(newInput);
 
-    // Check if pattern is complete
     if (newInput.length === currentPattern.length) {
       const isCorrect = JSON.stringify(newInput) === JSON.stringify(currentPattern);
       
       if (isCorrect) {
         setScore(s => s + 1);
-        HapticFeedbackService.correctAnswer(); // Success haptic
+        HapticFeedbackService.correctAnswer();
         setGameState('feedback');
         setTimeout(() => {
           if (currentRound + 1 >= TOTAL_ROUNDS) {
@@ -170,14 +175,13 @@ const MemoryPlayPattern: React.FC = () => {
           }
         }, 1500);
       } else {
-        // Allow one retry per round
         if (attempt === 0) {
           setAttempt(1);
           setUserInput([]);
-          HapticFeedbackService.warning(); // Retry haptic
+          HapticFeedbackService.warning();
           setGameState('showing');
         } else {
-          HapticFeedbackService.wrongAnswer(); // Failed haptic
+          HapticFeedbackService.wrongAnswer();
           setGameState('feedback');
           setTimeout(() => {
             if (currentRound + 1 >= TOTAL_ROUNDS) {
@@ -193,29 +197,28 @@ const MemoryPlayPattern: React.FC = () => {
   };
 
   const endGame = (reason: "time" | "finished") => {
-    setIsRunning(false);
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    
-    const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
-    const percentageScore = (score / TOTAL_ROUNDS) * 100;
-    HapticFeedbackService.scoreBasedFeedback(percentageScore);
-    
-    navigation.navigate("MemoryResults" as any, {
-      score,
-      totalQuestions: TOTAL_ROUNDS,
-      timeTaken,
-      endedBy: reason,
-      gameType: 'pattern',
-      level: 1,
-      difficulty: 'easy'
-    } as any);
-  };
+  setIsRunning(false);
+  if (intervalRef.current) {
+    clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }
+  
+  const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
+  
+  navigation.navigate("MemoryResults" as any, {
+    score,                      // Raw score (1 point per correct pattern)
+    totalQuestions: TOTAL_ROUNDS,  // 8 rounds total
+    timeTaken,
+    endedBy: reason,
+    gameType: 'pattern',
+    level: 1,
+    difficulty: 'easy'
+  } as any);
+};
 
   const handleStart = () => {
     setIsRunning(true);
+    setGameState('showing');
     HapticFeedbackService.gameStart();
   };
 
@@ -234,11 +237,11 @@ const MemoryPlayPattern: React.FC = () => {
   const isPatternComplete = JSON.stringify(userInput) === JSON.stringify(currentPattern);
 
   return (
-    <View className="flex-1" style={{ backgroundColor: bgColor }}>
+    <View className="flex-1 bg-white">
       {/* Header */}
       <View
         className="flex-row items-center justify-between px-5 pt-10 pb-4"
-        style={{ backgroundColor: headerBg }}
+        style={{ backgroundColor: PALETTE.lightPink }}
       >
         <TouchableOpacity
           onPress={() => {
@@ -249,59 +252,36 @@ const MemoryPlayPattern: React.FC = () => {
           className="items-center justify-center w-12 h-12 rounded-xl"
           style={{ backgroundColor: PALETTE.lightTeal }}
         >
-          <Text className="text-2xl" style={{ color: textColor }}>←</Text>
+          <Text className="text-2xl">←</Text>
         </TouchableOpacity>
 
         <View className="flex-row items-center gap-4">
           <View className="items-center mr-4">
-            <Text 
-              className="text-base font-semibold"
-              style={{ fontSize: 16 * fontScale, color: isDark ? '#ccc' : PALETTE.darkGray }}
-            >
-              Time
-            </Text>
-            <Text 
-              className="text-2xl font-bold" 
-              style={{ 
-                fontSize: 24 * fontScale,
-                color: timeLeft < 30 ? PALETTE.red : PALETTE.teal 
-              }}
-            >
+            <Text className="text-base font-semibold text-gray-600">Time</Text>
+            <Text className="text-2xl font-bold" style={{ color: timeLeft < 30 ? PALETTE.red : PALETTE.teal }}>
               {formatTime(timeLeft)}
             </Text>
           </View>
           <View className="items-center">
-            <Text 
-              className="text-base font-semibold"
-              style={{ fontSize: 16 * fontScale, color: isDark ? '#ccc' : PALETTE.darkGray }}
-            >
-              Score
-            </Text>
-            <Text 
-              className="text-2xl font-bold" 
-              style={{ 
-                fontSize: 24 * fontScale,
-                color: PALETTE.teal 
-              }}
-            >
+            <Text className="text-base font-semibold text-gray-600">Score</Text>
+            <Text className="text-2xl font-bold" style={{ color: PALETTE.teal }}>
               {score}
             </Text>
           </View>
         </View>
 
+        {/* Pause/Resume button only shown after game starts */}
         <View style={{ width: 44 }}>
-          {gameState === 'start' ? (
-            <TouchableOpacity onPress={handleStart}>
-              <Text className="text-2xl">▶️</Text>
-            </TouchableOpacity>
-          ) : isRunning ? (
-            <TouchableOpacity onPress={handlePause}>
-              <Text className="text-2xl">⏸️</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={handleResume}>
-              <Text className="text-2xl">▶️</Text>
-            </TouchableOpacity>
+          {gameState !== 'start' && (
+            isRunning ? (
+              <TouchableOpacity onPress={handlePause}>
+                <Text className="text-2xl">⏸️</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={handleResume}>
+                <Text className="text-2xl">▶️</Text>
+              </TouchableOpacity>
+            )
           )}
         </View>
       </View>
@@ -310,33 +290,14 @@ const MemoryPlayPattern: React.FC = () => {
       <View className="justify-center flex-1 px-5">
         <View
           className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
-          style={{ 
-            backgroundColor: cardBg, 
-            borderColor: PALETTE.lightTeal,
-            elevation: 5,
-            shadowColor: '#000',
-            shadowOpacity: 0.1,
-            shadowRadius: 10
-          }}
+          style={{ backgroundColor: "white", borderColor: PALETTE.lightTeal }}
         >
           {gameState === 'start' && (
             <View className="items-center">
-              <Text 
-                className="mb-4 text-4xl font-bold text-center" 
-                style={{ 
-                  fontSize: 36 * fontScale,
-                  color: PALETTE.teal 
-                }}
-              >
+              <Text className="mb-4 text-4xl font-bold text-center" style={{ color: PALETTE.teal }}>
                 Pattern Memory
               </Text>
-              <Text 
-                className="mb-6 text-xl text-center leading-7"
-                style={{ 
-                  fontSize: 20 * fontScale,
-                  color: textColor 
-                }}
-              >
+              <Text className="mb-6 text-xl text-center text-gray-700 leading-7">
                 Watch the colors light up, then tap them in the same order!
               </Text>
               <TouchableOpacity
@@ -344,34 +305,17 @@ const MemoryPlayPattern: React.FC = () => {
                 style={{ backgroundColor: PALETTE.teal }}
                 onPress={handleStart}
               >
-                <Text 
-                  className="text-2xl font-semibold text-white"
-                  style={{ fontSize: 24 * fontScale }}
-                >
-                  Start Game
-                </Text>
+                <Text className="text-2xl font-semibold text-white">Start Game</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {gameState === 'showing' && (
             <View className="items-center">
-              <Text 
-                className="mb-4 text-3xl font-bold text-center" 
-                style={{ 
-                  fontSize: 32 * fontScale,
-                  color: PALETTE.teal 
-                }}
-              >
+              <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
                 👀 Watch Carefully
               </Text>
-              <Text 
-                className="mb-6 text-xl text-center"
-                style={{ 
-                  fontSize: 20 * fontScale,
-                  color: textColor 
-                }}
-              >
+              <Text className="mb-6 text-xl text-center text-gray-600">
                 Pattern Length: {patternLength} colors
               </Text>
             </View>
@@ -379,22 +323,10 @@ const MemoryPlayPattern: React.FC = () => {
 
           {gameState === 'input' && (
             <View className="items-center">
-              <Text 
-                className="mb-4 text-3xl font-bold text-center" 
-                style={{ 
-                  fontSize: 32 * fontScale,
-                  color: PALETTE.teal 
-                }}
-              >
+              <Text className="mb-4 text-3xl font-bold text-center" style={{ color: PALETTE.teal }}>
                 ✋ Your Turn
               </Text>
-              <Text 
-                className="mb-6 text-xl text-center"
-                style={{ 
-                  fontSize: 20 * fontScale,
-                  color: textColor 
-                }}
-              >
+              <Text className="mb-6 text-xl text-center text-gray-600">
                 {userInput.length}/{patternLength} {attempt > 0 && "⚠️ (Second Try)"}
               </Text>
             </View>
@@ -402,19 +334,15 @@ const MemoryPlayPattern: React.FC = () => {
 
           {gameState === 'feedback' && (
             <View className="items-center">
-              <Text 
-                className="mb-4 text-3xl font-bold text-center" 
-                style={{ 
-                  fontSize: 32 * fontScale,
-                  color: isPatternComplete ? PALETTE.teal : PALETTE.orange 
-                }}
-              >
+              <Text className="mb-4 text-3xl font-bold text-center" style={{ 
+                color: isPatternComplete ? PALETTE.teal : PALETTE.orange 
+              }}>
                 {isPatternComplete ? "✓ Correct!" : "↻ Try Again!"}
               </Text>
             </View>
           )}
 
-          {/* Color Grid - LARGER for elderly */}
+          {/* Color Grid */}
           <View className="flex-row flex-wrap justify-center gap-4 mt-6">
             {COLORS.map((color, index) => {
               const isFlashing = flashingIndex === index;
@@ -425,10 +353,10 @@ const MemoryPlayPattern: React.FC = () => {
                   key={index}
                   className="items-center justify-center rounded-3xl"
                   style={{
-                    backgroundColor: isFlashing ? (isDark ? '#1a1a1a' : '#FFFFFF') : color,
+                    backgroundColor: isFlashing ? '#FFFFFF' : color,
                     borderWidth: isFlashing ? 6 : 3,
                     borderColor: color,
-                    height: 100, // Larger (was 80)
+                    height: 100,
                     width: '28%',
                     opacity: isDisabled ? 0.6 : 1,
                     shadowColor: '#000',
@@ -449,15 +377,9 @@ const MemoryPlayPattern: React.FC = () => {
           </View>
         </View>
 
-        {/* Progress - LARGER text */}
+        {/* Progress */}
         <View className="items-center">
-          <Text 
-            className="mb-3 text-xl font-semibold"
-            style={{ 
-              fontSize: 20 * fontScale,
-              color: textColor 
-            }}
-          >
+          <Text className="mb-3 text-xl font-semibold text-gray-600">
             Round:{" "}
             <Text className="font-bold" style={{ color: PALETTE.teal }}>
               {Math.min(currentRound + 1, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
@@ -482,7 +404,7 @@ export default MemoryPlayPattern;
 const styles = StyleSheet.create({
   progressTrack: {
     width: "100%",
-    height: 16, // Thicker (was 12)
+    height: 16,
     backgroundColor: "#E5E7EB",
     borderRadius: 8,
     overflow: "hidden",
