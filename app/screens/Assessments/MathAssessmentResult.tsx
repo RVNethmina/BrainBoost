@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Speech from "expo-speech";
 import React, { useState } from "react";
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Import the settings context
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "MathAssessmentResult">;
 
@@ -20,11 +21,18 @@ const MathAssessmentResult: React.FC = () => {
   const { results, savedId } = (route.params as RouteParams) || { results: null, savedId: null };
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  // Use settings context
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+
   if (!results) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#1a1a1a' : PALETTE.lightPink }]}>
         <View style={styles.center}>
-          <Text style={styles.errorText}>No results to show.</Text>
+          <Text style={[styles.errorText, { color: isDark ? '#fff' : PALETTE.neutralMuted }]}>
+            No results to show.
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -89,8 +97,15 @@ const MathAssessmentResult: React.FC = () => {
 
   const themeColor = getThemeColor();
 
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : PALETTE.lightPink;
+  const textColor = isDark ? '#fff' : PALETTE.teal;
+  const cardBg = isDark ? '#2a2a2a' : '#FFFFFF';
+  const mutedTextColor = isDark ? '#aaa' : PALETTE.neutralMuted;
+  const darkTextColor = isDark ? '#fff' : PALETTE.neutralDark;
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: PALETTE.lightPink }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -101,23 +116,40 @@ const MathAssessmentResult: React.FC = () => {
             <Text style={styles.trophyEmoji}>{getTrophyEmoji()}</Text>
           </View>
 
-          <Text style={[styles.performanceTitle, { color: themeColor }]}>
+          <Text style={[styles.performanceTitle, { 
+            color: themeColor,
+            fontSize: 32 * fontScale 
+          }]}>
             {getPerformanceMessage()}
           </Text>
 
-          <Text style={styles.assessmentComplete}>Assessment Complete</Text>
+          <Text style={[styles.assessmentComplete, { 
+            color: darkTextColor,
+            fontSize: 20 * fontScale 
+          }]}>
+            Assessment Complete
+          </Text>
 
-          <Text style={styles.encouragementText}>
+          <Text style={[styles.encouragementText, { 
+            color: mutedTextColor,
+            fontSize: 17 * fontScale 
+          }]}>
             {getEncouragementMessage()}
           </Text>
 
           {/* Listen Summary Button */}
           <TouchableOpacity
             onPress={speakSummary}
-            style={[styles.listenButton, { borderColor: themeColor }]}
+            style={[styles.listenButton, { 
+              borderColor: themeColor,
+              backgroundColor: isDark ? '#2a2a2a' : 'white'
+            }]}
             activeOpacity={0.7}
           >
-            <Text style={[styles.listenButtonText, { color: themeColor }]}>
+            <Text style={[styles.listenButtonText, { 
+              color: themeColor,
+              fontSize: 18 * fontScale 
+            }]}>
               {isSpeaking ? "⏸ Stop Reading" : "🔊 Listen to Summary"}
             </Text>
           </TouchableOpacity>
@@ -125,8 +157,12 @@ const MathAssessmentResult: React.FC = () => {
           {/* Save Status */}
           {savedId && (
             <View style={styles.saveStatusContainer}>
-              <View style={[styles.statusBadge, styles.statusSuccess]}>
-                <Text style={styles.statusTextSuccess}>✅ Results Saved!</Text>
+              <View style={[styles.statusBadge, styles.statusSuccess, { 
+                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.15)' 
+              }]}>
+                <Text style={[styles.statusTextSuccess, { fontSize: 15 * fontScale }]}>
+                  ✅ Results Saved!
+                </Text>
               </View>
             </View>
           )}
@@ -134,8 +170,14 @@ const MathAssessmentResult: React.FC = () => {
 
         {/* Stats Card */}
         <View style={styles.statsCardContainer}>
-          <View style={[styles.statsCard, { borderColor: themeColor }]}>
-            <Text style={[styles.statsTitle, { color: themeColor }]}>
+          <View style={[styles.statsCard, { 
+            borderColor: themeColor,
+            backgroundColor: cardBg
+          }]}>
+            <Text style={[styles.statsTitle, { 
+              color: themeColor,
+              fontSize: 24 * fontScale 
+            }]}>
               Your Performance
             </Text>
 
@@ -143,38 +185,70 @@ const MathAssessmentResult: React.FC = () => {
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
                 <View style={[styles.statCircle, { backgroundColor: `${themeColor}20` }]}>
-                  <Text style={[styles.statValue, { color: themeColor }]}>
+                  <Text style={[styles.statValue, { 
+                    color: themeColor,
+                    fontSize: 22 * fontScale 
+                  }]}>
                     {formatTime(results.timeSpent || 0)}
                   </Text>
                 </View>
-                <Text style={styles.statLabel}>Time Used</Text>
+                <Text style={[styles.statLabel, { 
+                  color: mutedTextColor,
+                  fontSize: 14 * fontScale 
+                }]}>
+                  Time Used
+                </Text>
               </View>
 
               <View style={styles.statItem}>
                 <View style={[styles.statCircle, { backgroundColor: `${themeColor}20` }]}>
-                  <Text style={[styles.statValue, { color: themeColor }]}>
+                  <Text style={[styles.statValue, { 
+                    color: themeColor,
+                    fontSize: 22 * fontScale 
+                  }]}>
                     {results.correctAnswers}/{results.totalQuestions}
                   </Text>
                 </View>
-                <Text style={styles.statLabel}>Correct</Text>
+                <Text style={[styles.statLabel, { 
+                  color: mutedTextColor,
+                  fontSize: 14 * fontScale 
+                }]}>
+                  Correct
+                </Text>
               </View>
 
               <View style={styles.statItem}>
                 <View style={[styles.statCircle, { backgroundColor: `${themeColor}20` }]}>
-                  <Text style={[styles.statValue, { color: themeColor }]}>
+                  <Text style={[styles.statValue, { 
+                    color: themeColor,
+                    fontSize: 22 * fontScale 
+                  }]}>
                     {percentage}%
                   </Text>
                 </View>
-                <Text style={styles.statLabel}>Accuracy</Text>
+                <Text style={[styles.statLabel, { 
+                  color: mutedTextColor,
+                  fontSize: 14 * fontScale 
+                }]}>
+                  Accuracy
+                </Text>
               </View>
             </View>
 
             {/* Cognitive Level */}
             {results.cognitiveLevel && (
-              <View style={styles.cognitiveContainer}>
-                <Text style={styles.cognitiveTitle}>Cognitive Level</Text>
+              <View style={[styles.cognitiveContainer, { borderTopColor: isDark ? '#3a3a3a' : '#E5E7EB' }]}>
+                <Text style={[styles.cognitiveTitle, { 
+                  color: darkTextColor,
+                  fontSize: 18 * fontScale 
+                }]}>
+                  Cognitive Level
+                </Text>
                 <View style={[styles.cognitiveBadge, { backgroundColor: `${themeColor}15` }]}>
-                  <Text style={[styles.cognitiveValue, { color: themeColor }]}>
+                  <Text style={[styles.cognitiveValue, { 
+                    color: themeColor,
+                    fontSize: 20 * fontScale 
+                  }]}>
                     {results.cognitiveLevel}
                   </Text>
                 </View>
@@ -183,19 +257,42 @@ const MathAssessmentResult: React.FC = () => {
 
             {/* Voice Metrics (if used) */}
             {results.voiceAnswersCount !== undefined && results.voiceAnswersCount > 0 && (
-              <View style={styles.voiceMetricsContainer}>
-                <Text style={styles.voiceMetricsTitle}>Voice Recognition Stats</Text>
+              <View style={[styles.voiceMetricsContainer, { borderTopColor: isDark ? '#3a3a3a' : '#E5E7EB' }]}>
+                <Text style={[styles.voiceMetricsTitle, { 
+                  color: darkTextColor,
+                  fontSize: 18 * fontScale 
+                }]}>
+                  Voice Recognition Stats
+                </Text>
                 <View style={styles.voiceMetricsGrid}>
                   <View style={styles.voiceMetricItem}>
-                    <Text style={styles.voiceMetricValue}>{results.voiceAnswersCount}</Text>
-                    <Text style={styles.voiceMetricLabel}>Voice Answers</Text>
+                    <Text style={[styles.voiceMetricValue, { 
+                      color: darkTextColor,
+                      fontSize: 24 * fontScale 
+                    }]}>
+                      {results.voiceAnswersCount}
+                    </Text>
+                    <Text style={[styles.voiceMetricLabel, { 
+                      color: mutedTextColor,
+                      fontSize: 14 * fontScale 
+                    }]}>
+                      Voice Answers
+                    </Text>
                   </View>
                   {results.avgVoiceResponseMs && (
                     <View style={styles.voiceMetricItem}>
-                      <Text style={styles.voiceMetricValue}>
+                      <Text style={[styles.voiceMetricValue, { 
+                        color: darkTextColor,
+                        fontSize: 24 * fontScale 
+                      }]}>
                         {Math.round(results.avgVoiceResponseMs / 1000)}s
                       </Text>
-                      <Text style={styles.voiceMetricLabel}>Avg Response</Text>
+                      <Text style={[styles.voiceMetricLabel, { 
+                        color: mutedTextColor,
+                        fontSize: 14 * fontScale 
+                      }]}>
+                        Avg Response
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -207,13 +304,22 @@ const MathAssessmentResult: React.FC = () => {
         {/* Achievement Badge */}
         {percentage >= 80 && (
           <View style={styles.achievementContainer}>
-            <View style={[styles.achievementBadge, { borderLeftColor: themeColor }]}>
-              <Text style={styles.achievementIcon}>⭐</Text>
+            <View style={[styles.achievementBadge, { 
+              borderLeftColor: themeColor,
+              backgroundColor: isDark ? '#2a2a2a' : 'rgba(255,255,255,0.95)'
+            }]}>
+              <Text style={[styles.achievementIcon, { fontSize: 36 * fontScale }]}>⭐</Text>
               <View style={styles.achievementContent}>
-                <Text style={[styles.achievementTitle, { color: themeColor }]}>
+                <Text style={[styles.achievementTitle, { 
+                  color: themeColor,
+                  fontSize: 20 * fontScale 
+                }]}>
                   Achievement Unlocked!
                 </Text>
-                <Text style={styles.achievementSubtitle}>
+                <Text style={[styles.achievementSubtitle, { 
+                  color: mutedTextColor,
+                  fontSize: 16 * fontScale 
+                }]}>
                   {percentage >= 90 ? "Cognitive Champion!" : "Excellent Mental Agility!"}
                 </Text>
               </View>
@@ -228,28 +334,44 @@ const MathAssessmentResult: React.FC = () => {
             onPress={() => navigation.navigate("MathAssessment")}
             activeOpacity={0.8}
           >
-            <Text style={styles.primaryButtonIcon}>🔄</Text>
-            <Text style={styles.primaryButtonText}>Try Again</Text>
+            <Text style={[styles.primaryButtonIcon, { fontSize: 24 * fontScale }]}>🔄</Text>
+            <Text style={[styles.primaryButtonText, { fontSize: 20 * fontScale }]}>
+              Try Again
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: themeColor }]}
+            style={[styles.secondaryButton, { 
+              borderColor: themeColor,
+              backgroundColor: isDark ? '#2a2a2a' : 'white'
+            }]}
             onPress={() => navigation.navigate("Assessment")}
             activeOpacity={0.8}
           >
-            <Text style={styles.secondaryButtonIcon}>📊</Text>
-            <Text style={[styles.secondaryButtonText, { color: themeColor }]}>
+            <Text style={[styles.secondaryButtonIcon, { fontSize: 24 * fontScale }]}>📊</Text>
+            <Text style={[styles.secondaryButtonText, { 
+              color: themeColor,
+              fontSize: 20 * fontScale 
+            }]}>
               View All Assessments
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.tertiaryButton}
+            style={[styles.tertiaryButton, { 
+              backgroundColor: isDark ? '#2a2a2a' : 'white',
+              borderColor: isDark ? '#3a3a3a' : '#D1D5DB'
+            }]}
             onPress={() => navigation.navigate("Home")}
             activeOpacity={0.8}
           >
-            <Text style={styles.tertiaryButtonIcon}>🏠</Text>
-            <Text style={styles.tertiaryButtonText}>Home</Text>
+            <Text style={[styles.tertiaryButtonIcon, { fontSize: 24 * fontScale }]}>🏠</Text>
+            <Text style={[styles.tertiaryButtonText, { 
+              color: mutedTextColor,
+              fontSize: 20 * fontScale 
+            }]}>
+              Home
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -279,7 +401,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: PALETTE.neutralMuted,
     fontWeight: "600",
   },
   heroSection: {
@@ -305,20 +426,15 @@ const styles = StyleSheet.create({
     fontSize: 64,
   },
   performanceTitle: {
-    fontSize: 32,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 12,
   },
   assessmentComplete: {
-    fontSize: 20,
     fontWeight: "600",
-    color: PALETTE.neutralDark,
     marginBottom: 12,
   },
   encouragementText: {
-    fontSize: 17,
-    color: PALETTE.neutralMuted,
     textAlign: "center",
     paddingHorizontal: 16,
     marginBottom: 24,
@@ -328,7 +444,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 16,
-    backgroundColor: "white",
     borderWidth: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -337,7 +452,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   listenButtonText: {
-    fontSize: 18,
     fontWeight: "700",
   },
   saveStatusContainer: {
@@ -348,13 +462,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.9)",
   },
-  statusSuccess: {
-    backgroundColor: "rgba(16, 185, 129, 0.15)",
-  },
+  statusSuccess: {},
   statusTextSuccess: {
-    fontSize: 15,
     color: PALETTE.green,
     fontWeight: "600",
   },
@@ -365,7 +475,6 @@ const styles = StyleSheet.create({
   statsCard: {
     padding: 28,
     borderRadius: 24,
-    backgroundColor: "white",
     borderWidth: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -374,7 +483,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   statsTitle: {
-    fontSize: 24,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 24,
@@ -402,26 +510,20 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statValue: {
-    fontSize: 22,
     fontWeight: "700",
   },
   statLabel: {
-    fontSize: 14,
     fontWeight: "600",
-    color: PALETTE.neutralMuted,
     textAlign: "center",
   },
   cognitiveContainer: {
     marginTop: 24,
     paddingTop: 24,
     borderTopWidth: 2,
-    borderTopColor: "#E5E7EB",
     alignItems: "center",
   },
   cognitiveTitle: {
-    fontSize: 18,
     fontWeight: "700",
-    color: PALETTE.neutralDark,
     marginBottom: 12,
   },
   cognitiveBadge: {
@@ -430,7 +532,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   cognitiveValue: {
-    fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
   },
@@ -438,12 +539,9 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingTop: 24,
     borderTopWidth: 2,
-    borderTopColor: "#E5E7EB",
   },
   voiceMetricsTitle: {
-    fontSize: 18,
     fontWeight: "700",
-    color: PALETTE.neutralDark,
     marginBottom: 16,
     textAlign: "center",
   },
@@ -455,14 +553,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   voiceMetricValue: {
-    fontSize: 24,
     fontWeight: "700",
-    color: PALETTE.neutralDark,
     marginBottom: 8,
   },
   voiceMetricLabel: {
-    fontSize: 14,
-    color: PALETTE.neutralMuted,
     textAlign: "center",
   },
   achievementContainer: {
@@ -474,7 +568,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.95)",
     borderLeftWidth: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -483,21 +576,16 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   achievementIcon: {
-    fontSize: 36,
     marginRight: 16,
   },
   achievementContent: {
     flex: 1,
   },
   achievementTitle: {
-    fontSize: 20,
     fontWeight: "700",
     marginBottom: 4,
   },
-  achievementSubtitle: {
-    fontSize: 16,
-    color: PALETTE.neutralMuted,
-  },
+  achievementSubtitle: {},
   buttonContainer: {
     paddingHorizontal: 20,
     gap: 16,
@@ -515,11 +603,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   primaryButtonIcon: {
-    fontSize: 24,
     marginRight: 12,
   },
   primaryButtonText: {
-    fontSize: 20,
     fontWeight: "700",
     color: "white",
   },
@@ -529,7 +615,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 18,
     borderRadius: 20,
-    backgroundColor: "white",
     borderWidth: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -538,11 +623,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   secondaryButtonIcon: {
-    fontSize: 24,
     marginRight: 12,
   },
   secondaryButtonText: {
-    fontSize: 20,
     fontWeight: "700",
   },
   tertiaryButton: {
@@ -551,9 +634,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 18,
     borderRadius: 20,
-    backgroundColor: "white",
     borderWidth: 2,
-    borderColor: "#D1D5DB",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -561,12 +642,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tertiaryButtonIcon: {
-    fontSize: 24,
     marginRight: 12,
   },
   tertiaryButtonText: {
-    fontSize: 20,
     fontWeight: "600",
-    color: PALETTE.neutralMuted,
   },
 });

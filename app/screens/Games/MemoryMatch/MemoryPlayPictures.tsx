@@ -1,7 +1,9 @@
-// app/src/screens/Games/MemoryMatch/MemoryPlayPictures.tsx
+// app/screens/Games/MemoryMatch/MemoryPlayPictures.tsx - COMPLETE
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { HapticFeedbackService } from "../../../services/HapticFeedbackService";
+import { generateDailySeed, SeededRandom } from "../../../utils/SeededRandom";
+import { auth } from '@/config/firebaseConfig';
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
@@ -12,11 +14,10 @@ type MemoryPlayPicturesNavigationProp = NativeStackNavigationProp<
   "MemoryPlayLevel4"
 >;
 
-const INITIAL_TIME = 300; // 5 minutes
+const INITIAL_TIME = 300;
 const TOTAL_ROUNDS = 8;
-const STUDY_TIME = 5000; // 5 seconds to study
+const STUDY_TIME = 5000;
 
-// Themed picture sets with familiar items
 const PICTURE_THEMES = {
   kitchen: {
     name: "Kitchen Items",
@@ -82,17 +83,24 @@ const MemoryPlayPictures: React.FC = () => {
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const studyIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const randomGen = useRef<SeededRandom | null>(null);
 
-  // Generate round content
+  useEffect(() => {
+    const userId = auth.currentUser?.uid || 'guest';
+    const seed = generateDailySeed(userId);
+    randomGen.current = new SeededRandom(seed);
+    console.log(`Pictures game initialized with seed for user: ${userId}`);
+  }, []);
+
   const generateRound = (round: number) => {
     const themes = Object.keys(PICTURE_THEMES);
     const themeKey = themes[round % themes.length] as keyof typeof PICTURE_THEMES;
     const theme = PICTURE_THEMES[themeKey];
+    const rng = randomGen.current!;
     
-    // Progressive difficulty: start with 3 items, increase by 1 every 2 rounds
     const itemCount = Math.min(3 + Math.floor(round / 2), 6);
     
-    const shuffledItems = [...theme.items].sort(() => Math.random() - 0.5);
+    const shuffledItems = rng.shuffle([...theme.items]);
     const itemsToStudy = shuffledItems.slice(0, itemCount).map((item, index) => ({
       ...item,
       id: `study-${index}`
@@ -105,7 +113,7 @@ const MemoryPlayPictures: React.FC = () => {
       id: `distractor-${index}`
     }));
     
-    const allChoices = [...itemsToStudy, ...distractors].sort(() => Math.random() - 0.5);
+    const allChoices = rng.shuffle([...itemsToStudy, ...distractors]);
     
     return {
       theme: themeKey,
@@ -114,9 +122,8 @@ const MemoryPlayPictures: React.FC = () => {
     };
   };
 
-  // Initialize round
   useEffect(() => {
-    if (currentRound < TOTAL_ROUNDS) {
+    if (currentRound < TOTAL_ROUNDS && randomGen.current) {
       const roundData = generateRound(currentRound);
       setCurrentTheme(roundData.theme);
       setStudyItems(roundData.studyItems);
@@ -129,19 +136,17 @@ const MemoryPlayPictures: React.FC = () => {
       } else {
         setGameState('studying');
         setStudyTimeLeft(STUDY_TIME / 1000);
-        HapticFeedbackService.levelUp(); // Haptic for new level
+        HapticFeedbackService.levelUp();
       }
     }
   }, [currentRound]);
 
-  // Main timer effect
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       intervalRef.current = setInterval(() => {
         setTimeLeft((t) => {
           const newTime = t - 1;
-          // Time warning haptic
           HapticFeedbackService.timeBasedWarning(newTime, INITIAL_TIME);
           return newTime;
         });
@@ -161,15 +166,14 @@ const MemoryPlayPictures: React.FC = () => {
     };
   }, [isRunning, timeLeft]);
 
-  // Study timer effect
   useEffect(() => {
-    if (gameState === 'studying' && studyTimeLeft > 0) {
+    if (gameState === 'studying' && studyTimeLeft > 0 && isRunning) {
       if (studyIntervalRef.current) clearInterval(studyIntervalRef.current);
       studyIntervalRef.current = setInterval(() => {
         setStudyTimeLeft((t) => {
           if (t <= 1) {
             setGameState('recall');
-            HapticFeedbackService.buttonPress(); // Gentle tap for transition
+            HapticFeedbackService.buttonPress();
             return 0;
           }
           return t - 1;
@@ -177,7 +181,7 @@ const MemoryPlayPictures: React.FC = () => {
       }, 1000);
     }
 
-    if (gameState !== 'studying' && studyIntervalRef.current) {
+    if ((gameState !== 'studying' || !isRunning) && studyIntervalRef.current) {
       clearInterval(studyIntervalRef.current);
       studyIntervalRef.current = null;
     }
@@ -188,9 +192,8 @@ const MemoryPlayPictures: React.FC = () => {
         studyIntervalRef.current = null;
       }
     };
-  }, [gameState, studyTimeLeft]);
+  }, [gameState, studyTimeLeft, isRunning]);
 
-  // Time up effect
   useEffect(() => {
     if (timeLeft <= 0) {
       HapticFeedbackService.gameEnd();
@@ -198,7 +201,6 @@ const MemoryPlayPictures: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
@@ -222,7 +224,7 @@ const MemoryPlayPictures: React.FC = () => {
   const handleItemSelect = (itemId: string) => {
     if (gameState !== 'recall' || !isRunning) return;
 
-    HapticFeedbackService.selection(); // Haptic on selection
+    HapticFeedbackService.selection();
 
     setSelectedItems(prev => {
       if (prev.includes(itemId)) {
@@ -236,7 +238,7 @@ const MemoryPlayPictures: React.FC = () => {
   const submitAnswer = () => {
     if (gameState !== 'recall' || !isRunning) return;
 
-    HapticFeedbackService.buttonPress(); // Submit button haptic
+    HapticFeedbackService.buttonPress();
 
     const studyItemIds = studyItems.map(item => item.id);
     const correctSelections = selectedItems.filter(id => studyItemIds.includes(id));
@@ -254,15 +256,14 @@ const MemoryPlayPictures: React.FC = () => {
     setFeedback({ correct: correctSelections, incorrect: incorrectSelections });
     setGameState('feedback');
     
-    // Enhanced haptic feedback based on performance
     if (accuracy === 1) {
-      HapticFeedbackService.perfectRound(); // Perfect!
+      HapticFeedbackService.correctAnswer();
     } else if (accuracy >= 0.8) {
-      HapticFeedbackService.correctAnswer(); // Great!
+      HapticFeedbackService.correctAnswer();
     } else if (accuracy >= 0.5) {
-      HapticFeedbackService.selection(); // OK
+      HapticFeedbackService.selection();
     } else {
-      HapticFeedbackService.wrongAnswer(); // Needs improvement
+      HapticFeedbackService.wrongAnswer();
     }
 
     setTimeout(() => {
@@ -276,30 +277,31 @@ const MemoryPlayPictures: React.FC = () => {
   };
 
   const endGame = (reason: "time" | "finished") => {
-    setIsRunning(false);
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (studyIntervalRef.current) {
-      clearInterval(studyIntervalRef.current);
-      studyIntervalRef.current = null;
-    }
-    
-    const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
-    navigation.navigate("MemoryResults" as any, {
-      score,
-      totalQuestions: TOTAL_ROUNDS,
-      timeTaken,
-      endedBy: reason,
-      gameType: 'pictures',
-      level: 4,
-      difficulty: 'expert'
-    } as any);
-  };
+  setIsRunning(false);
+  if (intervalRef.current) {
+    clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }
+  if (studyIntervalRef.current) {
+    clearInterval(studyIntervalRef.current);
+    studyIntervalRef.current = null;
+  }
+  
+  const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
+  
+  navigation.navigate("MemoryResults" as any, {
+    score,                      // Raw score (variable points based on accuracy)
+    totalQuestions: TOTAL_ROUNDS,  // 8 rounds total
+    timeTaken,
+    endedBy: reason,
+    gameType: 'pictures',
+    level: 4,
+    difficulty: 'expert'
+  } as any);
+};
 
   const handleStart = () => {
-    HapticFeedbackService.gameStart(); // Game start haptic
+    HapticFeedbackService.gameStart();
     setIsRunning(true);
     setGameState('studying');
     setStudyTimeLeft(STUDY_TIME / 1000);
@@ -340,7 +342,6 @@ const MemoryPlayPictures: React.FC = () => {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header - Larger touch targets */}
       <View
         className="flex-row items-center justify-between px-5 pt-12 pb-5"
         style={{ backgroundColor: PALETTE.lightPink }}
@@ -377,14 +378,7 @@ const MemoryPlayPictures: React.FC = () => {
 
         <View style={{ width: 56, height: 56 }}>
           {gameState === 'start' ? (
-            <TouchableOpacity 
-              onPress={handleStart}
-              className="items-center justify-center rounded-2xl"
-              style={{ backgroundColor: PALETTE.teal, width: 56, height: 56 }}
-              activeOpacity={0.7}
-            >
-              <Text className="text-3xl">▶️</Text>
-            </TouchableOpacity>
+            <View style={{ width: 56, height: 56 }} />
           ) : isRunning ? (
             <TouchableOpacity 
               onPress={handlePause}
@@ -407,7 +401,6 @@ const MemoryPlayPictures: React.FC = () => {
         </View>
       </View>
 
-      {/* Game Area */}
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
         {gameState === 'start' && (
           <View
@@ -446,7 +439,6 @@ const MemoryPlayPictures: React.FC = () => {
               ⏱️ {studyTimeLeft}s
             </Text>
             
-            {/* Study items grid - Larger cards */}
             <View className="flex-row flex-wrap justify-center gap-4 mb-6">
               {studyItems.map((item) => (
                 <View
@@ -486,7 +478,6 @@ const MemoryPlayPictures: React.FC = () => {
               {selectedItems.length} selected
             </Text>
             
-            {/* All choices grid - Larger touch targets */}
             <View className="flex-row flex-wrap justify-center gap-4 mb-8">
               {allChoices.map((item) => {
                 const isSelected = selectedItems.includes(item.id);
@@ -559,7 +550,6 @@ const MemoryPlayPictures: React.FC = () => {
               {feedback.correct.length} out of {studyItems.length} correct
             </Text>
 
-            {/* Show correct items */}
             <Text className="mb-4 text-xl font-bold" style={{ color: PALETTE.teal }}>
               Items to remember:
             </Text>
@@ -623,7 +613,6 @@ const MemoryPlayPictures: React.FC = () => {
           </View>
         )}
 
-        {/* Progress - Larger visual */}
         <View className="items-center mb-10">
           <Text className="mb-3 text-2xl font-bold text-gray-700">
             Round {Math.min(currentRound + 1, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}

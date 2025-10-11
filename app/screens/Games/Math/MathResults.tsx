@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Speech from "expo-speech";
 import React, { useEffect, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext";
 
 type MathResultsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -30,6 +31,10 @@ type SaveMathResultResponse =
 const MathResultsScreen: React.FC = () => {
   const navigation = useNavigation<MathResultsScreenNavigationProp>();
   const route = useRoute();
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+
   const {
     score = 0,
     totalQuestions = 0,
@@ -43,6 +48,15 @@ const MathResultsScreen: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const savedRef = useRef(false);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : PALETTE.lightPink;
+  const textColor = isDark ? '#fff' : '#374151';
+  const secondaryTextColor = isDark ? '#ccc' : '#6B7280';
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const successBg = isDark ? '#1a3a2a' : 'rgba(16, 185, 129, 0.15)';
+  const errorBg = isDark ? '#3a1a1a' : 'rgba(239, 68, 68, 0.15)';
+  const borderColor = isDark ? '#444' : '#D1D5DB';
 
   const percentageScore = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
@@ -156,7 +170,7 @@ const MathResultsScreen: React.FC = () => {
   const themeColor = getThemeColor();
 
   return (
-    <View style={[styles.container, { backgroundColor: PALETTE.lightPink }]}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -167,21 +181,40 @@ const MathResultsScreen: React.FC = () => {
             <Text style={styles.trophyEmoji}>{getTrophyEmoji()}</Text>
           </View>
 
-          <Text style={[styles.performanceTitle, { color: themeColor }]}>
+          <Text style={[styles.performanceTitle, { 
+            fontSize: 32 * fontScale,
+            color: themeColor 
+          }]}>
             {getPerformanceMessage()}
           </Text>
 
-          <Text style={styles.endMessage}>{getEndMessage()}</Text>
+          <Text style={[styles.endMessage, { 
+            fontSize: 20 * fontScale,
+            color: textColor 
+          }]}>
+            {getEndMessage()}
+          </Text>
 
-          <Text style={styles.encouragementText}>{getEncouragementMessage()}</Text>
+          <Text style={[styles.encouragementText, { 
+            fontSize: 17 * fontScale,
+            color: secondaryTextColor 
+          }]}>
+            {getEncouragementMessage()}
+          </Text>
 
           {/* Listen Summary Button */}
           <TouchableOpacity
             onPress={speakSummary}
-            style={[styles.listenButton, { borderColor: themeColor }]}
+            style={[styles.listenButton, { 
+              borderColor: themeColor,
+              backgroundColor: cardBg 
+            }]}
             activeOpacity={0.7}
           >
-            <Text style={[styles.listenButtonText, { color: themeColor }]}>
+            <Text style={[styles.listenButtonText, { 
+              fontSize: 18 * fontScale,
+              color: themeColor 
+            }]}>
               {isSpeaking ? "⏸ Stop Reading" : "🔊 Listen to Summary"}
             </Text>
           </TouchableOpacity>
@@ -189,18 +222,33 @@ const MathResultsScreen: React.FC = () => {
           {/* Save Status */}
           <View style={styles.saveStatusContainer}>
             {saveStatus === "saving" && (
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>💾 Saving results...</Text>
+              <View style={[styles.statusBadge, { backgroundColor: isDark ? '#3a3a3a' : 'rgba(255,255,255,0.9)' }]}>
+                <Text style={[styles.statusText, { 
+                  fontSize: 15 * fontScale,
+                  color: secondaryTextColor 
+                }]}>
+                  💾 Saving results...
+                </Text>
               </View>
             )}
             {saveStatus === "saved" && (
-              <View style={[styles.statusBadge, styles.statusSuccess]}>
-                <Text style={styles.statusTextSuccess}>✅ Results Saved!</Text>
+              <View style={[styles.statusBadge, { backgroundColor: successBg }]}>
+                <Text style={[styles.statusTextSuccess, { 
+                  fontSize: 15 * fontScale,
+                  color: PALETTE.teal 
+                }]}>
+                  ✅ Results Saved!
+                </Text>
               </View>
             )}
             {saveStatus === "error" && (
-              <View style={[styles.statusBadge, styles.statusError]}>
-                <Text style={styles.statusTextError}>⚠️ Could Not Save</Text>
+              <View style={[styles.statusBadge, { backgroundColor: errorBg }]}>
+                <Text style={[styles.statusTextError, { 
+                  fontSize: 15 * fontScale,
+                  color: PALETTE.red 
+                }]}>
+                  ⚠️ Could Not Save
+                </Text>
               </View>
             )}
           </View>
@@ -208,55 +256,108 @@ const MathResultsScreen: React.FC = () => {
 
         {/* Stats Card */}
         <View style={styles.statsCardContainer}>
-          <View style={[styles.statsCard, { borderColor: themeColor }]}>
-            <Text style={[styles.statsTitle, { color: themeColor }]}>
+          <View style={[styles.statsCard, { 
+            borderColor: themeColor,
+            backgroundColor: cardBg 
+          }]}>
+            <Text style={[styles.statsTitle, { 
+              fontSize: 24 * fontScale,
+              color: themeColor 
+            }]}>
               Your Performance
             </Text>
 
             {/* Main Stats */}
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <View style={[styles.statCircle, { backgroundColor: `${themeColor}20` }]}>
-                  <Text style={[styles.statValue, { color: themeColor }]}>
+                <View style={[styles.statCircle, { backgroundColor: isDark ? `${themeColor}30` : `${themeColor}20` }]}>
+                  <Text style={[styles.statValue, { 
+                    fontSize: 22 * fontScale,
+                    color: themeColor 
+                  }]}>
                     {formatTime(timeTaken)}
                   </Text>
                 </View>
-                <Text style={styles.statLabel}>Time Used</Text>
+                <Text style={[styles.statLabel, { 
+                  fontSize: 14 * fontScale,
+                  color: secondaryTextColor 
+                }]}>
+                  Time Used
+                </Text>
               </View>
 
               <View style={styles.statItem}>
-                <View style={[styles.statCircle, { backgroundColor: `${themeColor}20` }]}>
-                  <Text style={[styles.statValue, { color: themeColor }]}>
+                <View style={[styles.statCircle, { backgroundColor: isDark ? `${themeColor}30` : `${themeColor}20` }]}>
+                  <Text style={[styles.statValue, { 
+                    fontSize: 22 * fontScale,
+                    color: themeColor 
+                  }]}>
                     {score}/{totalQuestions}
                   </Text>
                 </View>
-                <Text style={styles.statLabel}>Correct</Text>
+                <Text style={[styles.statLabel, { 
+                  fontSize: 14 * fontScale,
+                  color: secondaryTextColor 
+                }]}>
+                  Correct
+                </Text>
               </View>
 
               <View style={styles.statItem}>
-                <View style={[styles.statCircle, { backgroundColor: `${themeColor}20` }]}>
-                  <Text style={[styles.statValue, { color: themeColor }]}>
+                <View style={[styles.statCircle, { backgroundColor: isDark ? `${themeColor}30` : `${themeColor}20` }]}>
+                  <Text style={[styles.statValue, { 
+                    fontSize: 22 * fontScale,
+                    color: themeColor 
+                  }]}>
                     {percentageScore}%
                   </Text>
                 </View>
-                <Text style={styles.statLabel}>Accuracy</Text>
+                <Text style={[styles.statLabel, { 
+                  fontSize: 14 * fontScale,
+                  color: secondaryTextColor 
+                }]}>
+                  Accuracy
+                </Text>
               </View>
             </View>
 
             {/* Voice Metrics (if used) */}
             {voiceAnswersCount > 0 && (
-              <View style={styles.voiceMetricsContainer}>
-                <Text style={styles.voiceMetricsTitle}>Voice Recognition Stats</Text>
+              <View style={[styles.voiceMetricsContainer, { borderTopColor: isDark ? '#444' : '#E5E7EB' }]}>
+                <Text style={[styles.voiceMetricsTitle, { 
+                  fontSize: 18 * fontScale,
+                  color: textColor 
+                }]}>
+                  Voice Recognition Stats
+                </Text>
                 <View style={styles.voiceMetricsGrid}>
                   <View style={styles.voiceMetricItem}>
-                    <Text style={styles.voiceMetricValue}>{voiceAnswersCount}</Text>
-                    <Text style={styles.voiceMetricLabel}>Voice Answers</Text>
+                    <Text style={[styles.voiceMetricValue, { 
+                      fontSize: 24 * fontScale,
+                      color: textColor 
+                    }]}>
+                      {voiceAnswersCount}
+                    </Text>
+                    <Text style={[styles.voiceMetricLabel, { 
+                      fontSize: 14 * fontScale,
+                      color: secondaryTextColor 
+                    }]}>
+                      Voice Answers
+                    </Text>
                   </View>
                   <View style={styles.voiceMetricItem}>
-                    <Text style={styles.voiceMetricValue}>
+                    <Text style={[styles.voiceMetricValue, { 
+                      fontSize: 24 * fontScale,
+                      color: textColor 
+                    }]}>
                       {avgVoiceResponseMs ? `${Math.round(avgVoiceResponseMs / 1000)}s` : "--"}
                     </Text>
-                    <Text style={styles.voiceMetricLabel}>Avg Response Time</Text>
+                    <Text style={[styles.voiceMetricLabel, { 
+                      fontSize: 14 * fontScale,
+                      color: secondaryTextColor 
+                    }]}>
+                      Avg Response Time
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -267,13 +368,22 @@ const MathResultsScreen: React.FC = () => {
         {/* Achievement Badge */}
         {percentageScore >= 80 && (
           <View style={styles.achievementContainer}>
-            <View style={[styles.achievementBadge, { borderLeftColor: themeColor }]}>
+            <View style={[styles.achievementBadge, { 
+              borderLeftColor: themeColor,
+              backgroundColor: isDark ? '#3a3a3a' : 'rgba(255,255,255,0.95)' 
+            }]}>
               <Text style={styles.achievementIcon}>⭐</Text>
               <View style={styles.achievementContent}>
-                <Text style={[styles.achievementTitle, { color: themeColor }]}>
+                <Text style={[styles.achievementTitle, { 
+                  fontSize: 20 * fontScale,
+                  color: themeColor 
+                }]}>
                   Achievement Unlocked!
                 </Text>
-                <Text style={styles.achievementSubtitle}>
+                <Text style={[styles.achievementSubtitle, { 
+                  fontSize: 16 * fontScale,
+                  color: secondaryTextColor 
+                }]}>
                   {percentageScore >= 90 ? "Math Master!" : "Great Problem Solver!"}
                 </Text>
               </View>
@@ -289,27 +399,43 @@ const MathResultsScreen: React.FC = () => {
             activeOpacity={0.8}
           >
             <Text style={styles.primaryButtonIcon}>🔄</Text>
-            <Text style={styles.primaryButtonText}>Play Again</Text>
+            <Text style={[styles.primaryButtonText, { fontSize: 20 * fontScale }]}>
+              Play Again
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: themeColor }]}
+            style={[styles.secondaryButton, { 
+              borderColor: themeColor,
+              backgroundColor: cardBg 
+            }]}
             onPress={() => navigation.navigate("BrainGames")}
             activeOpacity={0.8}
           >
             <Text style={styles.secondaryButtonIcon}>🎮</Text>
-            <Text style={[styles.secondaryButtonText, { color: themeColor }]}>
+            <Text style={[styles.secondaryButtonText, { 
+              fontSize: 20 * fontScale,
+              color: themeColor 
+            }]}>
               More Games
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.tertiaryButton}
+            style={[styles.tertiaryButton, { 
+              backgroundColor: cardBg,
+              borderColor: borderColor 
+            }]}
             onPress={() => navigation.navigate("Home")}
             activeOpacity={0.8}
           >
             <Text style={styles.tertiaryButtonIcon}>🏠</Text>
-            <Text style={styles.tertiaryButtonText}>Home</Text>
+            <Text style={[styles.tertiaryButtonText, { 
+              fontSize: 20 * fontScale,
+              color: secondaryTextColor 
+            }]}>
+              Home
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -349,20 +475,15 @@ const styles = StyleSheet.create({
     fontSize: 64,
   },
   performanceTitle: {
-    fontSize: 32,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 12,
   },
   endMessage: {
-    fontSize: 20,
     fontWeight: "600",
-    color: "#374151",
     marginBottom: 12,
   },
   encouragementText: {
-    fontSize: 17,
-    color: "#6B7280",
     textAlign: "center",
     paddingHorizontal: 16,
     marginBottom: 24,
@@ -372,7 +493,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 16,
-    backgroundColor: "white",
     borderWidth: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -381,7 +501,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   listenButtonText: {
-    fontSize: 18,
     fontWeight: "700",
   },
   saveStatusContainer: {
@@ -392,27 +511,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.9)",
-  },
-  statusSuccess: {
-    backgroundColor: "rgba(16, 185, 129, 0.15)",
-  },
-  statusError: {
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
   },
   statusText: {
-    fontSize: 15,
-    color: "#6B7280",
     fontWeight: "600",
   },
   statusTextSuccess: {
-    fontSize: 15,
-    color: "#10B981",
     fontWeight: "600",
   },
   statusTextError: {
-    fontSize: 15,
-    color: "#EF4444",
     fontWeight: "600",
   },
   statsCardContainer: {
@@ -422,7 +528,6 @@ const styles = StyleSheet.create({
   statsCard: {
     padding: 28,
     borderRadius: 24,
-    backgroundColor: "white",
     borderWidth: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -431,7 +536,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   statsTitle: {
-    fontSize: 24,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 24,
@@ -459,25 +563,19 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statValue: {
-    fontSize: 22,
     fontWeight: "700",
   },
   statLabel: {
-    fontSize: 14,
     fontWeight: "600",
-    color: "#6B7280",
     textAlign: "center",
   },
   voiceMetricsContainer: {
     marginTop: 24,
     paddingTop: 24,
     borderTopWidth: 2,
-    borderTopColor: "#E5E7EB",
   },
   voiceMetricsTitle: {
-    fontSize: 18,
     fontWeight: "700",
-    color: "#374151",
     marginBottom: 16,
     textAlign: "center",
   },
@@ -489,14 +587,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   voiceMetricValue: {
-    fontSize: 24,
     fontWeight: "700",
-    color: "#374151",
     marginBottom: 8,
   },
   voiceMetricLabel: {
-    fontSize: 14,
-    color: "#6B7280",
     textAlign: "center",
   },
   achievementContainer: {
@@ -508,7 +602,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.95)",
     borderLeftWidth: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -524,12 +617,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   achievementTitle: {
-    fontSize: 20,
     fontWeight: "700",
     marginBottom: 4,
   },
   achievementSubtitle: {
-    fontSize: 16,
     color: "#6B7280",
   },
   buttonContainer: {
@@ -553,7 +644,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   primaryButtonText: {
-    fontSize: 20,
     fontWeight: "700",
     color: "white",
   },
@@ -563,7 +653,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 18,
     borderRadius: 20,
-    backgroundColor: "white",
     borderWidth: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -576,7 +665,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   secondaryButtonText: {
-    fontSize: 20,
     fontWeight: "700",
   },
   tertiaryButton: {
@@ -585,9 +673,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 18,
     borderRadius: 20,
-    backgroundColor: "white",
     borderWidth: 2,
-    borderColor: "#D1D5DB",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -599,8 +685,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   tertiaryButtonText: {
-    fontSize: 20,
     fontWeight: "600",
-    color: "#6B7280",
   },
 });

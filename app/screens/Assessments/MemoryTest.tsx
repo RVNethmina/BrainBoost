@@ -1,7 +1,8 @@
 // app/src/screens/Games/MemoryMatch/MemoryTest.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from '@/app/navigation/AppNavigator';
-import { HapticFeedbackService } from "../../services/HapticFeedbackService";
+import { HapticFeedbackService } from "@/app/services/HapticFeedbackService";
+import { generateDailySeed, SeededRandom } from "@/app/utils/SeededRandom";
 import { firestore } from '@/config/firebaseConfig';
 import { NotificationService } from '@/config/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -69,9 +70,10 @@ const MemoryTest: React.FC = () => {
   const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [restored, setRestored] = useState(false);
   const jumpRef = useRef<RNScrollView | null>(null);
+  const randomGen = useRef<SeededRandom | null>(null);
 
-  // Simplified 8-question set for elderly-friendly assessment
-  const questions: Question[] = [
+  // Base question pool - will be shuffled daily
+  const baseQuestions: Question[] = [
     { id: 1, question: 'Look at this pattern:\n🔴 🔵 🔴 🔵 ___\n\nWhat comes next?', options: ['🔴','🔵','🟡','🟢'], correctAnswer: 0, difficulty: 'easy', category: 'pattern', type: 'multiple_choice' },
     { id: 2, question: 'Remember this sequence:\n7, 3, 9, 1\nWhich number was third?', options: ['7','3','9','1'], correctAnswer: 2, difficulty: 'easy', category: 'sequence', type: 'multiple_choice' },
     { id: 3, question: 'Study these items:\n🍎 🚗 📚 ⚽\nHow many items were there?', options: ['3','4','5','6'], correctAnswer: 1, difficulty: 'easy', category: 'recall', type: 'multiple_choice' },
@@ -81,6 +83,21 @@ const MemoryTest: React.FC = () => {
     { id: 7, question: 'Study this sequence:\nA-3-B-7-C-11\nWhat number comes next?', options: ['13','14','15','16'], correctAnswer: 2, difficulty: 'hard', category: 'sequence', type: 'multiple_choice' },
     { id: 8, question: 'Remember these words:\nHOUSE, TREE, CAR, BOOK, PHONE\nWhich was in the middle position?', options: ['HOUSE','TREE','CAR','BOOK'], correctAnswer: 2, difficulty: 'hard', category: 'recall', type: 'multiple_choice' }
   ];
+
+  const [questions, setQuestions] = useState<Question[]>(baseQuestions);
+
+  // Initialize seeded random generator for daily variation
+  useEffect(() => {
+    const userId = auth.currentUser?.uid || 'guest';
+    const seed = generateDailySeed(userId);
+    randomGen.current = new SeededRandom(seed);
+    
+    // Shuffle questions with daily seed
+    const shuffledQuestions = randomGen.current.shuffle(baseQuestions);
+    setQuestions(shuffledQuestions);
+    
+    console.log(`Memory assessment initialized with daily seed for user: ${userId}`);
+  }, []);
 
   // Restore saved progress
   useEffect(() => {
@@ -92,8 +109,26 @@ const MemoryTest: React.FC = () => {
           const saved = JSON.parse(raw);
           if (saved && saved.selectedAnswers) {
             Alert.alert('Resume Assessment?', 'Continue your previous memory assessment?', [
-              { text: 'Start Fresh', style: 'destructive', onPress: async () => { HapticFeedbackService.buttonPress(); await AsyncStorage.removeItem(STORAGE_KEY); setRestored(true); } },
-              { text: 'Resume', onPress: () => { HapticFeedbackService.buttonPress(); setSelectedAnswers(saved.selectedAnswers || {}); setCurrentQuestion(saved.currentQuestion || 0); setStartTime(saved.startTime ? new Date(saved.startTime) : new Date()); setAssessmentStarted(true); setRestored(true); } }
+              { 
+                text: 'Start Fresh', 
+                style: 'destructive', 
+                onPress: async () => { 
+                  HapticFeedbackService.buttonPress(); 
+                  await AsyncStorage.removeItem(STORAGE_KEY); 
+                  setRestored(true); 
+                } 
+              },
+              { 
+                text: 'Resume', 
+                onPress: () => { 
+                  HapticFeedbackService.selection(); 
+                  setSelectedAnswers(saved.selectedAnswers || {}); 
+                  setCurrentQuestion(saved.currentQuestion || 0); 
+                  setStartTime(saved.startTime ? new Date(saved.startTime) : new Date()); 
+                  setAssessmentStarted(true); 
+                  setRestored(true); 
+                } 
+              }
             ], { cancelable: false });
             return;
           }
@@ -108,7 +143,14 @@ const MemoryTest: React.FC = () => {
   useEffect(() => {
     if (!assessmentStarted) return;
     const save = async () => {
-      try { await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ selectedAnswers, currentQuestion, startTime: startTime?.toISOString() || new Date().toISOString(), savedAt: new Date().toISOString() })); }
+      try { 
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+          selectedAnswers, 
+          currentQuestion, 
+          startTime: startTime?.toISOString() || new Date().toISOString(), 
+          savedAt: new Date().toISOString() 
+        })); 
+      }
       catch (e) { console.warn('Save failed', e); }
     };
     save();
@@ -116,57 +158,215 @@ const MemoryTest: React.FC = () => {
 
   // Jump-bar auto-scroll
   useEffect(() => {
-    const buttonWidth = 70; const gap = 12;
+    const buttonWidth = 70; 
+    const gap = 12;
     const totalWidth = questions.length * (buttonWidth + gap);
     const centerOffset = Math.max(0, (SCREEN_WIDTH / 2) - (buttonWidth / 2));
     const maxScroll = Math.max(0, totalWidth - SCREEN_WIDTH + 24);
     const targetX = Math.max(0, Math.min(maxScroll, currentQuestion * (buttonWidth + gap) - centerOffset));
-    try { jumpRef.current?.scrollTo({ x: targetX, animated: true }); } catch { try { jumpRef.current?.scrollToEnd({ animated: true }); } catch {} }
+    try { 
+      jumpRef.current?.scrollTo({ x: targetX, animated: true }); 
+    } catch { 
+      try { 
+        jumpRef.current?.scrollToEnd({ animated: true }); 
+      } catch {} 
+    }
   }, [currentQuestion]);
 
-  const startAssessment = () => { HapticFeedbackService.gameStart(); setAssessmentStarted(true); setStartTime(new Date()); setCurrentQuestion(0); setSelectedAnswers({}); setShowResults(false); };
-  const handleAnswerSelect = (answerIndex: number) => { HapticFeedbackService.selection(); setSelectedAnswers(prev => ({ ...prev, [questions[currentQuestion].id]: answerIndex })); };
-  const goPrev = () => { if (currentQuestion === 0) return; HapticFeedbackService.buttonPress(); setCurrentQuestion(c => c - 1); };
-  const goNext = () => { HapticFeedbackService.buttonPress(); if (currentQuestion < questions.length - 1) { setCurrentQuestion(c => c + 1); } else { Alert.alert('Submit Assessment', 'Ready to submit? You cannot change answers after submission.', [{ text: 'Review', style: 'cancel', onPress: () => HapticFeedbackService.buttonPress() }, { text: 'Submit', onPress: finishAssessment }]); } };
-  const jumpToQuestion = (idx: number) => { HapticFeedbackService.buttonPress(); setCurrentQuestion(idx); };
+  const startAssessment = () => { 
+    HapticFeedbackService.gameStart(); 
+    setAssessmentStarted(true); 
+    setStartTime(new Date()); 
+    setCurrentQuestion(0); 
+    setSelectedAnswers({}); 
+    setShowResults(false); 
+  };
+
+  const handleAnswerSelect = (answerIndex: number) => { 
+    const question = questions[currentQuestion];
+    const isCorrect = answerIndex === question.correctAnswer;
+    
+    // Provide immediate haptic feedback based on correctness
+    if (isCorrect) {
+      HapticFeedbackService.correctAnswer();
+    } else {
+      HapticFeedbackService.selection();
+    }
+    
+    setSelectedAnswers(prev => ({ ...prev, [question.id]: answerIndex })); 
+  };
+
+  const goPrev = () => { 
+    if (currentQuestion === 0) return; 
+    HapticFeedbackService.buttonPress(); 
+    setCurrentQuestion(c => c - 1); 
+  };
+
+  const goNext = () => { 
+    HapticFeedbackService.buttonPress(); 
+    if (currentQuestion < questions.length - 1) { 
+      setCurrentQuestion(c => c + 1); 
+    } else { 
+      Alert.alert(
+        'Submit Assessment', 
+        'Ready to submit? You cannot change answers after submission.', 
+        [
+          { 
+            text: 'Review', 
+            style: 'cancel', 
+            onPress: () => HapticFeedbackService.buttonPress() 
+          }, 
+          { 
+            text: 'Submit', 
+            onPress: finishAssessment 
+          }
+        ]
+      ); 
+    } 
+  };
+
+  const jumpToQuestion = (idx: number) => { 
+    HapticFeedbackService.cardFlip(); 
+    setCurrentQuestion(idx); 
+  };
 
   const calculateResults = (): AssessmentResult => {
     let correctAnswers = 0;
-    const memoryCategories = { pattern: { correct: 0, total: 0 }, sequence: { correct: 0, total: 0 }, visual: { correct: 0, total: 0 }, spatial: { correct: 0, total: 0 }, recall: { correct: 0, total: 0 } };
+    const memoryCategories = { 
+      pattern: { correct: 0, total: 0 }, 
+      sequence: { correct: 0, total: 0 }, 
+      visual: { correct: 0, total: 0 }, 
+      spatial: { correct: 0, total: 0 }, 
+      recall: { correct: 0, total: 0 } 
+    };
+    
     const answers = questions.map(q => {
-      const sel = selectedAnswers[q.id]; const isCorrect = sel === q.correctAnswer;
-      if (isCorrect) correctAnswers++; memoryCategories[q.category].total++; if (isCorrect) memoryCategories[q.category].correct++;
+      const sel = selectedAnswers[q.id]; 
+      const isCorrect = sel === q.correctAnswer;
+      if (isCorrect) correctAnswers++; 
+      memoryCategories[q.category].total++; 
+      if (isCorrect) memoryCategories[q.category].correct++;
       return { questionId: q.id, selectedAnswer: sel ?? -1, isCorrect };
     });
+    
     const score = Math.round((correctAnswers / questions.length) * 100);
     const timeSpent = startTime ? Math.round((Date.now() - startTime.getTime()) / 1000) : 0;
+    
     let cognitiveLevel: AssessmentResult['cognitiveLevel'] = 'needs_attention';
-    if (score >= 88) cognitiveLevel = 'excellent'; else if (score >= 75) cognitiveLevel = 'good'; else if (score >= 63) cognitiveLevel = 'fair';
-    return { userId: auth.currentUser?.uid, totalQuestions: questions.length, correctAnswers, incorrectAnswers: questions.length - correctAnswers, score, timeSpent, difficulty: 'mixed', answers, completedAt: new Date(), cognitiveLevel, memoryCategories };
+    if (score >= 88) cognitiveLevel = 'excellent'; 
+    else if (score >= 75) cognitiveLevel = 'good'; 
+    else if (score >= 63) cognitiveLevel = 'fair';
+    
+    return { 
+      userId: auth.currentUser?.uid, 
+      totalQuestions: questions.length, 
+      correctAnswers, 
+      incorrectAnswers: questions.length - correctAnswers, 
+      score, 
+      timeSpent, 
+      difficulty: 'mixed', 
+      answers, 
+      completedAt: new Date(), 
+      cognitiveLevel, 
+      memoryCategories 
+    };
   };
 
-  const computeDomainStats = () => Object.entries(calculateResults().memoryCategories).filter(([_, val]) => val.total > 0).map(([category, val]) => ({ category: category.toUpperCase(), correct: val.correct, total: val.total, percent: Math.round((val.correct / Math.max(1, val.total)) * 100) }));
+  const computeDomainStats = () => Object.entries(calculateResults().memoryCategories)
+    .filter(([_, val]) => val.total > 0)
+    .map(([category, val]) => ({ 
+      category: category.toUpperCase(), 
+      correct: val.correct, 
+      total: val.total, 
+      percent: Math.round((val.correct / Math.max(1, val.total)) * 100) 
+    }));
 
   const saveToFirestore = async (results: AssessmentResult) => {
     const userId = auth.currentUser?.uid;
-    if (!userId) { Alert.alert('Login Required', 'Please login to save results.'); return false; }
+    if (!userId) { 
+      HapticFeedbackService.wrongAnswer();
+      Alert.alert('Login Required', 'Please login to save results.'); 
+      return false; 
+    }
+    
     try {
       setIsLoading(true);
-      const docRef = await addDoc(collection(firestore, `users/${userId}/memoryResults`), { ...results, createdAt: serverTimestamp(), assessmentType: 'cognitive_memory_elderly' });
+      const docRef = await addDoc(collection(firestore, `users/${userId}/memoryResults`), { 
+        ...results, 
+        createdAt: serverTimestamp(), 
+        assessmentType: 'cognitive_memory_elderly' 
+      });
+      
       console.log('Memory assessment saved', docRef.id);
-      HapticFeedbackService.achievement();
-      try { await NotificationService.sendLocalNotification('Memory Assessment Complete! 🧠', `Score: ${results.score}% - ${results.cognitiveLevel}`); } catch {}
-      await AsyncStorage.removeItem(STORAGE_KEY); return true;
+      
+      // Provide haptic feedback based on performance
+      HapticFeedbackService.scoreBasedFeedback(results.score);
+      
+      try { 
+        await NotificationService.sendLocalNotification(
+          'Memory Assessment Complete! 🧠', 
+          `Score: ${results.score}% - ${results.cognitiveLevel}`
+        ); 
+      } catch {}
+      
+      await AsyncStorage.removeItem(STORAGE_KEY); 
+      return true;
     } catch (error) {
-      console.error('Save failed', error); HapticFeedbackService.wrongAnswer();
-      try { await NotificationService.sendLocalNotification('Save Failed', 'Unable to save memory assessment results.'); } catch {}
-      Alert.alert('Save Failed', 'Unable to save results. Please check your connection.'); return false;
-    } finally { setIsLoading(false); }
+      console.error('Save failed', error); 
+      HapticFeedbackService.wrongAnswer();
+      
+      try { 
+        await NotificationService.sendLocalNotification(
+          'Save Failed', 
+          'Unable to save memory assessment results.'
+        ); 
+      } catch {}
+      
+      Alert.alert('Save Failed', 'Unable to save results. Please check your connection.'); 
+      return false;
+    } finally { 
+      setIsLoading(false); 
+    }
   };
 
-  const finishAssessment = async () => { HapticFeedbackService.gameEnd(); const results = calculateResults(); const saved = await saveToFirestore(results); if (saved) setShowResults(true); };
-  const resetAssessment = async () => { HapticFeedbackService.buttonPress(); await AsyncStorage.removeItem(STORAGE_KEY); setAssessmentStarted(false); setCurrentQuestion(0); setSelectedAnswers({}); setShowResults(false); setStartTime(null); };
-  const exitAssessment = async () => { HapticFeedbackService.buttonPress(); Alert.alert('Exit Assessment', 'Your progress will be saved. You can resume later.', [{ text: 'Cancel', style: 'cancel', onPress: () => HapticFeedbackService.buttonPress() }, { text: 'Exit', onPress: () => { HapticFeedbackService.buttonPress(); navigation.goBack(); } }]); };
+  const finishAssessment = async () => { 
+    HapticFeedbackService.gameEnd(); 
+    const results = calculateResults(); 
+    const saved = await saveToFirestore(results); 
+    if (saved) setShowResults(true); 
+  };
+
+  const resetAssessment = async () => { 
+    HapticFeedbackService.buttonPress(); 
+    await AsyncStorage.removeItem(STORAGE_KEY); 
+    setAssessmentStarted(false); 
+    setCurrentQuestion(0); 
+    setSelectedAnswers({}); 
+    setShowResults(false); 
+    setStartTime(null); 
+  };
+
+  const exitAssessment = async () => { 
+    HapticFeedbackService.buttonPress(); 
+    Alert.alert(
+      'Exit Assessment', 
+      'Your progress will be saved. You can resume later.', 
+      [
+        { 
+          text: 'Cancel', 
+          style: 'cancel', 
+          onPress: () => HapticFeedbackService.buttonPress() 
+        }, 
+        { 
+          text: 'Exit', 
+          onPress: () => { 
+            HapticFeedbackService.buttonPress(); 
+            navigation.goBack(); 
+          } 
+        }
+      ]
+    ); 
+  };
 
   const getCognitiveBadge = (level: string) => {
     switch(level){
@@ -178,13 +378,27 @@ const MemoryTest: React.FC = () => {
     }
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      HapticFeedbackService.cancel();
+    };
+  }, []);
+
   // --- UI Rendering ---
 
   if (!assessmentStarted && restored) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.topRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => { HapticFeedbackService.buttonPress(); navigation.goBack(); }} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.backBtn} 
+            onPress={() => { 
+              HapticFeedbackService.buttonPress(); 
+              navigation.goBack(); 
+            }} 
+            activeOpacity={0.7}
+          >
             <Text style={[styles.backBtnText, { color: PALETTE.teal }]}>← Back</Text>
           </TouchableOpacity>
         </View>
@@ -207,13 +421,27 @@ const MemoryTest: React.FC = () => {
             <Text style={styles.welcomeLine}>• ⏱️ Takes about 6-8 minutes</Text>
             <Text style={styles.welcomeLine}>• 💾 Progress saved automatically</Text>
             <Text style={styles.welcomeLine}>• 📊 Detailed results provided</Text>
+            <Text style={styles.welcomeLine}>• 📳 Haptic feedback enabled</Text>
           </View>
 
-          <TouchableOpacity style={[styles.startButton, { backgroundColor: PALETTE.teal }]} onPress={startAssessment} activeOpacity={0.8} accessibilityLabel="Start memory assessment">
+          <TouchableOpacity 
+            style={[styles.startButton, { backgroundColor: PALETTE.teal }]} 
+            onPress={startAssessment} 
+            activeOpacity={0.8} 
+            accessibilityLabel="Start memory assessment"
+          >
             <Text style={styles.startButtonText}>Start Assessment</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.smallAction} onPress={async () => { HapticFeedbackService.buttonPress(); await AsyncStorage.removeItem(STORAGE_KEY); Alert.alert('Cleared', 'Saved progress cleared.'); }} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.smallAction} 
+            onPress={async () => { 
+              HapticFeedbackService.buttonPress(); 
+              await AsyncStorage.removeItem(STORAGE_KEY); 
+              Alert.alert('Cleared', 'Saved progress cleared.'); 
+            }} 
+            activeOpacity={0.7}
+          >
             <Text style={[styles.smallActionText, { color: '#666' }]}>Clear saved progress</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -239,9 +467,18 @@ const MemoryTest: React.FC = () => {
           </View>
 
           <View style={styles.statsRow}>
-            <View style={styles.statCard}><Text style={styles.statNumber}>{results.correctAnswers}</Text><Text style={styles.statLabel}>Correct</Text></View>
-            <View style={styles.statCard}><Text style={styles.statNumber}>{results.incorrectAnswers}</Text><Text style={styles.statLabel}>Incorrect</Text></View>
-            <View style={styles.statCard}><Text style={styles.statNumber}>{Math.floor(results.timeSpent / 60)}m</Text><Text style={styles.statLabel}>Time</Text></View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{results.correctAnswers}</Text>
+              <Text style={styles.statLabel}>Correct</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{results.incorrectAnswers}</Text>
+              <Text style={styles.statLabel}>Incorrect</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{Math.floor(results.timeSpent / 60)}m</Text>
+              <Text style={styles.statLabel}>Time</Text>
+            </View>
           </View>
 
           <Text style={styles.domainHeader}>Performance by Category</Text>
@@ -250,20 +487,50 @@ const MemoryTest: React.FC = () => {
               <View key={d.category} style={styles.domainCard}>
                 <Text style={styles.domainTitle}>{d.category}</Text>
                 <Text style={[styles.domainPercent, { color: PALETTE.teal }]}>{d.percent}%</Text>
-                <View style={styles.domainBar}><View style={[styles.domainFill, { width: `${d.percent}%`, backgroundColor: PALETTE.teal }]} /></View>
+                <View style={styles.domainBar}>
+                  <View style={[styles.domainFill, { width: `${d.percent}%`, backgroundColor: PALETTE.teal }]} />
+                </View>
                 <Text style={styles.domainSmall}>{d.correct}/{d.total} correct</Text>
               </View>
             ))}
           </View>
 
-          {isLoading && <View style={{ marginVertical: 16 }}><ActivityIndicator size="large" color={PALETTE.teal} /></View>}
+          {isLoading && (
+            <View style={{ marginVertical: 16 }}>
+              <ActivityIndicator size="large" color={PALETTE.teal} />
+            </View>
+          )}
 
           <View style={styles.resultNavRow}>
-            <TouchableOpacity style={[styles.resultNavBtn, { backgroundColor: PALETTE.teal }]} onPress={() => { HapticFeedbackService.buttonPress(); navigation.navigate('Home'); }} activeOpacity={0.8}><Text style={styles.resultNavText}>Go Home</Text></TouchableOpacity>
-            <TouchableOpacity style={[styles.resultNavBtnAlt, { backgroundColor: PALETTE.orange }]} onPress={() => { HapticFeedbackService.buttonPress(); navigation.navigate('Assessment'); }} activeOpacity={0.8}><Text style={styles.resultNavTextAlt}>All Assessments</Text></TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.resultNavBtn, { backgroundColor: PALETTE.teal }]} 
+              onPress={() => { 
+                HapticFeedbackService.buttonPress(); 
+                navigation.navigate('Home'); 
+              }} 
+              activeOpacity={0.8}
+            >
+              <Text style={styles.resultNavText}>Go Home</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.resultNavBtnAlt, { backgroundColor: PALETTE.orange }]} 
+              onPress={() => { 
+                HapticFeedbackService.buttonPress(); 
+                navigation.navigate('Assessment'); 
+              }} 
+              activeOpacity={0.8}
+            >
+              <Text style={styles.resultNavTextAlt}>All Assessments</Text>
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={[styles.retakeBtn, { backgroundColor: PALETTE.lightTeal }]} onPress={resetAssessment} activeOpacity={0.8}><Text style={[styles.retakeText, { color: PALETTE.teal }]}>Take Again</Text></TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.retakeBtn, { backgroundColor: PALETTE.lightTeal }]} 
+            onPress={resetAssessment} 
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.retakeText, { color: PALETTE.teal }]}>Take Again</Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     );
@@ -277,20 +544,51 @@ const MemoryTest: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => { HapticFeedbackService.buttonPress(); navigation.goBack(); }} activeOpacity={0.7}><Text style={[styles.backSmall, { color: PALETTE.teal }]}>← Back</Text></TouchableOpacity>
-        <Text style={[styles.progressText, { color: '#0f172a' }]}>Question {currentQuestion + 1} / {questions.length}</Text>
-        <TouchableOpacity onPress={exitAssessment} activeOpacity={0.7}><Text style={[styles.exitText, { color: PALETTE.red }]}>Exit</Text></TouchableOpacity>
+        <TouchableOpacity 
+          onPress={() => { 
+            HapticFeedbackService.buttonPress(); 
+            navigation.goBack(); 
+          }} 
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.backSmall, { color: PALETTE.teal }]}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={[styles.progressText, { color: '#0f172a' }]}>
+          Question {currentQuestion + 1} / {questions.length}
+        </Text>
+        <TouchableOpacity onPress={exitAssessment} activeOpacity={0.7}>
+          <Text style={[styles.exitText, { color: PALETTE.red }]}>Exit</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={[styles.progressBar, { backgroundColor: PALETTE.lightTeal }]}><View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: PALETTE.teal }]} /></View>
+      <View style={[styles.progressBar, { backgroundColor: PALETTE.lightTeal }]}>
+        <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: PALETTE.teal }]} />
+      </View>
 
-      <RNScrollView horizontal ref={jumpRef} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.jumpBar, { paddingRight: 28 }]}>
+      <RNScrollView 
+        horizontal 
+        ref={jumpRef} 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={[styles.jumpBar, { paddingRight: 28 }]}
+      >
         {questions.map((q, idx) => {
           const questionAnswered = selectedAnswers[q.id] !== undefined;
           const active = idx === currentQuestion;
           return (
-            <TouchableOpacity key={q.id} onPress={() => jumpToQuestion(idx)} accessibilityLabel={`Jump to question ${idx + 1}`} activeOpacity={0.7} style={[styles.jumpBtn, active ? styles.jumpBtnActive : null, questionAnswered ? styles.jumpBtnAnswered : null]}>
-              <Text style={[styles.jumpBtnText, active ? styles.jumpBtnTextActive : null]}>{idx + 1}</Text>
+            <TouchableOpacity 
+              key={q.id} 
+              onPress={() => jumpToQuestion(idx)} 
+              accessibilityLabel={`Jump to question ${idx + 1}`} 
+              activeOpacity={0.7} 
+              style={[
+                styles.jumpBtn, 
+                active ? styles.jumpBtnActive : null, 
+                questionAnswered ? styles.jumpBtnAnswered : null
+              ]}
+            >
+              <Text style={[styles.jumpBtnText, active ? styles.jumpBtnTextActive : null]}>
+                {idx + 1}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -298,16 +596,36 @@ const MemoryTest: React.FC = () => {
 
       <ScrollView contentContainerStyle={styles.questionWrap} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
-          <Text style={[styles.category, { color: PALETTE.teal, backgroundColor: PALETTE.lightTeal }]}>{question.category.toUpperCase()}</Text>
-          <Text style={[styles.questionText, { fontSize: 22, lineHeight: 32 }]}>{question.question}</Text>
+          <Text style={[styles.category, { color: PALETTE.teal, backgroundColor: PALETTE.lightTeal }]}>
+            {question.category.toUpperCase()}
+          </Text>
+          <Text style={[styles.questionText, { fontSize: 22, lineHeight: 32 }]}>
+            {question.question}
+          </Text>
 
           <View style={{ marginTop: 16 }}>
             {question.options.map((opt, i) => {
               const selected = selectedAnswers[question.id] === i;
               return (
-                <TouchableOpacity key={i} onPress={() => handleAnswerSelect(i)} activeOpacity={0.7} style={[styles.option, selected ? styles.optionSelected : null, { borderColor: selected ? PALETTE.teal : '#E6EEF8' }]} accessibilityLabel={`Option ${i + 1}: ${opt}`}>
-                  <Text style={[styles.optionText, selected ? styles.optionTextSelected : null]}>{opt}</Text>
-                  {selected && <View style={styles.checkmark}><Text style={{ color: PALETTE.teal, fontSize: 20, fontWeight: 'bold' }}>✓</Text></View>}
+                <TouchableOpacity 
+                  key={i} 
+                  onPress={() => handleAnswerSelect(i)} 
+                  activeOpacity={0.7} 
+                  style={[
+                    styles.option, 
+                    selected ? styles.optionSelected : null, 
+                    { borderColor: selected ? PALETTE.teal : '#E6EEF8' }
+                  ]} 
+                  accessibilityLabel={`Option ${i + 1}: ${opt}`}
+                >
+                  <Text style={[styles.optionText, selected ? styles.optionTextSelected : null]}>
+                    {opt}
+                  </Text>
+                  {selected && (
+                    <View style={styles.checkmark}>
+                      <Text style={{ color: PALETTE.teal, fontSize: 20, fontWeight: 'bold' }}>✓</Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -315,8 +633,34 @@ const MemoryTest: React.FC = () => {
         </View>
 
         <View style={styles.navRow}>
-          <TouchableOpacity onPress={goPrev} disabled={currentQuestion === 0} activeOpacity={0.8} style={[styles.navBtn, { backgroundColor: PALETTE.teal }, currentQuestion === 0 ? styles.navDisabled : null]}><Text style={[styles.navBtnText, currentQuestion === 0 ? styles.navDisabledText : null]}>← Previous</Text></TouchableOpacity>
-          <TouchableOpacity onPress={goNext} disabled={!answered} activeOpacity={0.8} style={[styles.navBtn, { backgroundColor: PALETTE.teal }, !answered ? styles.navDisabled : null]}><Text style={[styles.navBtnText, !answered ? styles.navDisabledText : null]}>{currentQuestion === questions.length - 1 ? 'Finish ✓' : 'Next →'}</Text></TouchableOpacity>
+          <TouchableOpacity 
+            onPress={goPrev} 
+            disabled={currentQuestion === 0} 
+            activeOpacity={0.8} 
+            style={[
+              styles.navBtn, 
+              { backgroundColor: PALETTE.teal }, 
+              currentQuestion === 0 ? styles.navDisabled : null
+            ]}
+          >
+            <Text style={[styles.navBtnText, currentQuestion === 0 ? styles.navDisabledText : null]}>
+              ← Previous
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={goNext} 
+            disabled={!answered} 
+            activeOpacity={0.8} 
+            style={[
+              styles.navBtn, 
+              { backgroundColor: PALETTE.teal }, 
+              !answered ? styles.navDisabled : null
+            ]}
+          >
+            <Text style={[styles.navBtnText, !answered ? styles.navDisabledText : null]}>
+              {currentQuestion === questions.length - 1 ? 'Finish ✓' : 'Next →'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

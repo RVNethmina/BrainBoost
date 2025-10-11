@@ -7,6 +7,7 @@ import { Audio } from "expo-av";
 import * as Speech from "expo-speech";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext";
 
 // IMPORTANT: add secrets.js in your project root and export ASSEMBLY_API_KEY from it
 import { ASSEMBLY_API_KEY } from "../../../../secrets";
@@ -158,6 +159,9 @@ async function transcribeWithAssembly(uri: string): Promise<{ text?: string; err
 
 const MathPlayAddition: React.FC = () => {
   const navigation = useNavigation<MathPlayScreenNavigationProp>();
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
 
   const [timeLeft, setTimeLeft] = useState<number>(INITIAL_TIME);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -178,6 +182,16 @@ const MathPlayAddition: React.FC = () => {
   const voiceStartTs = useRef<number | null>(null);
   const voiceResponseTimes = useRef<number[]>([]);
   const voiceAnswersCount = useRef<number>(0);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  const optionDefaultBg = isDark ? '#3a3a3a' : '#F0FDFA';
+  const optionDefaultBorder = isDark ? '#555' : '#B2F5EA';
+  const statusBoxBg = isDark ? '#3a3a3a' : '#EFF6FF';
 
   useEffect(() => {
     const q: Question[] = Array.from({ length: TOTAL_QUESTIONS }, () =>
@@ -448,29 +462,43 @@ const MathPlayAddition: React.FC = () => {
   const getOperatorSymbol = (op: 'addition' | 'subtraction') => op === 'addition' ? '+' : '−';
 
   const getOptionStyle = (option: number) => {
-    if (!showFeedback) return styles.optionDefault;
+    if (!showFeedback) return {
+      backgroundColor: optionDefaultBg,
+      borderColor: optionDefaultBorder,
+    };
     
     const isCorrect = option === current?.correctAnswer;
     const isSelected = option === selectedAnswer;
     
     if (isCorrect) return styles.optionCorrect;
     if (isSelected && !isCorrect) return styles.optionWrong;
-    return styles.optionDefault;
+    return {
+      backgroundColor: optionDefaultBg,
+      borderColor: optionDefaultBorder,
+    };
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header */}
       <View
         className="flex-row items-center justify-between px-4 pt-12 pb-5"
-        style={{ backgroundColor: PALETTE.lightPink }}
+        style={{ backgroundColor: headerBg }}
       >
         <View style={{ width: 40 }} />
         <View className="items-center">
-          <Text style={{ fontSize: 22, fontWeight: "700", color: PALETTE.teal }}>
+          <Text style={{ 
+            fontSize: 22 * fontScale, 
+            fontWeight: "700", 
+            color: PALETTE.teal 
+          }}>
             Math Practice
           </Text>
-          <Text style={{ fontSize: 16, color: PALETTE.teal, marginTop: 2 }}>
+          <Text style={{ 
+            fontSize: 16 * fontScale, 
+            color: PALETTE.teal, 
+            marginTop: 2 
+          }}>
             Addition & Subtraction
           </Text>
         </View>
@@ -479,8 +507,11 @@ const MathPlayAddition: React.FC = () => {
 
       {/* Main */}
       <View className="flex-1 px-5 py-6">
-        <View style={styles.questionCard}>
-          <Text style={styles.questionText}>
+        <View style={[styles.questionCard, { backgroundColor: cardBg, borderColor: optionDefaultBorder }]}>
+          <Text style={[styles.questionText, { 
+            fontSize: 38 * fontScale,
+            color: PALETTE.teal 
+          }]}>
             {current ? `${current.a} ${getOperatorSymbol(current.operation)} ${current.b} = ?` : "Loading..."}
           </Text>
 
@@ -494,7 +525,10 @@ const MathPlayAddition: React.FC = () => {
                   onPress={() => handleAnswer(option)}
                   disabled={!isRunning || showFeedback}
                 >
-                  <Text style={styles.optionText}>{option}</Text>
+                  <Text style={[styles.optionText, { 
+                    fontSize: 26 * fontScale,
+                    color: PALETTE.teal 
+                  }]}>{option}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -507,7 +541,10 @@ const MathPlayAddition: React.FC = () => {
                   onPress={() => handleAnswer(option)}
                   disabled={!isRunning || showFeedback}
                 >
-                  <Text style={styles.optionText}>{option}</Text>
+                  <Text style={[styles.optionText, { 
+                    fontSize: 26 * fontScale,
+                    color: PALETTE.teal 
+                  }]}>{option}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -522,7 +559,10 @@ const MathPlayAddition: React.FC = () => {
                   { backgroundColor: isRunning ? PALETTE.teal : "#D1D5DB" }
                 ]}
               >
-                <Text style={[styles.voiceButtonText, { opacity: isRunning ? 1 : 0.5 }]}>
+                <Text style={[styles.voiceButtonText, { 
+                  fontSize: 16 * fontScale,
+                  opacity: isRunning ? 1 : 0.5 
+                }]}>
                   🔊 Read Question
                 </Text>
               </TouchableOpacity>
@@ -547,6 +587,7 @@ const MathPlayAddition: React.FC = () => {
                 <Text style={[
                   styles.voiceButtonText,
                   { 
+                    fontSize: 16 * fontScale,
                     color: isRecording ? "white" : "#065F46",
                     opacity: (!isRunning || isTranscribing) ? 0.5 : 1
                   }
@@ -559,19 +600,31 @@ const MathPlayAddition: React.FC = () => {
             {/* Status Messages */}
             <View style={styles.statusContainer}>
               {isTranscribing && (
-                <View style={styles.statusBox}>
-                  <Text style={styles.statusText}>🎯 Processing your answer...</Text>
+                <View style={[styles.statusBox, { backgroundColor: statusBoxBg }]}>
+                  <Text style={[styles.statusText, { 
+                    fontSize: 16 * fontScale,
+                    color: isDark ? '#ccc' : '#1E40AF'
+                  }]}>🎯 Processing your answer...</Text>
                 </View>
               )}
               {!isTranscribing && lastTranscription && !showFeedback && (
-                <View style={styles.statusBox}>
-                  <Text style={styles.statusLabel}>You said:</Text>
-                  <Text style={styles.statusValue}>"{lastTranscription}"</Text>
+                <View style={[styles.statusBox, { backgroundColor: statusBoxBg }]}>
+                  <Text style={[styles.statusLabel, { 
+                    fontSize: 14 * fontScale,
+                    color: secondaryTextColor 
+                  }]}>You said:</Text>
+                  <Text style={[styles.statusValue, { 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }]}>"{lastTranscription}"</Text>
                 </View>
               )}
               {!isRunning && !showStartHint && (
-                <View style={[styles.statusBox, { backgroundColor: "#FEF3C7" }]}>
-                  <Text style={[styles.statusText, { color: "#92400E" }]}>
+                <View style={[styles.statusBox, { backgroundColor: isDark ? '#4a3a1a' : "#FEF3C7" }]}>
+                  <Text style={[styles.statusText, { 
+                    fontSize: 16 * fontScale,
+                    color: isDark ? '#ccc' : "#92400E" 
+                  }]}>
                     ⏸ Quiz Paused
                   </Text>
                 </View>
@@ -582,28 +635,34 @@ const MathPlayAddition: React.FC = () => {
 
         {/* Progress */}
         <View style={{ marginTop: 20, alignItems: "center" }}>
-          <Text style={styles.progressText}>
+          <Text style={[styles.progressText, { 
+            fontSize: 18 * fontScale,
+            color: textColor 
+          }]}>
             Question {Math.min(currentQuestionIndex + 1, TOTAL_QUESTIONS)} of {TOTAL_QUESTIONS}
           </Text>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
           </View>
-          <Text style={styles.scoreText}>Score: {score}</Text>
+          <Text style={[styles.scoreText, { 
+            fontSize: 20 * fontScale,
+            color: PALETTE.teal 
+          }]}>Score: {score}</Text>
         </View>
 
         {/* Control Buttons */}
         <View style={{ marginTop: 24, alignItems: "center" }}>
           {!isRunning && showStartHint ? (
             <TouchableOpacity onPress={handleStart} style={[styles.controlButton, styles.startButton]}>
-              <Text style={styles.controlButtonText}>🚀 Start Quiz</Text>
+              <Text style={[styles.controlButtonText, { fontSize: 20 * fontScale }]}>🚀 Start Quiz</Text>
             </TouchableOpacity>
           ) : isRunning ? (
             <TouchableOpacity onPress={handlePause} style={[styles.controlButton, styles.pauseButton]}>
-              <Text style={styles.controlButtonText}>⏸ Pause</Text>
+              <Text style={[styles.controlButtonText, { fontSize: 20 * fontScale }]}>⏸ Pause</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={handleResume} style={[styles.controlButton, styles.resumeButton]}>
-              <Text style={styles.controlButtonText}>▶ Resume</Text>
+              <Text style={[styles.controlButtonText, { fontSize: 20 * fontScale }]}>▶ Resume</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -618,9 +677,7 @@ const styles = StyleSheet.create({
   questionCard: {
     padding: 24,
     borderRadius: 20,
-    backgroundColor: "#fff",
     borderWidth: 2,
-    borderColor: "#B2F5EA",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -628,10 +685,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   questionText: {
-    fontSize: 38,
     fontWeight: "700",
     textAlign: "center",
-    color: PALETTE.teal,
     letterSpacing: 1,
   },
   optionButton: {
@@ -640,10 +695,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     borderWidth: 2,
-  },
-  optionDefault: {
-    backgroundColor: "#F0FDFA",
-    borderColor: "#B2F5EA",
   },
   optionCorrect: {
     backgroundColor: "#D1FAE5",
@@ -654,9 +705,7 @@ const styles = StyleSheet.create({
     borderColor: "#EF4444",
   },
   optionText: {
-    fontSize: 26,
     fontWeight: "700",
-    color: PALETTE.teal,
   },
   voiceButton: {
     flex: 1,
@@ -670,9 +719,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   voiceButtonText: {
-    fontSize: 16,
     fontWeight: "700",
-    color: "white",
   },
   statusContainer: {
     marginTop: 16,
@@ -681,29 +728,20 @@ const styles = StyleSheet.create({
   statusBox: {
     padding: 14,
     borderRadius: 12,
-    backgroundColor: "#EFF6FF",
   },
   statusText: {
-    fontSize: 16,
-    color: "#1E40AF",
     textAlign: "center",
     fontWeight: "600",
   },
   statusLabel: {
-    fontSize: 14,
-    color: "#6B7280",
     marginBottom: 4,
   },
   statusValue: {
-    fontSize: 16,
-    color: "#1F2937",
     fontWeight: "600",
   },
   progressText: {
-    fontSize: 18,
     marginBottom: 10,
     fontWeight: "600",
-    color: "#374151",
   },
   progressTrack: {
     width: "100%",
@@ -718,9 +756,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   scoreText: {
-    fontSize: 20,
     fontWeight: "700",
-    color: PALETTE.teal,
     marginTop: 12,
   },
   controlButton: {
@@ -745,6 +781,5 @@ const styles = StyleSheet.create({
   controlButtonText: {
     color: "white",
     fontWeight: "700",
-    fontSize: 20,
   },
 });

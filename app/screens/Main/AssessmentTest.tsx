@@ -1,4 +1,4 @@
-// app/src/screens/AssessmentTest.tsx
+// app/src/screens/Main/AssessmentTest.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation } from "@react-navigation/native";
@@ -12,11 +12,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext";
 
-// navigation type for the whole stack
 type RootNavProp = NativeStackNavigationProp<RootStackParamList>;
 
-type AssessmentRoute = "MemoryTest" | "AttentionAssessmentIntro" | "MathAssessment" | "PuzzleAssessmentIntro";
+type AssessmentRoute = "MemoryTest" | "AttentionAssessment" | "MathAssessment" | "PuzzleAssessmentIntro";
 
 type AssessmentItem = {
   id: number;
@@ -46,7 +46,7 @@ const assessments: AssessmentItem[] = [
     icon: "⚡",
     duration: "10 minutes",
     type: "Focus",
-    screen: "AttentionAssessmentIntro",
+    screen: "AttentionAssessment",
     bgColor: PALETTE.lightPink,
     textColor: PALETTE.orange,
   },
@@ -56,7 +56,7 @@ const assessments: AssessmentItem[] = [
     icon: "🔢",
     duration: "12 minutes",
     type: "Numerical",
-    screen: "MathAssessmentStart",
+    screen: "MathAssessment",
     bgColor: PALETTE.lightPink,
     textColor: PALETTE.red,
   },
@@ -74,43 +74,62 @@ const assessments: AssessmentItem[] = [
 
 const AssessmentTest: React.FC = () => {
   const navigation = useNavigation<RootNavProp>();
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#96B5B5';
+  const textColor = isDark ? '#fff' : '#2C3E3E';
+  const cardBg = isDark ? '#2a2a2a' : '#E6F1F1';
+  const backButtonBg = isDark ? '#3a3a3a' : '#E6F1F1';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: bgColor }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: backButtonBg }]}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={[styles.backIcon, { fontSize: 20 * fontScale, color: textColor }]}>
+            ←
+          </Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Assessment Tests</Text>
+        <Text style={[styles.headerTitle, { fontSize: 20 * fontScale, color: textColor }]}>
+          Assessment Tests
+        </Text>
         <View style={{ width: 48 }} />
       </View>
 
       {/* Content */}
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.subtitle}>Choose an assessment to test your skills</Text>
+        <Text style={[styles.subtitle, { fontSize: 16 * fontScale, color: textColor }]}>
+          Choose an assessment to test your skills
+        </Text>
 
         <View style={styles.grid}>
           {assessments.map((a) => (
             <TouchableOpacity
               key={a.id}
-              style={styles.card}
+              style={[styles.card, { backgroundColor: cardBg }]}
               onPress={() => navigation.navigate(a.screen as any)}
               accessibilityRole="button"
               accessibilityLabel={`${a.title}. ${a.duration}. ${a.type} test.`}
             >
               <Text style={styles.icon}>{a.icon}</Text>
-              <Text style={styles.cardTitle}>{a.title}</Text>
-              <Text style={styles.cardDesc}>{a.duration}</Text>
+              <Text style={[styles.cardTitle, { fontSize: 16 * fontScale, color: textColor }]}>
+                {a.title}
+              </Text>
+              <Text style={[styles.cardDesc, { fontSize: 13 * fontScale, color: textColor }]}>
+                {a.duration}
+              </Text>
 
               <View style={[styles.badge, { backgroundColor: a.bgColor }]}>
-                <Text style={[styles.badgeText, { color: a.textColor }]}>
+                <Text style={[styles.badgeText, { fontSize: 12 * fontScale, color: a.textColor }]}>
                   {a.type}
                 </Text>
               </View>
@@ -127,7 +146,6 @@ export default AssessmentTest;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#96B5B5", // match BrainGames background
   },
   header: {
     flexDirection: "row",
@@ -136,24 +154,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: "#96B5B5",
   },
   backButton: {
     alignItems: "center",
     justifyContent: "center",
     width: 48,
     height: 48,
-    backgroundColor: "#E6F1F1",
     borderRadius: 12,
   },
-  backIcon: {
-    fontSize: 20,
-    color: "#2C3E3E",
-  },
+  backIcon: {},
   headerTitle: {
-    fontSize: 20,
     fontWeight: "700",
-    color: "#2C3E3E",
   },
   scroll: {
     flex: 1,
@@ -163,8 +174,6 @@ const styles = StyleSheet.create({
   subtitle: {
     marginVertical: 16,
     textAlign: "center",
-    color: "#2C3E3E",
-    fontSize: 16,
     opacity: 0.8,
   },
   grid: {
@@ -177,7 +186,6 @@ const styles = StyleSheet.create({
     width: "48%",
     marginBottom: 16,
     padding: 18,
-    backgroundColor: "#E6F1F1",
     borderRadius: 12,
     alignItems: "center",
   },
@@ -186,18 +194,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cardTitle: {
-    fontSize: 16,
     fontWeight: "600",
     textAlign: "center",
-    color: "#2C3E3E",
     marginBottom: 4,
   },
   cardDesc: {
     marginTop: 2,
     textAlign: "center",
-    color: "#2C3E3E",
     opacity: 0.7,
-    fontSize: 13,
   },
   badge: {
     paddingHorizontal: 12,
@@ -206,7 +210,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   badgeText: {
-    fontSize: 12,
     fontWeight: "600",
   },
 });

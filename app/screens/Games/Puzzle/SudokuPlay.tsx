@@ -266,7 +266,7 @@
 // });
 
 
-// screens/Games/Puzzle/SudokuPlay.tsx
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -280,7 +280,7 @@ type Props = {
   onComplete?: (res: {
     accuracy: number;      // 0..100
     timeTaken: number;     // seconds
-    avgRT: number;         // ms (we’ll keep 0 unless you want to count moves)
+    avgRT: number;         // ms (we'll keep 0 unless you want to count moves)
   }) => void;
 };
 
@@ -335,8 +335,22 @@ function generateSudoku(N: number, boxR: number, boxC: number, holes: number) {
 export default function SudokuPlay({ assessmentMode = false, onComplete }: Props) {
   const nav = useNavigation<Nav>();
   const route = useRoute<any>();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+  
   const diff: Diff = (route.params?.difficulty || "easy");
   const { N, boxR, boxC, holes, time } = config(diff);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.neutralDark;
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  const cellBg = isDark ? '#2a2a2a' : '#FFF';
+  const selectedCellBg = isDark ? '#3a3a3a' : PALETTE.teal;
+  const numBtnBg = isDark ? '#3a3a3a' : PALETTE.lightTeal;
+  const secondaryTextColor = isDark ? '#ccc' : '#6B7280';
 
   const [initial, setInitial] = useState<number[][]>([]);
   const [grid, setGrid] = useState<number[][]>([]);
@@ -440,28 +454,50 @@ export default function SudokuPlay({ assessmentMode = false, onComplete }: Props
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "white" }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: PALETTE.lightPink }]}>
-        <TouchableOpacity onPress={() => { setRunning(false); (assessmentMode ? finish("timeUp") : nav.goBack()); }} style={[styles.iconBtn, { backgroundColor: PALETTE.lightTeal }]}>
-          <Text style={styles.iconText}>←</Text>
+      <View style={[styles.header, { backgroundColor: headerBg }]}>
+        <TouchableOpacity 
+          onPress={() => { setRunning(false); (assessmentMode ? finish("timeUp") : nav.goBack()); }} 
+          style={[styles.iconBtn, { backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightTeal }]}
+        >
+          <Text style={[styles.iconText, { color: textColor }]}>←</Text>
         </TouchableOpacity>
         <View style={{ alignItems: "center" }}>
-          <Text style={{ fontSize: 14, color: "#6B7280" }}>Sudoku {N}×{N}</Text>
-          <Text style={{ fontSize: 20, fontWeight: "700" }}>{formatTime(timeLeft)}</Text>
+          <Text style={{ 
+            fontSize: 14 * fontScale, 
+            color: secondaryTextColor 
+          }}>
+            Sudoku {N}×{N}
+          </Text>
+          <Text style={{ 
+            fontSize: 20 * fontScale, 
+            fontWeight: "700",
+            color: textColor 
+          }}>
+            {formatTime(timeLeft)}
+          </Text>
         </View>
         <View style={{ width: 44, alignItems: "center" }}>
           {running ? (
-            <TouchableOpacity onPress={() => setRunning(false)}><Text style={styles.iconText}>⏸️</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setRunning(false)}>
+              <Text style={styles.iconText}>⏸️</Text>
+            </TouchableOpacity>
           ) : (
-            <TouchableOpacity onPress={() => setRunning(true)}><Text style={styles.iconText}>▶️</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setRunning(true)}>
+              <Text style={styles.iconText}>▶️</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <View style={{ alignItems: "center", marginBottom: 10 }}>
-          <Text style={{ fontSize: 22, fontWeight: "600", color: PALETTE.teal }}>
+          <Text style={{ 
+            fontSize: 22 * fontScale, 
+            fontWeight: "600", 
+            color: PALETTE.teal 
+          }}>
             Tap a cell, then choose a number
           </Text>
         </View>
@@ -483,7 +519,7 @@ export default function SudokuPlay({ assessmentMode = false, onComplete }: Props
                     style={[
                       styles.cell,
                       {
-                        backgroundColor: selected ? PALETTE.teal : "#FFF",
+                        backgroundColor: selected ? selectedCellBg : cellBg,
                         borderLeftWidth: borderL,
                         borderTopWidth: borderT,
                         borderColor: conflict ? PALETTE.red : PALETTE.teal,
@@ -491,7 +527,11 @@ export default function SudokuPlay({ assessmentMode = false, onComplete }: Props
                       }
                     ]}
                   >
-                    <Text style={{ fontSize: 20, fontWeight: "700", color: selected ? "white" : (fixed ? PALETTE.orange : PALETTE.neutralDark) }}>
+                    <Text style={{ 
+                      fontSize: 20 * fontScale, 
+                      fontWeight: "700", 
+                      color: selected ? "white" : (fixed ? PALETTE.orange : (isDark ? '#fff' : PALETTE.neutralDark)) 
+                    }}>
                       {val === 0 ? "" : val}
                     </Text>
                   </TouchableOpacity>
@@ -505,21 +545,64 @@ export default function SudokuPlay({ assessmentMode = false, onComplete }: Props
         <View style={{ marginTop: 16, alignItems: "center" }}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center" }}>
             {nums.map(n => (
-              <TouchableOpacity key={n} onPress={() => setValue(n)} style={styles.numBtn}>
-                <Text style={{ fontSize: 22, fontWeight: "700", color: PALETTE.teal }}>{n}</Text>
+              <TouchableOpacity 
+                key={n} 
+                onPress={() => setValue(n)} 
+                style={[styles.numBtn, { backgroundColor: numBtnBg }]}
+              >
+                <Text style={{ 
+                  fontSize: 22 * fontScale, 
+                  fontWeight: "700", 
+                  color: isDark ? '#fff' : PALETTE.teal 
+                }}>
+                  {n}
+                </Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity onPress={erase} style={[styles.numBtn, { backgroundColor: PALETTE.lightPink, borderColor: PALETTE.red }]}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: PALETTE.red }}>Erase</Text>
+            <TouchableOpacity 
+              onPress={erase} 
+              style={[styles.numBtn, { 
+                backgroundColor: isDark ? '#4a2a2a' : PALETTE.lightPink, 
+                borderColor: PALETTE.red 
+              }]}
+            >
+              <Text style={{ 
+                fontSize: 18 * fontScale, 
+                fontWeight: "700", 
+                color: PALETTE.red 
+              }}>
+                Erase
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => {
-              if (isSolved(grid, solved)) finish("completed");
-              else Alert.alert("Keep going", "There are still mistakes or empty cells.");
-            }} style={[styles.numBtn, { backgroundColor: PALETTE.teal }]}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: "white" }}>Check</Text>
+            <TouchableOpacity 
+              onPress={() => {
+                if (isSolved(grid, solved)) finish("completed");
+                else Alert.alert("Keep going", "There are still mistakes or empty cells.");
+              }} 
+              style={[styles.numBtn, { backgroundColor: PALETTE.teal }]}
+            >
+              <Text style={{ 
+                fontSize: 18 * fontScale, 
+                fontWeight: "700", 
+                color: "white" 
+              }}>
+                Check
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={hint} style={[styles.numBtn, { backgroundColor: "#FFEDCC", borderColor: PALETTE.orange }]}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: PALETTE.orange }}>Hint</Text>
+            <TouchableOpacity 
+              onPress={hint} 
+              style={[styles.numBtn, { 
+                backgroundColor: isDark ? '#4a3a00' : "#FFEDCC", 
+                borderColor: PALETTE.orange 
+              }]}
+            >
+              <Text style={{ 
+                fontSize: 18 * fontScale, 
+                fontWeight: "700", 
+                color: PALETTE.orange 
+              }}>
+                Hint
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -527,12 +610,22 @@ export default function SudokuPlay({ assessmentMode = false, onComplete }: Props
         {/* Start/Pause */}
         <View style={{ alignItems: "center", marginTop: 14 }}>
           {!running ? (
-            <TouchableOpacity style={styles.ctaStart} onPress={() => setRunning(true)}>
-              <Text style={styles.ctaText}>Start</Text>
+            <TouchableOpacity 
+              style={[styles.ctaStart, { backgroundColor: PALETTE.teal }]} 
+              onPress={() => setRunning(true)}
+            >
+              <Text style={[styles.ctaText, { fontSize: 18 * fontScale }]}>
+                Start
+              </Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={styles.ctaPause} onPress={() => setRunning(false)}>
-              <Text style={styles.ctaText}>Pause</Text>
+            <TouchableOpacity 
+              style={[styles.ctaPause, { backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightPink }]} 
+              onPress={() => setRunning(false)}
+            >
+              <Text style={[styles.ctaText, { fontSize: 18 * fontScale }]}>
+                Pause
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -542,12 +635,52 @@ export default function SudokuPlay({ assessmentMode = false, onComplete }: Props
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 40, paddingBottom: 12 },
-  iconBtn: { width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  header: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    paddingHorizontal: 20, 
+    paddingTop: 40, 
+    paddingBottom: 12 
+  },
+  iconBtn: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 12, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
   iconText: { fontSize: 24 },
-  cell: { width: 40, height: 40, margin: 2, borderWidth: 2, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  numBtn: { width: 56, height: 56, borderRadius: 14, backgroundColor: PALETTE.lightTeal, margin: 6, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: PALETTE.teal },
-  ctaStart: { backgroundColor: PALETTE.teal, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16 },
-  ctaPause: { backgroundColor: PALETTE.lightPink, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16 },
-  ctaText: { color: "white", fontSize: 18, fontWeight: "700" },
+  cell: { 
+    width: 40, 
+    height: 40, 
+    margin: 2, 
+    borderWidth: 2, 
+    borderRadius: 8, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+  numBtn: { 
+    width: 56, 
+    height: 56, 
+    borderRadius: 14, 
+    margin: 6, 
+    alignItems: "center", 
+    justifyContent: "center", 
+    borderWidth: 2 
+  },
+  ctaStart: { 
+    paddingHorizontal: 24, 
+    paddingVertical: 14, 
+    borderRadius: 16 
+  },
+  ctaPause: { 
+    paddingHorizontal: 24, 
+    paddingVertical: 14, 
+    borderRadius: 16 
+  },
+  ctaText: { 
+    color: "white", 
+    fontWeight: "700" 
+  },
 });

@@ -1,7 +1,9 @@
-// app/src/screens/Games/MemoryMatch/MemoryPlayNumbers.tsx
+// app/screens/Games/MemoryMatch/MemoryPlayNumbers.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { HapticFeedbackService } from "../../../services/HapticFeedbackService";
+import { generateDailySeed, SeededRandom } from "../../../utils/SeededRandom";
+import { auth } from '@/config/firebaseConfig';
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
@@ -12,9 +14,9 @@ type MemoryPlayNumbersNavigationProp = NativeStackNavigationProp<
   "MemoryPlayLevel3"
 >;
 
-const INITIAL_TIME = 300; // 5 minutes (increased from 4)
-const TOTAL_ROUNDS = 8; // Reduced from 10 for elderly
-const SHOW_TIME = 4000; // 4 seconds (increased from 3)
+const INITIAL_TIME = 300;
+const TOTAL_ROUNDS = 8;
+const SHOW_TIME = 4000;
 
 const MemoryPlayNumbers: React.FC = () => {
   const navigation = useNavigation<MemoryPlayNumbersNavigationProp>();
@@ -31,26 +33,33 @@ const MemoryPlayNumbers: React.FC = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const showIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastWarningRef = useRef<number>(0);
+  const randomGen = useRef<SeededRandom | null>(null);
 
-  // Generate numbers - IMPROVED for elderly (slower progression)
+  useEffect(() => {
+    const userId = auth.currentUser?.uid || 'guest';
+    const seed = generateDailySeed(userId);
+    randomGen.current = new SeededRandom(seed);
+    console.log(`Numbers game initialized with seed for user: ${userId}`);
+  }, []);
+
   const generateNumbers = (round: number): number[] => {
-    const digitCount = Math.min(3 + Math.floor(round / 3), 6); // Slower: 3->4->5->6 max
+    const digitCount = Math.min(3 + Math.floor(round / 3), 6);
     const numbers: number[] = [];
+    const rng = randomGen.current!;
     
     for (let i = 0; i < digitCount; i++) {
       if (i === 0) {
-        numbers.push(Math.floor(Math.random() * 9) + 1);
+        numbers.push(rng.nextInt(9) + 1);
       } else {
-        numbers.push(Math.floor(Math.random() * 10));
+        numbers.push(rng.nextInt(10));
       }
     }
     
     return numbers;
   };
 
-  // Initialize round
   useEffect(() => {
-    if (currentRound < TOTAL_ROUNDS) {
+    if (currentRound < TOTAL_ROUNDS && randomGen.current) {
       const numbers = generateNumbers(currentRound);
       setCurrentNumbers(numbers);
       setUserInput('');
@@ -64,7 +73,6 @@ const MemoryPlayNumbers: React.FC = () => {
     }
   }, [currentRound]);
 
-  // Timer with haptic warnings
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -93,15 +101,14 @@ const MemoryPlayNumbers: React.FC = () => {
     };
   }, [isRunning]);
 
-  // Show timer
   useEffect(() => {
-    if (gameState === 'showing' && showTimeLeft > 0) {
+    if (gameState === 'showing' && showTimeLeft > 0 && isRunning) {
       if (showIntervalRef.current) clearInterval(showIntervalRef.current);
       showIntervalRef.current = setInterval(() => {
         setShowTimeLeft((t) => {
           if (t <= 1) {
             setGameState('input');
-            HapticFeedbackService.buttonPress(); // Ready signal
+            HapticFeedbackService.buttonPress();
             return 0;
           }
           return t - 1;
@@ -109,7 +116,7 @@ const MemoryPlayNumbers: React.FC = () => {
       }, 1000);
     }
 
-    if (gameState !== 'showing' && showIntervalRef.current) {
+    if ((gameState !== 'showing' || !isRunning) && showIntervalRef.current) {
       clearInterval(showIntervalRef.current);
       showIntervalRef.current = null;
     }
@@ -120,9 +127,8 @@ const MemoryPlayNumbers: React.FC = () => {
         showIntervalRef.current = null;
       }
     };
-  }, [gameState, showTimeLeft]);
+  }, [gameState, showTimeLeft, isRunning]);
 
-  // Time up
   useEffect(() => {
     if (timeLeft <= 0) {
       HapticFeedbackService.gameEnd();
@@ -130,7 +136,6 @@ const MemoryPlayNumbers: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Cleanup
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
@@ -154,7 +159,7 @@ const MemoryPlayNumbers: React.FC = () => {
   const handleNumberInput = (digit: string) => {
     if (gameState !== 'input' || !isRunning) return;
     
-    HapticFeedbackService.selection(); // Haptic on keypress
+    HapticFeedbackService.selection();
     
     if (digit === 'clear') {
       setUserInput('');
@@ -180,9 +185,9 @@ const MemoryPlayNumbers: React.FC = () => {
     if (isCorrect) {
       const points = currentNumbers.length * 10;
       setScore(s => s + points);
-      HapticFeedbackService.correctAnswer(); // Success haptic
+      HapticFeedbackService.correctAnswer();
     } else {
-      HapticFeedbackService.wrongAnswer(); // Wrong haptic
+      HapticFeedbackService.wrongAnswer();
     }
     
     setGameState('feedback');
@@ -195,36 +200,32 @@ const MemoryPlayNumbers: React.FC = () => {
         HapticFeedbackService.levelUp();
         setCurrentRound(r => r + 1);
       }
-    }, 2500); // Longer feedback time for elderly
+    }, 2500);
   };
 
-  const endGame = (reason: "time" | "finished") => {
-    setIsRunning(false);
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (showIntervalRef.current) {
-      clearInterval(showIntervalRef.current);
-      showIntervalRef.current = null;
-    }
-    
-    const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
-    const maxPossibleScore = TOTAL_ROUNDS * 60; // Approximate max
-    const percentageScore = (score / maxPossibleScore) * 100;
-    HapticFeedbackService.scoreBasedFeedback(percentageScore);
-    
-    navigation.navigate("MemoryResults" as any, {
-      score,
-      totalQuestions: TOTAL_ROUNDS,
-      timeTaken,
-      endedBy: reason,
-      gameType: 'numbers',
-      level: 3,
-      difficulty: 'hard'
-    } as any);
-  };
-
+const endGame = (reason: "time" | "finished") => {
+  setIsRunning(false);
+  if (intervalRef.current) {
+    clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }
+  if (showIntervalRef.current) {
+    clearInterval(showIntervalRef.current);
+    showIntervalRef.current = null;
+  }
+  
+  const timeTaken = INITIAL_TIME - Math.max(0, timeLeft);
+  
+  navigation.navigate("MemoryResults" as any, {
+    score,                      // Raw score (10-60 points per correct answer)
+    totalQuestions: TOTAL_ROUNDS,  // 8 rounds total
+    timeTaken,
+    endedBy: reason,
+    gameType: 'numbers',
+    level: 3,
+    difficulty: 'hard'
+  } as any);
+}; 
   const handleStart = () => {
     setIsRunning(true);
     setGameState('showing');
@@ -248,7 +249,6 @@ const MemoryPlayNumbers: React.FC = () => {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header */}
       <View
         className="flex-row items-center justify-between px-5 pt-10 pb-4"
         style={{ backgroundColor: PALETTE.lightPink }}
@@ -288,9 +288,7 @@ const MemoryPlayNumbers: React.FC = () => {
 
         <View style={{ width: 44 }}>
           {gameState === 'start' ? (
-            <TouchableOpacity onPress={handleStart}>
-              <Text className="text-2xl">▶️</Text>
-            </TouchableOpacity>
+            <View style={{ width: 44 }} />
           ) : isRunning ? (
             <TouchableOpacity onPress={handlePause}>
               <Text className="text-2xl">⏸️</Text>
@@ -303,7 +301,6 @@ const MemoryPlayNumbers: React.FC = () => {
         </View>
       </View>
 
-      {/* Game Area */}
       <View className="justify-center flex-1 px-5">
         <View
           className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
@@ -336,7 +333,6 @@ const MemoryPlayNumbers: React.FC = () => {
                 Time left: {showTimeLeft}s
               </Text>
               
-              {/* Large number display */}
               <View 
                 className="items-center justify-center p-8 mb-6 rounded-2xl"
                 style={{ backgroundColor: PALETTE.lightTeal, minHeight: 140 }}
@@ -364,7 +360,6 @@ const MemoryPlayNumbers: React.FC = () => {
                 Type what you remember ({userInput.length}/{currentNumbers.length})
               </Text>
               
-              {/* Input display - LARGER */}
               <View 
                 className="items-center justify-center p-6 mb-6 rounded-2xl"
                 style={{ backgroundColor: '#F9FAFB', minHeight: 100, width: '100%' }}
@@ -381,7 +376,6 @@ const MemoryPlayNumbers: React.FC = () => {
                 </Text>
               </View>
 
-              {/* Number pad - LARGER buttons */}
               <View className="w-full mb-4">
                 <View className="flex-row justify-center gap-3 mb-3">
                   {[1, 2, 3].map(num => (
@@ -506,7 +500,6 @@ const MemoryPlayNumbers: React.FC = () => {
           )}
         </View>
 
-        {/* Progress */}
         <View className="items-center">
           <View style={styles.progressTrack}>
             <View

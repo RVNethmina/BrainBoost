@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "MathAssessment">;
 
@@ -34,6 +35,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const MathAssessment: React.FC = () => {
   const navigation = useNavigation<NavProp>();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+  
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{
     [key: number]: number;
@@ -43,6 +49,17 @@ const MathAssessment: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [restored, setRestored] = useState(false);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#F7FAFC';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
+  const progressBarBg = isDark ? '#3a3a3a' : PALETTE.lightTeal;
+  const jumpBtnBg = isDark ? '#3a3a3a' : '#F1F5F9';
+  const optionBg = isDark ? '#3a3a3a' : '#F8FAFC';
+  const optionBorder = isDark ? '#444' : '#E6EEF8';
+  const categoryBg = isDark ? '#3a3a3a' : '#EEF2FF';
 
   const jumpRef = useRef<ScrollView | null>(null);
 
@@ -409,23 +426,34 @@ const MathAssessment: React.FC = () => {
   const progress = Math.round(((currentQuestion + 1) / questions.length) * 100);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={[styles.backSmall, { color: PALETTE.teal }]}>
+          <Text style={[styles.backSmall, { 
+            fontSize: 14 * fontScale,
+            color: PALETTE.teal 
+          }]}>
             ← Back
           </Text>
         </TouchableOpacity>
-        <Text style={[styles.progressText, { color: PALETTE.neutralDark }]}>
+        <Text style={[styles.progressText, { 
+          fontSize: 16 * fontScale,
+          color: textColor 
+        }]}>
           Question {currentQuestion + 1} / {questions.length}
         </Text>
         <TouchableOpacity onPress={exitAssessment}>
-          <Text style={[styles.exitText, { color: PALETTE.red }]}>Exit</Text>
+          <Text style={[styles.exitText, { 
+            fontSize: 14 * fontScale,
+            color: PALETTE.red 
+          }]}>
+            Exit
+          </Text>
         </TouchableOpacity>
       </View>
 
       <View
-        style={[styles.progressBar, { backgroundColor: PALETTE.lightTeal }]}
+        style={[styles.progressBar, { backgroundColor: progressBarBg }]}
       >
         <View
           style={[
@@ -451,13 +479,18 @@ const MathAssessment: React.FC = () => {
               accessibilityLabel={`Jump to question ${idx + 1}`}
               style={[
                 styles.jumpBtn,
-                active ? styles.jumpBtnActive : null,
+                { backgroundColor: jumpBtnBg },
+                active ? { backgroundColor: PALETTE.purple } : null,
                 answered ? styles.jumpBtnAnswered : null,
               ]}
             >
               <Text
                 style={[
                   styles.jumpBtnText,
+                  { 
+                    fontSize: 20 * fontScale,
+                    color: isDark ? '#fff' : '#0f172a'
+                  },
                   active ? styles.jumpBtnTextActive : null,
                 ]}
               >
@@ -472,11 +505,18 @@ const MathAssessment: React.FC = () => {
         contentContainerStyle={styles.questionWrap}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.card}>
-          <Text style={[styles.category, { color: PALETTE.purple }]}>
+        <View style={[styles.card, { backgroundColor: cardBg }]}>
+          <Text style={[styles.category, { 
+            fontSize: 14 * fontScale,
+            color: PALETTE.purple,
+            backgroundColor: categoryBg
+          }]}>
             {question.category.toUpperCase()}
           </Text>
-          <Text style={[styles.questionText, { fontSize: 22 }]}>
+          <Text style={[styles.questionText, { 
+            fontSize: 22 * fontScale,
+            color: textColor 
+          }]}>
             {question.question}
           </Text>
 
@@ -489,14 +529,24 @@ const MathAssessment: React.FC = () => {
                   onPress={() => handleAnswerSelect(i)}
                   style={[
                     styles.option,
-                    selected ? styles.optionSelected : null,
-                    { borderColor: selected ? PALETTE.purple : undefined },
+                    { 
+                      backgroundColor: optionBg,
+                      borderColor: optionBorder
+                    },
+                    selected ? { 
+                      backgroundColor: isDark ? '#3a3a3a' : '#F0F9FF', 
+                      borderColor: PALETTE.purple 
+                    } : null,
                   ]}
                   accessibilityLabel={`Option ${i + 1}: ${opt}`}
                 >
                   <Text
                     style={[
                       styles.optionText,
+                      { 
+                        fontSize: 18 * fontScale,
+                        color: textColor
+                      },
                       selected ? styles.optionTextSelected : null,
                     ]}
                   >
@@ -514,12 +564,14 @@ const MathAssessment: React.FC = () => {
             disabled={currentQuestion === 0}
             style={[
               styles.navBtn,
+              { backgroundColor: PALETTE.purple },
               currentQuestion === 0 ? styles.navDisabled : null,
             ]}
           >
             <Text
               style={[
                 styles.navBtnText,
+                { fontSize: 16 * fontScale },
                 currentQuestion === 0 ? styles.navDisabledText : null,
               ]}
             >
@@ -532,6 +584,7 @@ const MathAssessment: React.FC = () => {
             disabled={selectedAnswers[question.id] === undefined}
             style={[
               styles.navBtn,
+              { backgroundColor: PALETTE.purple },
               selectedAnswers[question.id] === undefined
                 ? styles.navDisabled
                 : null,
@@ -540,6 +593,7 @@ const MathAssessment: React.FC = () => {
             <Text
               style={[
                 styles.navBtnText,
+                { fontSize: 16 * fontScale },
                 selectedAnswers[question.id] === undefined
                   ? styles.navDisabledText
                   : null,
@@ -557,28 +611,26 @@ const MathAssessment: React.FC = () => {
 export default MathAssessment;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F7FAFC" },
+  container: { flex: 1 },
   topRow: { paddingHorizontal: 12, paddingTop: 12, alignItems: "flex-start" },
   backBtn: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8 },
-  backBtnText: { fontWeight: "700", fontSize: 16 },
+  backBtnText: { fontWeight: "700" },
   welcomeContent: { padding: 24, alignItems: "center" },
   bigTitle: {
-    fontSize: 30,
     fontWeight: "800",
     marginBottom: 8,
     textAlign: "center",
   },
-  largeSubtitle: { fontSize: 18, marginBottom: 20, textAlign: "center" },
+  largeSubtitle: { marginBottom: 20, textAlign: "center" },
   welcomeCard: {
     width: "100%",
-    backgroundColor: "#fff",
     padding: 18,
     borderRadius: 12,
     marginBottom: 18,
     elevation: 3,
   },
-  welcomeCardTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8 },
-  welcomeLine: { fontSize: 16, color: "#475569", marginVertical: 2 },
+  welcomeCardTitle: { fontWeight: "700", marginBottom: 8 },
+  welcomeLine: { marginVertical: 2 },
   startButton: {
     marginTop: 8,
     paddingVertical: 18,
@@ -587,7 +639,6 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   startButtonText: {
-    fontSize: 18,
     color: "#fff",
     fontWeight: "800",
     textAlign: "center",
@@ -600,9 +651,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  progressText: { fontSize: 16, fontWeight: "700" },
+  progressText: { fontWeight: "700" },
   backSmall: { fontWeight: "700" },
-  exitText: { fontSize: 14, fontWeight: "700" },
+  exitText: { fontWeight: "700" },
   progressBar: {
     height: 8,
     marginHorizontal: 12,
@@ -615,18 +666,16 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
   },
-  jumpBtnActive: { backgroundColor: PALETTE.purple },
+  jumpBtnActive: {},
   jumpBtnAnswered: { borderWidth: 2, borderColor: PALETTE.green },
-  jumpBtnText: { fontSize: 20, fontWeight: "800", color: "#0f172a" },
+  jumpBtnText: { fontWeight: "800" },
   jumpBtnTextActive: { color: "#fff" },
   questionWrap: { padding: 16, paddingBottom: 36 },
   card: {
-    backgroundColor: "#fff",
     padding: 20,
     borderRadius: 12,
     elevation: 3,
@@ -638,25 +687,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontWeight: "700",
     marginBottom: 12,
-    backgroundColor: "#EEF2FF",
   },
   questionText: {
-    fontSize: 20,
-    color: "#0f172a",
     lineHeight: 28,
     marginBottom: 8,
   },
   option: {
-    backgroundColor: "#F8FAFC",
     paddingVertical: 16,
     paddingHorizontal: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E6EEF8",
     marginVertical: 8,
   },
-  optionSelected: { backgroundColor: "#F0F9FF", borderColor: PALETTE.purple },
-  optionText: { textAlign: "center", fontSize: 18, color: "#0f172a" },
+  optionSelected: { borderColor: PALETTE.purple },
+  optionText: { textAlign: "center" },
   optionTextSelected: { fontWeight: "800" },
   navRow: {
     flexDirection: "row",
@@ -665,29 +709,27 @@ const styles = StyleSheet.create({
   },
   navBtn: {
     flex: 1,
-    backgroundColor: PALETTE.purple,
     paddingVertical: 14,
     borderRadius: 10,
     marginHorizontal: 8,
     alignItems: "center",
   },
-  navBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  navBtnText: { color: "#fff", fontWeight: "800" },
   navDisabled: { backgroundColor: "#cbd5e1" },
   navDisabledText: { color: "#475569" },
   resultsContent: { padding: 24, alignItems: "center" },
-  resultsTitle: { fontSize: 22, fontWeight: "800", marginBottom: 12 },
+  resultsTitle: { fontWeight: "800", marginBottom: 12 },
   badgeBox: {
     width: "100%",
-    backgroundColor: "#fff",
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
     borderWidth: 2,
     marginBottom: 12,
   },
-  badgeLabel: { fontSize: 18, fontWeight: "900" },
-  badgeScore: { fontSize: 40, fontWeight: "900", marginTop: 6 },
-  badgeMsg: { marginTop: 8, textAlign: "center", fontSize: 15 },
+  badgeLabel: { fontWeight: "900" },
+  badgeScore: { fontWeight: "900", marginTop: 6 },
+  badgeMsg: { marginTop: 8, textAlign: "center" },
   domainGrid: {
     width: "100%",
     flexDirection: "row",
@@ -697,14 +739,13 @@ const styles = StyleSheet.create({
   },
   domainCard: {
     width: "48%",
-    backgroundColor: "#fff",
     padding: 12,
     borderRadius: 10,
     marginBottom: 10,
     elevation: 2,
   },
   domainTitle: { fontWeight: "800", marginBottom: 6 },
-  domainPercent: { fontSize: 22, fontWeight: "900" },
+  domainPercent: { fontWeight: "900" },
   domainBar: {
     height: 8,
     backgroundColor: "#EEF2FF",
@@ -713,7 +754,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   domainFill: { height: "100%" },
-  domainSmall: { marginTop: 6, color: "#475569" },
+  domainSmall: { marginTop: 6 },
   resultNavRow: {
     flexDirection: "row",
     width: "100%",
