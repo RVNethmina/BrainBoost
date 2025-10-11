@@ -9,6 +9,17 @@
 // type Nav = NativeStackNavigationProp<RootStackParamList, "MathResults">;
 // type Diff = "easy" | "medium" | "hard";
 
+// type Props = {
+//   assessmentMode?: boolean;
+//   onComplete?: (res: {
+//     accuracy: number;
+//     moves: number;
+//     mistakes: number;
+//     timeTaken: number;
+//     avgRT: number;
+//   }) => void;
+// };
+
 // function gridSizeFor(diff: Diff) {
 //   return diff === "easy" ? 3 : diff === "medium" ? 4 : 5;
 // }
@@ -21,7 +32,7 @@
 //   return a;
 // }
 
-// export default function JigsawPlay() {
+// export default function JigsawPlay({ assessmentMode = false, onComplete }: Props) {
 //   const nav = useNavigation<Nav>();
 //   const route = useRoute<any>();
 //   const diff: Diff = route.params?.difficulty || "easy";
@@ -56,9 +67,10 @@
 //     arr.reduce((acc, v, i) => acc + (v === solved[i] ? 1 : 0), 0);
 
 //   const formatTime = (s: number) =>
-//     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(
-//       s % 60
-//     ).padStart(2, "0")}`;
+//     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
+//       2,
+//       "0"
+//     )}`;
 
 //   // timer
 //   useEffect(() => {
@@ -107,6 +119,21 @@
 //       timerRef.current = null;
 //     }
 //     const timeTaken = initialTime - Math.max(0, timeLeft);
+//     const accuracy = (countCorrect(tiles) / (N * N)) * 100;
+//     const avgRT = moves > 0 ? Math.round((timeTaken * 1000) / moves) : 0;
+
+//     if (assessmentMode && onComplete) {
+//       onComplete({
+//         accuracy,
+//         moves,
+//         mistakes,
+//         timeTaken,
+//         avgRT,
+//       });
+//       return;
+//     }
+
+//     // normal navigation fallback
 //     nav.navigate("MathResults", {
 //       score: Math.max(1, N * N - moves),
 //       totalQuestions: 1,
@@ -370,6 +397,7 @@
 //   },
 //   ctaText: { color: "white", fontSize: 18, fontWeight: "700" },
 // });
+// screens/Games/Puzzle/JigsawPlay.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -406,7 +434,8 @@ function shuffled<T>(arr: T[]) {
 export default function JigsawPlay({ assessmentMode = false, onComplete }: Props) {
   const nav = useNavigation<Nav>();
   const route = useRoute<any>();
-  const diff: Diff = route.params?.difficulty || "easy";
+  // Use 'medium' difficulty for assessment if no route param is passed
+  const diff: Diff = assessmentMode ? "medium" : (route.params?.difficulty || "easy");
   const N = gridSizeFor(diff);
   const initialTime = diff === "easy" ? 150 : diff === "medium" ? 120 : 120;
   const WRONG_LIMIT = 5;
@@ -429,9 +458,10 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
   const [moves, setMoves] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [timeLeft, setTimeLeft] = useState(initialTime);
-  const [running, setRunning] = useState(false);
-  const [flashWrong, setFlashWrong] = useState<number | null>(null); // index for quick red flash
+  const [running, setRunning] = useState(assessmentMode); // Start running immediately in assessment mode
+  const [flashWrong, setFlashWrong] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef<number>(Date.now()); // Track start time
 
   // helpers
   const countCorrect = (arr: number[]) =>
@@ -470,7 +500,7 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
   // solved check
   useEffect(() => {
     if (tiles.every((v, idx) => v === solved[idx])) {
-      Alert.alert("Great job!", "Puzzle solved 🎉");
+      !assessmentMode && Alert.alert("Great job!", "Puzzle solved 🎉");
       end("completed");
     }
   }, [tiles, solved]);
@@ -478,7 +508,7 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
   // mistakes limit
   useEffect(() => {
     if (mistakes >= WRONG_LIMIT) {
-      Alert.alert("Game Over", `You made ${WRONG_LIMIT} wrong moves.`);
+      !assessmentMode && Alert.alert("Game Over", `You made ${WRONG_LIMIT} wrong moves.`);
       end("mistakes");
     }
   }, [mistakes]);
@@ -489,7 +519,7 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    const timeTaken = initialTime - Math.max(0, timeLeft);
+    const timeTaken = Math.floor((Date.now() - startTimeRef.current) / 1000);
     const accuracy = (countCorrect(tiles) / (N * N)) * 100;
     const avgRT = moves > 0 ? Math.round((timeTaken * 1000) / moves) : 0;
 
@@ -554,6 +584,7 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
     setMistakes(0);
     setTimeLeft(initialTime);
     setRunning(false);
+    startTimeRef.current = Date.now();
   };
 
   const showRules = () => {
@@ -570,7 +601,8 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
         <TouchableOpacity
           onPress={() => {
             setRunning(false);
-            nav.goBack();
+            // In assessment mode, exiting means treating it as timeUp
+            assessmentMode ? end("timeUp") : nav.goBack();
           }}
           style={[styles.iconBtn, { backgroundColor: PALETTE.lightTeal }]}
           accessibilityRole="button"
@@ -606,24 +638,26 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
 
       {/* Body */}
       <View style={styles.body}>
-        {/* Top actions */}
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            onPress={showRules}
-            style={[styles.smallBtn, { backgroundColor: "#FFF" }]}
-          >
-            <Text style={[styles.smallBtnText, { color: PALETTE.teal }]}>
-              Rules
-            </Text>
-          </TouchableOpacity>
+        {/* Top actions - Hide Reset/Rules in Assessment Mode */}
+        {!assessmentMode && (
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              onPress={showRules}
+              style={[styles.smallBtn, { backgroundColor: "#FFF" }]}
+            >
+              <Text style={[styles.smallBtnText, { color: PALETTE.teal }]}>
+                Rules
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={resetGame}
-            style={[styles.smallBtn, { backgroundColor: PALETTE.teal }]}
-          >
-            <Text style={[styles.smallBtnText, { color: "white" }]}>Reset</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={resetGame}
+              style={[styles.smallBtn, { backgroundColor: PALETTE.teal }]}
+            >
+              <Text style={[styles.smallBtnText, { color: "white" }]}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={{ alignItems: "center", marginBottom: 8 }}>
           <Text style={{ fontSize: 18, color: PALETTE.neutralMuted }}>
@@ -670,26 +704,28 @@ export default function JigsawPlay({ assessmentMode = false, onComplete }: Props
           })}
         </View>
 
-        {/* Start/Pause big CTA */}
-        <View style={{ alignItems: "center", marginTop: 16 }}>
-          {!running ? (
-            <TouchableOpacity
-              style={[styles.cta, { backgroundColor: PALETTE.teal }]}
-              onPress={() => setRunning(true)}
-              accessibilityRole="button"
-            >
-              <Text style={styles.ctaText}>Start</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.cta, { backgroundColor: PALETTE.lightPink }]}
-              onPress={() => setRunning(false)}
-              accessibilityRole="button"
-            >
-              <Text style={styles.ctaText}>Pause</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {/* Start/Pause big CTA - Hide in Assessment Mode */}
+        {!assessmentMode && (
+          <View style={{ alignItems: "center", marginTop: 16 }}>
+            {!running ? (
+              <TouchableOpacity
+                style={[styles.cta, { backgroundColor: PALETTE.teal }]}
+                onPress={() => setRunning(true)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.ctaText}>Start</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.cta, { backgroundColor: PALETTE.lightPink }]}
+                onPress={() => setRunning(false)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.ctaText}>Pause</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );
