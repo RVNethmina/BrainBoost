@@ -179,18 +179,33 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useRef, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Import the settings context
 import JigsawPlay from "../Games/Puzzle/JigsawPlay";
 import SudokuPlay from "../Games/Puzzle/SudokuPlay";
 import TargetNumberPlay from "../Games/Puzzle/TargetNumberPlay";
-;
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "PuzzleAssessmentResult">;
 
 export default function PuzzleAssessmentRun() {
   const nav = useNavigation<Nav>();
+  
+  // Use settings context
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+
   const [step, setStep] = useState(0);
   const [results, setResults] = useState<any[]>([]);
   const startTimeRef = useRef(Date.now());
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : 'white';
+  const textColor = isDark ? '#fff' : PALETTE.teal;
+  const mutedTextColor = isDark ? '#aaa' : '#6B7280';
+  const cardBg1 = isDark ? '#2a4a4a' : PALETTE.lightTeal;
+  const cardBg2 = isDark ? '#4a2a2a' : PALETTE.lightPink;
+  const cardText1 = isDark ? '#fff' : PALETTE.teal;
+  const cardText2 = isDark ? '#fff' : PALETTE.red;
 
   // Define all tasks here
   // Note: Only TargetNumberPlay and JigsawPlay need assessmentMode prop defined
@@ -235,7 +250,10 @@ export default function PuzzleAssessmentRun() {
 
   const Progress = () => (
     <View style={{ alignItems: "center", marginBottom: 20 }}>
-      <Text style={{ fontSize: 16, color: "#6B7280" }}>
+      <Text style={{ 
+        fontSize: 16 * fontScale, 
+        color: mutedTextColor 
+      }}>
         Task {Math.min(step + 1, totalTasks)} / {totalTasks}
       </Text>
     </View>
@@ -250,9 +268,19 @@ export default function PuzzleAssessmentRun() {
     const roundStartTime = Date.now();
     
     return (
-      <View style={{ flex: 1, padding: 20, justifyContent: "center" }}>
+      <View style={{ 
+        flex: 1, 
+        padding: 20, 
+        justifyContent: "center",
+        backgroundColor: bgColor 
+      }}>
         <Progress />
-        <Text style={{ fontSize: 20, fontWeight: "700", marginBottom: 20 }}>
+        <Text style={{ 
+          fontSize: 20 * fontScale, 
+          fontWeight: "700", 
+          marginBottom: 20,
+          color: textColor 
+        }}>
           {q.prompt}
         </Text>
         {q.options.map((opt, i) => (
@@ -271,13 +299,17 @@ export default function PuzzleAssessmentRun() {
             }}
             style={{
               padding: 16,
-              backgroundColor: index % 2 === 0 ? PALETTE.lightTeal : PALETTE.lightPink,
+              backgroundColor: i % 2 === 0 ? cardBg1 : cardBg2,
               marginBottom: 12,
               borderRadius: 12,
             }}
           >
             <Text
-              style={{ fontSize: 20, fontWeight: "600", color: index % 2 === 0 ? PALETTE.teal : PALETTE.red }}
+              style={{ 
+                fontSize: 20 * fontScale, 
+                fontWeight: "600", 
+                color: i % 2 === 0 ? cardText1 : cardText2 
+              }}
             >
               {opt}
             </Text>
@@ -341,10 +373,15 @@ export default function PuzzleAssessmentRun() {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "white",
+        backgroundColor: bgColor,
       }}
     >
-      <Text style={{ fontSize: 18, color: "#6B7280" }}>{step >= totalTasks ? "Assessment Complete" : "Loading Next Task..."}</Text>
+      <Text style={{ 
+        fontSize: 18 * fontScale, 
+        color: mutedTextColor 
+      }}>
+        {step >= totalTasks ? "Assessment Complete" : "Loading Next Task..."}
+      </Text>
     </View>
   );
 }

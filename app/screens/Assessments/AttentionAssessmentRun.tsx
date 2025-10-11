@@ -5,6 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Vibration, BackHandler } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type AttentionAssessmentRunNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -52,7 +53,23 @@ type TrialResult = {
 
 const AttentionAssessmentRun: React.FC = () => {
   const navigation = useNavigation<AttentionAssessmentRunNavigationProp>();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
   
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.teal;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const buttonBg = isDark ? '#3a3a3a' : PALETTE.lightTeal;
+  const activeButtonBg = isDark ? '#4a3a00' : '#FEF3C7';
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
+  const borderColor = isDark ? '#444' : PALETTE.teal;
+  const gridItemBg = isDark ? '#3a3a3a' : PALETTE.lightTeal;
+  const inactiveGridBg = isDark ? '#2a2a2a' : '#F3F4F6';
+
   const [currentPhase, setCurrentPhase] = useState<AssessmentPhase>('task1');
   const [taskState, setTaskState] = useState<TaskState>('instruction');
   const [timeLeft, setTimeLeft] = useState<number>(TOTAL_TIME);
@@ -518,25 +535,55 @@ const AttentionAssessmentRun: React.FC = () => {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header */}
       <View
         className="flex-row items-center justify-between px-5 pt-10 pb-4"
-        style={{ backgroundColor: PALETTE.teal }}
+        style={{ backgroundColor: headerBg }}
       >
         <View className="items-center">
-          <Text className="text-sm text-white">Task {getCurrentTaskNumber()}/3</Text>
-          <Text className="text-lg font-bold text-white">{getCurrentTaskName()}</Text>
+          <Text 
+            className="text-sm text-white"
+            style={{ fontSize: 14 * fontScale }}
+          >
+            Task {getCurrentTaskNumber()}/3
+          </Text>
+          <Text 
+            className="text-lg font-bold text-white"
+            style={{ fontSize: 18 * fontScale }}
+          >
+            {getCurrentTaskName()}
+          </Text>
         </View>
 
         <View className="items-center">
-          <Text className="text-sm text-white">Time Remaining</Text>
-          <Text className="text-xl font-bold text-white">{formatTime(taskTimeLeft)}</Text>
+          <Text 
+            className="text-sm text-white"
+            style={{ fontSize: 14 * fontScale }}
+          >
+            Time Remaining
+          </Text>
+          <Text 
+            className="text-xl font-bold text-white"
+            style={{ fontSize: 20 * fontScale }}
+          >
+            {formatTime(taskTimeLeft)}
+          </Text>
         </View>
 
         <View className="items-center">
-          <Text className="text-sm text-white">Total</Text>
-          <Text className="text-lg font-bold text-white">{formatTime(timeLeft)}</Text>
+          <Text 
+            className="text-sm text-white"
+            style={{ fontSize: 14 * fontScale }}
+          >
+            Total
+          </Text>
+          <Text 
+            className="text-lg font-bold text-white"
+            style={{ fontSize: 18 * fontScale }}
+          >
+            {formatTime(timeLeft)}
+          </Text>
         </View>
       </View>
 
@@ -545,14 +592,33 @@ const AttentionAssessmentRun: React.FC = () => {
         {taskState === 'instruction' && (
           <View
             className="p-6 mb-8 border shadow-sm rounded-2xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.teal }}
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: borderColor,
+              shadowColor: '#000',
+              shadowOpacity: isDark ? 0.3 : 0.1,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
           >
             {currentPhase === 'task1' && (
               <>
-                <Text className="mb-4 text-2xl font-bold text-center" style={{ color: PALETTE.teal }}>
+                <Text 
+                  className="mb-4 text-2xl font-bold text-center"
+                  style={{ 
+                    fontSize: 24 * fontScale,
+                    color: PALETTE.teal 
+                  }}
+                >
                   Task 1: Visual Search
                 </Text>
-                <Text className="mb-6 text-lg text-center text-gray-700">
+                <Text 
+                  className="mb-6 text-lg text-center"
+                  style={{ 
+                    fontSize: 18 * fontScale,
+                    color: textColor 
+                  }}
+                >
                   Find the target symbol shown at the top. Tap it if you see it, or tap "No Target" if it's not present.
                 </Text>
               </>
@@ -560,10 +626,22 @@ const AttentionAssessmentRun: React.FC = () => {
 
             {currentPhase === 'task2' && (
               <>
-                <Text className="mb-4 text-2xl font-bold text-center" style={{ color: PALETTE.teal }}>
+                <Text 
+                  className="mb-4 text-2xl font-bold text-center"
+                  style={{ 
+                    fontSize: 24 * fontScale,
+                    color: PALETTE.teal 
+                  }}
+                >
                   Task 2: Sustained Focus
                 </Text>
-                <Text className="mb-6 text-lg text-center text-gray-700">
+                <Text 
+                  className="mb-6 text-lg text-center"
+                  style={{ 
+                    fontSize: 18 * fontScale,
+                    color: textColor 
+                  }}
+                >
                   Tap the screen whenever you see the target symbol (🎯). Ignore other symbols.
                 </Text>
               </>
@@ -571,10 +649,22 @@ const AttentionAssessmentRun: React.FC = () => {
 
             {currentPhase === 'task3' && (
               <>
-                <Text className="mb-4 text-2xl font-bold text-center" style={{ color: PALETTE.teal }}>
+                <Text 
+                  className="mb-4 text-2xl font-bold text-center"
+                  style={{ 
+                    fontSize: 24 * fontScale,
+                    color: PALETTE.teal 
+                  }}
+                >
                   Task 3: Divided Attention
                 </Text>
-                <Text className="mb-6 text-lg text-center text-gray-700">
+                <Text 
+                  className="mb-6 text-lg text-center"
+                  style={{ 
+                    fontSize: 18 * fontScale,
+                    color: textColor 
+                  }}
+                >
                   Tap the glowing symbols as quickly as possible. Multiple targets may appear at once. They will disappear after 2 seconds.
                 </Text>
               </>
@@ -585,7 +675,12 @@ const AttentionAssessmentRun: React.FC = () => {
               style={{ backgroundColor: PALETTE.teal }}
               onPress={startTask}
             >
-              <Text className="text-xl font-semibold text-white text-center">Start Task</Text>
+              <Text 
+                className="text-xl font-semibold text-white text-center"
+                style={{ fontSize: 20 * fontScale }}
+              >
+                Start Task
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -593,9 +688,22 @@ const AttentionAssessmentRun: React.FC = () => {
         {taskState === 'running' && currentPhase === 'task1' && (
           <View
             className="p-4 border shadow-sm rounded-2xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.teal }}
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: borderColor,
+              shadowColor: '#000',
+              shadowOpacity: isDark ? 0.3 : 0.1,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
           >
-            <Text className="mb-4 text-xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-4 text-xl font-bold text-center"
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               Find: {task1Target}
             </Text>
 
@@ -606,9 +714,9 @@ const AttentionAssessmentRun: React.FC = () => {
                   key={item.id}
                   className="items-center justify-center rounded-xl"
                   style={{
-                    backgroundColor: PALETTE.lightTeal,
+                    backgroundColor: gridItemBg,
                     borderWidth: 2,
-                    borderColor: PALETTE.teal,
+                    borderColor: borderColor,
                     width: 60,
                     height: 60,
                     margin: 2,
@@ -646,10 +754,21 @@ const AttentionAssessmentRun: React.FC = () => {
                 }, 500);
               }}
             >
-              <Text className="text-lg font-semibold text-white text-center">No Target</Text>
+              <Text 
+                className="text-lg font-semibold text-white text-center"
+                style={{ fontSize: 18 * fontScale }}
+              >
+                No Target
+              </Text>
             </TouchableOpacity>
 
-            <Text className="mt-4 text-center text-gray-600">
+            <Text 
+              className="mt-4 text-center"
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: secondaryTextColor 
+              }}
+            >
               Round: {task1Round + 1}/{TASK1_ROUNDS}
             </Text>
           </View>
@@ -659,16 +778,22 @@ const AttentionAssessmentRun: React.FC = () => {
           <View
             className="items-center justify-center flex-1"
           >
-            <Text className="mb-8 text-xl text-center text-gray-600">
+            <Text 
+              className="mb-8 text-xl text-center"
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: secondaryTextColor 
+              }}
+            >
               Tap when you see the target: 🎯
             </Text>
 
             <TouchableOpacity
               className="items-center justify-center rounded-full"
               style={{
-                backgroundColor: task2ShowingStimulus ? PALETTE.lightTeal : '#F3F4F6',
+                backgroundColor: task2ShowingStimulus ? buttonBg : inactiveGridBg,
                 borderWidth: 4,
-                borderColor: task2IsTarget ? PALETTE.teal : '#D1D5DB',
+                borderColor: task2IsTarget ? PALETTE.teal : (isDark ? '#666' : '#D1D5DB'),
                 width: 200,
                 height: 200,
               }}
@@ -679,7 +804,13 @@ const AttentionAssessmentRun: React.FC = () => {
               </Text>
             </TouchableOpacity>
 
-            <Text className="mt-8 text-center text-gray-600">
+            <Text 
+              className="mt-8 text-center"
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: secondaryTextColor 
+              }}
+            >
               Stimuli shown: {task2StimulusCount}
             </Text>
           </View>
@@ -688,9 +819,22 @@ const AttentionAssessmentRun: React.FC = () => {
         {taskState === 'running' && currentPhase === 'task3' && (
           <View
             className="p-4 border shadow-sm rounded-2xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.teal }}
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: borderColor,
+              shadowColor: '#000',
+              shadowOpacity: isDark ? 0.3 : 0.1,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
           >
-            <Text className="mb-4 text-xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-4 text-xl font-bold text-center"
+              style={{ 
+                fontSize: 20 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               Tap the Glowing Symbols
             </Text>
 
@@ -703,9 +847,9 @@ const AttentionAssessmentRun: React.FC = () => {
                     key={item.id}
                     className="items-center justify-center rounded-xl"
                     style={{
-                      backgroundColor: isActive ? '#FEF3C7' : PALETTE.lightTeal,
+                      backgroundColor: isActive ? activeButtonBg : gridItemBg,
                       borderWidth: 3,
-                      borderColor: isActive ? PALETTE.orange : PALETTE.teal,
+                      borderColor: isActive ? PALETTE.orange : borderColor,
                       width: 70,
                       height: 70,
                       margin: 2,
@@ -722,7 +866,13 @@ const AttentionAssessmentRun: React.FC = () => {
               })}
             </View>
 
-            <Text className="mt-4 text-center text-gray-600">
+            <Text 
+              className="mt-4 text-center"
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: secondaryTextColor 
+              }}
+            >
               Active targets: {task3ActiveTargets.size} | Trial: {task3TrialNumber}
             </Text>
           </View>
@@ -731,12 +881,31 @@ const AttentionAssessmentRun: React.FC = () => {
         {taskState === 'complete' && (
           <View
             className="p-6 border shadow-sm rounded-2xl"
-            style={{ backgroundColor: "white", borderColor: PALETTE.teal }}
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: borderColor,
+              shadowColor: '#000',
+              shadowOpacity: isDark ? 0.3 : 0.1,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
           >
-            <Text className="mb-4 text-2xl font-bold text-center" style={{ color: PALETTE.teal }}>
+            <Text 
+              className="mb-4 text-2xl font-bold text-center"
+              style={{ 
+                fontSize: 24 * fontScale,
+                color: PALETTE.teal 
+              }}
+            >
               Task {getCurrentTaskNumber()} Complete!
             </Text>
-            <Text className="text-lg text-center text-gray-600">
+            <Text 
+              className="text-lg text-center"
+              style={{ 
+                fontSize: 18 * fontScale,
+                color: textColor 
+              }}
+            >
               {currentPhase === 'task3' ? 'Calculating your results...' : 'Preparing next task...'}
             </Text>
           </View>

@@ -6,6 +6,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useSettings } from '@/app/contexts/SettingsContext'; // Add this import
 
 type AttentionAssessmentResultNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -33,6 +34,11 @@ type AssessmentResultsRouteParams = {
 const AttentionAssessmentResult: React.FC = () => {
   const navigation = useNavigation<AttentionAssessmentResultNavigationProp>();
   const route = useRoute();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+  
   const {
     totalTime = 0,
     results = [],
@@ -40,6 +46,15 @@ const AttentionAssessmentResult: React.FC = () => {
     averageReactionTime = 0,
     tasksCompleted = 0,
   } = (route.params as AssessmentResultsRouteParams) || {};
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const lightCardBg = isDark ? '#3a3a3a' : '#F9FAFB';
+  const infoBg = isDark ? '#2a3a4a' : '#F0F9FF';
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
+  const borderColor = isDark ? '#444' : '#E5E7EB';
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const savedRef = useRef(false);
@@ -178,13 +193,18 @@ const AttentionAssessmentResult: React.FC = () => {
   }, []);
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header */}
       <View
         className="flex-row items-center justify-center px-5 pt-12 pb-6"
         style={{ backgroundColor: performance.color }}
       >
-        <Text className="text-3xl font-bold text-white">Assessment Complete</Text>
+        <Text 
+          className="text-3xl font-bold text-white"
+          style={{ fontSize: 32 * fontScale }}
+        >
+          Assessment Complete
+        </Text>
       </View>
 
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
@@ -194,100 +214,285 @@ const AttentionAssessmentResult: React.FC = () => {
             className="items-center justify-center w-40 h-40 mb-6 rounded-full"
             style={{ backgroundColor: performance.color }}
           >
-            <Text className="text-5xl font-bold text-white">{attentionScore}</Text>
-            <Text className="text-lg text-white">/ 100</Text>
+            <Text 
+              className="text-5xl font-bold text-white"
+              style={{ fontSize: 48 * fontScale }}
+            >
+              {attentionScore}
+            </Text>
+            <Text 
+              className="text-lg text-white"
+              style={{ fontSize: 18 * fontScale }}
+            >
+              / 100
+            </Text>
           </View>
           
-          <Text className="mb-2 text-3xl font-bold" style={{ color: performance.color }}>
+          <Text 
+            className="mb-2 text-3xl font-bold"
+            style={{ 
+              fontSize: 32 * fontScale,
+              color: performance.color 
+            }}
+          >
             {performance.level}
           </Text>
-          <Text className="mb-4 text-xl text-center text-gray-600">
+          <Text 
+            className="mb-4 text-xl text-center"
+            style={{ 
+              fontSize: 20 * fontScale,
+              color: secondaryTextColor 
+            }}
+          >
             Attention Performance Score
           </Text>
 
           {/* Save Status */}
           {saveStatus === 'saving' && (
-            <Text className="mb-2 text-sm text-gray-500">Saving assessment...</Text>
+            <Text 
+              className="mb-2 text-sm"
+              style={{ 
+                fontSize: 14 * fontScale,
+                color: secondaryTextColor 
+              }}
+            >
+              Saving assessment...
+            </Text>
           )}
           {saveStatus === 'saved' && (
-            <Text className="mb-2 text-sm text-green-600">✓ Assessment saved</Text>
+            <Text 
+              className="mb-2 text-sm text-green-600"
+              style={{ fontSize: 14 * fontScale }}
+            >
+              ✓ Assessment saved
+            </Text>
           )}
           {saveStatus === 'error' && (
-            <Text className="mb-2 text-sm text-red-500">Could not save (offline?)</Text>
+            <Text 
+              className="mb-2 text-sm text-red-500"
+              style={{ fontSize: 14 * fontScale }}
+            >
+              Could not save (offline?)
+            </Text>
           )}
         </View>
 
         {/* Summary Stats */}
         <View
           className="p-5 mb-6 rounded-2xl"
-          style={{ backgroundColor: '#F9FAFB' }}
+          style={{ backgroundColor: lightCardBg }}
         >
-          <Text className="mb-4 text-xl font-bold" style={{ color: PALETTE.teal }}>
+          <Text 
+            className="mb-4 text-xl font-bold"
+            style={{ 
+              fontSize: 20 * fontScale,
+              color: PALETTE.teal 
+            }}
+          >
             Assessment Summary
           </Text>
           
           <View className="flex-row justify-between mb-3">
-            <Text className="text-gray-700">Duration:</Text>
-            <Text className="font-semibold">{formatTime(totalTime)}</Text>
+            <Text 
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              Duration:
+            </Text>
+            <Text 
+              className="font-semibold"
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              {formatTime(totalTime)}
+            </Text>
           </View>
           
           <View className="flex-row justify-between mb-3">
-            <Text className="text-gray-700">Tasks Completed:</Text>
-            <Text className="font-semibold">{tasksCompleted}/3</Text>
+            <Text 
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              Tasks Completed:
+            </Text>
+            <Text 
+              className="font-semibold"
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              {tasksCompleted}/3
+            </Text>
           </View>
           
           <View className="flex-row justify-between mb-3">
-            <Text className="text-gray-700">Overall Accuracy:</Text>
-            <Text className="font-semibold">{overallAccuracy}%</Text>
+            <Text 
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              Overall Accuracy:
+            </Text>
+            <Text 
+              className="font-semibold"
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              {overallAccuracy}%
+            </Text>
           </View>
           
           <View className="flex-row justify-between">
-            <Text className="text-gray-700">Avg Response Time:</Text>
-            <Text className="font-semibold">{averageReactionTime}ms</Text>
+            <Text 
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              Avg Response Time:
+            </Text>
+            <Text 
+              className="font-semibold"
+              style={{ 
+                fontSize: 16 * fontScale,
+                color: textColor 
+              }}
+            >
+              {averageReactionTime}ms
+            </Text>
           </View>
         </View>
 
         {/* Task Breakdown */}
         <View
           className="p-5 mb-6 rounded-2xl"
-          style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E5E7EB' }}
+          style={{ 
+            backgroundColor: cardBg, 
+            borderWidth: 1, 
+            borderColor: borderColor 
+          }}
         >
-          <Text className="mb-4 text-xl font-bold" style={{ color: PALETTE.teal }}>
+          <Text 
+            className="mb-4 text-xl font-bold"
+            style={{ 
+              fontSize: 20 * fontScale,
+              color: PALETTE.teal 
+            }}
+          >
             Task Performance Breakdown
           </Text>
 
           {tasksCompleted >= 1 && (
-            <View className="p-4 mb-3 rounded-xl" style={{ backgroundColor: PALETTE.lightTeal }}>
-              <Text className="mb-2 text-lg font-semibold" style={{ color: PALETTE.teal }}>
+            <View 
+              className="p-4 mb-3 rounded-xl" 
+              style={{ backgroundColor: isDark ? '#2a4a4a' : PALETTE.lightTeal }}
+            >
+              <Text 
+                className="mb-2 text-lg font-semibold"
+                style={{ 
+                  fontSize: 18 * fontScale,
+                  color: PALETTE.teal 
+                }}
+              >
                 Task 1: Visual Search
               </Text>
               <View className="flex-row justify-between">
-                <Text className="text-gray-700">Accuracy: {task1Metrics.accuracy}%</Text>
-                <Text className="text-gray-700">Avg RT: {task1Metrics.avgRT}ms</Text>
+                <Text 
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }}
+                >
+                  Accuracy: {task1Metrics.accuracy}%
+                </Text>
+                <Text 
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }}
+                >
+                  Avg RT: {task1Metrics.avgRT}ms
+                </Text>
               </View>
             </View>
           )}
 
           {tasksCompleted >= 2 && (
-            <View className="p-4 mb-3 rounded-xl" style={{ backgroundColor: '#FFEDCC' }}>
-              <Text className="mb-2 text-lg font-semibold" style={{ color: PALETTE.orange }}>
+            <View 
+              className="p-4 mb-3 rounded-xl" 
+              style={{ backgroundColor: isDark ? '#4a3a2a' : '#FFEDCC' }}
+            >
+              <Text 
+                className="mb-2 text-lg font-semibold"
+                style={{ 
+                  fontSize: 18 * fontScale,
+                  color: PALETTE.orange 
+                }}
+              >
                 Task 2: Sustained Focus
               </Text>
               <View className="flex-row justify-between">
-                <Text className="text-gray-700">Accuracy: {task2Metrics.accuracy}%</Text>
-                <Text className="text-gray-700">Avg RT: {task2Metrics.avgRT}ms</Text>
+                <Text 
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }}
+                >
+                  Accuracy: {task2Metrics.accuracy}%
+                </Text>
+                <Text 
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }}
+                >
+                  Avg RT: {task2Metrics.avgRT}ms
+                </Text>
               </View>
             </View>
           )}
 
           {tasksCompleted >= 3 && (
-            <View className="p-4 rounded-xl" style={{ backgroundColor: '#FFE0E0' }}>
-              <Text className="mb-2 text-lg font-semibold" style={{ color: PALETTE.red }}>
+            <View 
+              className="p-4 rounded-xl" 
+              style={{ backgroundColor: isDark ? '#4a2a2a' : '#FFE0E0' }}
+            >
+              <Text 
+                className="mb-2 text-lg font-semibold"
+                style={{ 
+                  fontSize: 18 * fontScale,
+                  color: PALETTE.red 
+                }}
+              >
                 Task 3: Divided Attention
               </Text>
               <View className="flex-row justify-between">
-                <Text className="text-gray-700">Accuracy: {task3Metrics.accuracy}%</Text>
-                <Text className="text-gray-700">Avg RT: {task3Metrics.avgRT}ms</Text>
+                <Text 
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }}
+                >
+                  Accuracy: {task3Metrics.accuracy}%
+                </Text>
+                <Text 
+                  style={{ 
+                    fontSize: 16 * fontScale,
+                    color: textColor 
+                  }}
+                >
+                  Avg RT: {task3Metrics.avgRT}ms
+                </Text>
               </View>
             </View>
           )}
@@ -296,22 +501,57 @@ const AttentionAssessmentResult: React.FC = () => {
         {/* Interpretation */}
         <View
           className="p-5 mb-6 rounded-2xl"
-          style={{ backgroundColor: 'white', borderWidth: 2, borderColor: performance.color }}
+          style={{ 
+            backgroundColor: cardBg, 
+            borderWidth: 2, 
+            borderColor: performance.color 
+          }}
         >
-          <Text className="mb-3 text-xl font-bold" style={{ color: performance.color }}>
+          <Text 
+            className="mb-3 text-xl font-bold"
+            style={{ 
+              fontSize: 20 * fontScale,
+              color: performance.color 
+            }}
+          >
             What This Means
           </Text>
-          <Text className="mb-4 text-base text-gray-700">
+          <Text 
+            className="mb-4 text-base"
+            style={{ 
+              fontSize: 16 * fontScale,
+              color: textColor 
+            }}
+          >
             {performance.description}
           </Text>
           
-          <Text className="mb-3 text-lg font-semibold" style={{ color: PALETTE.teal }}>
+          <Text 
+            className="mb-3 text-lg font-semibold"
+            style={{ 
+              fontSize: 18 * fontScale,
+              color: PALETTE.teal 
+            }}
+          >
             Recommendations:
           </Text>
           {performance.recommendations.map((rec, index) => (
             <View key={index} className="flex-row items-start gap-2 mb-2">
-              <Text className="text-base text-gray-700">•</Text>
-              <Text className="flex-1 text-base text-gray-700">{rec}</Text>
+              <Text 
+                style={{ 
+                  fontSize: 16 * fontScale,
+                  color: textColor 
+                }}
+              >•</Text>
+              <Text 
+                className="flex-1"
+                style={{ 
+                  fontSize: 16 * fontScale,
+                  color: textColor 
+                }}
+              >
+                {rec}
+              </Text>
             </View>
           ))}
         </View>
@@ -319,16 +559,34 @@ const AttentionAssessmentResult: React.FC = () => {
         {/* Age-Based Context */}
         <View
           className="p-5 mb-6 rounded-2xl"
-          style={{ backgroundColor: '#F0F9FF' }}
+          style={{ backgroundColor: infoBg }}
         >
-          <Text className="mb-3 text-lg font-semibold" style={{ color: PALETTE.teal }}>
+          <Text 
+            className="mb-3 text-lg font-semibold"
+            style={{ 
+              fontSize: 18 * fontScale,
+              color: PALETTE.teal 
+            }}
+          >
             Understanding Your Results
           </Text>
-          <Text className="mb-3 text-base text-gray-700">
+          <Text 
+            className="mb-3 text-base"
+            style={{ 
+              fontSize: 16 * fontScale,
+              color: textColor 
+            }}
+          >
             Attention abilities can vary based on many factors including age, health, stress, and sleep. 
             These results provide a snapshot of your current attention performance.
           </Text>
-          <Text className="text-base text-gray-700">
+          <Text 
+            className="text-base"
+            style={{ 
+              fontSize: 16 * fontScale,
+              color: textColor 
+            }}
+          >
             Regular practice with attention training exercises can help improve focus and concentration over time.
           </Text>
         </View>
@@ -342,7 +600,12 @@ const AttentionAssessmentResult: React.FC = () => {
           onPress={() => navigation.navigate('AttentionQuiz')}
         >
           <Text className="mr-2 text-2xl">🎯</Text>
-          <Text className="text-xl font-semibold text-white">Practice Attention Games</Text>
+          <Text 
+            className="text-xl font-semibold text-white"
+            style={{ fontSize: 20 * fontScale }}
+          >
+            Practice Attention Games
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -351,16 +614,29 @@ const AttentionAssessmentResult: React.FC = () => {
           onPress={() => navigation.navigate('Assessment')}
         >
           <Text className="mr-2 text-2xl">📊</Text>
-          <Text className="text-xl font-semibold text-white">Other Assessments</Text>
+          <Text 
+            className="text-xl font-semibold text-white"
+            style={{ fontSize: 20 * fontScale }}
+          >
+            Other Assessments
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: PALETTE.lightTeal }}
+          style={{ backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightTeal }}
           onPress={() => navigation.navigate('Home')}
         >
           <Text className="mr-2 text-2xl">🏠</Text>
-          <Text className="text-xl font-semibold text-white">Back to Home</Text>
+          <Text 
+            className="text-xl font-semibold"
+            style={{ 
+              fontSize: 20 * fontScale,
+              color: textColor 
+            }}
+          >
+            Back to Home
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
