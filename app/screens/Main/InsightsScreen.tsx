@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Import the settings context
 
 interface CognitiveMetric {
   label: string;
@@ -40,11 +41,27 @@ interface PersonalizedInsight {
 
 const InsightsScreen: React.FC = () => {
   const navigation = useNavigation();
+  
+  // Use settings context
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<CognitiveMetric[]>([]);
   const [insights, setInsights] = useState<PersonalizedInsight[]>([]);
   const [brainAge, setBrainAge] = useState<number>(65);
   const [actualAge, setActualAge] = useState<number>(70);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#FFF';
+  const textColor = isDark ? '#fff' : '#111827';
+  const mutedTextColor = isDark ? '#aaa' : PALETTE.neutralMuted;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  const headerButtonBg = isDark ? '#3a3a3a' : '#F3F4F6';
+  const progressTrackBg = isDark ? '#3a3a3a' : '#E5E7EB';
+  const borderColor = isDark ? '#3a3a3a' : '#F3F4F6';
 
   useEffect(() => {
     fetchUserInsights();
@@ -304,27 +321,42 @@ const InsightsScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.flex}>
+      <SafeAreaView style={[styles.flex, { backgroundColor: bgColor }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={PALETTE.purple} />
-          <Text style={styles.loadingText}>Analyzing your brain health...</Text>
+          <Text style={[styles.loadingText, { 
+            color: mutedTextColor,
+            fontSize: 16 * fontScale 
+          }]}>
+            Analyzing your brain health...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.flex}>
+    <SafeAreaView style={[styles.flex, { backgroundColor: bgColor }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: PALETTE.lightPink }]}>
+      <View style={[styles.header, { backgroundColor: headerBg }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.headerButton}
+          style={[styles.headerButton, { backgroundColor: headerButtonBg }]}
         >
-          <Text style={styles.headerButtonText}>←</Text>
+          <Text style={[styles.headerButtonText, { 
+            color: textColor,
+            fontSize: 20 * fontScale 
+          }]}>
+            ←
+          </Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Insights</Text>
+        <Text style={[styles.headerTitle, { 
+          color: textColor,
+          fontSize: 20 * fontScale 
+        }]}>
+          Insights
+        </Text>
 
         <View style={{ width: 48 }} />
       </View>
@@ -332,13 +364,26 @@ const InsightsScreen: React.FC = () => {
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Brain Age Card */}
-        <View style={[styles.centerCard, { backgroundColor: PALETTE.yellow }]}>
-          <Text style={styles.emoji}>🧠</Text>
-          <Text style={styles.cardTitle}>Brain Age</Text>
-          <Text style={[styles.bigStat, { color: PALETTE.purple }]}>
+        <View style={[styles.centerCard, { 
+          backgroundColor: isDark ? '#3a3a1a' : PALETTE.yellow 
+        }]}>
+          <Text style={[styles.emoji, { fontSize: 36 * fontScale }]}>🧠</Text>
+          <Text style={[styles.cardTitle, { 
+            color: textColor,
+            fontSize: 20 * fontScale 
+          }]}>
+            Brain Age
+          </Text>
+          <Text style={[styles.bigStat, { 
+            color: PALETTE.purple,
+            fontSize: 28 * fontScale 
+          }]}>
             {brainAge} years
           </Text>
-          <Text style={styles.cardNote}>
+          <Text style={[styles.cardNote, { 
+            color: mutedTextColor,
+            fontSize: 14 * fontScale 
+          }]}>
             {brainAge < actualAge
               ? `${actualAge - brainAge} years younger than actual!`
               : 'Keep training to improve!'}
@@ -349,18 +394,33 @@ const InsightsScreen: React.FC = () => {
         {insights.map((insight, index) => (
           <View
             key={index}
-            style={[styles.infoCard, { backgroundColor: insight.color }]}
+            style={[styles.infoCard, { 
+              backgroundColor: insight.color,
+              opacity: isDark ? 0.9 : 1
+            }]}
           >
-            <Text style={styles.infoEmoji}>{insight.emoji}</Text>
+            <Text style={[styles.infoEmoji, { fontSize: 22 * fontScale }]}>
+              {insight.emoji}
+            </Text>
             <View style={styles.infoBody}>
-              <Text style={styles.infoTitle}>{insight.title}</Text>
-              <Text style={styles.infoText}>{insight.message}</Text>
+              <Text style={[styles.infoTitle, { 
+                color: textColor,
+                fontSize: 16 * fontScale 
+              }]}>
+                {insight.title}
+              </Text>
+              <Text style={[styles.infoText, { 
+                color: mutedTextColor,
+                fontSize: 14 * fontScale 
+              }]}>
+                {insight.message}
+              </Text>
             </View>
           </View>
         ))}
 
         {/* Detailed Metrics */}
-        {metrics.map((metric) => renderMetric(metric))}
+        {metrics.map((metric) => renderMetric(metric, isDark, fontScale, cardBg, textColor, mutedTextColor, progressTrackBg, borderColor))}
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -372,27 +432,52 @@ export default InsightsScreen;
 
 /* ---------- helpers ---------- */
 
-function renderMetric(metric: CognitiveMetric) {
+function renderMetric(
+  metric: CognitiveMetric, 
+  isDark: boolean, 
+  fontScale: number, 
+  cardBg: string, 
+  textColor: string, 
+  mutedTextColor: string,
+  progressTrackBg: string,
+  borderColor: string
+) {
   const trendIcon = metric.trend === 'improving' ? '↗️' : metric.trend === 'declining' ? '↘️' : '➡️';
   const trendColor = metric.trend === 'improving' ? PALETTE.green : metric.trend === 'declining' ? PALETTE.red : PALETTE.neutralMuted;
 
   return (
-    <View style={styles.metricCard} key={metric.label}>
+    <View style={[styles.metricCard, { 
+      backgroundColor: cardBg,
+      borderColor: borderColor
+    }]} key={metric.label}>
       <View style={styles.metricHeader}>
-        <Text style={styles.metricEmoji}>{metric.emoji}</Text>
-        <Text style={styles.metricTitle}>{metric.label}</Text>
+        <Text style={[styles.metricEmoji, { fontSize: 22 * fontScale }]}>
+          {metric.emoji}
+        </Text>
+        <Text style={[styles.metricTitle, { 
+          color: textColor,
+          fontSize: 16 * fontScale 
+        }]}>
+          {metric.label}
+        </Text>
         <View style={styles.metricValueContainer}>
-          <Text style={[styles.metricValue, { color: metric.color }]}>
+          <Text style={[styles.metricValue, { 
+            color: metric.color,
+            fontSize: 18 * fontScale 
+          }]}>
             {metric.score}%
           </Text>
-          <Text style={[styles.trendIcon, { color: trendColor }]}>
+          <Text style={[styles.trendIcon, { 
+            color: trendColor,
+            fontSize: 16 * fontScale 
+          }]}>
             {trendIcon}
           </Text>
         </View>
       </View>
 
       <View style={styles.progressContainer}>
-        <View style={styles.progressTrack}>
+        <View style={[styles.progressTrack, { backgroundColor: progressTrackBg }]}>
           <View
             style={[
               styles.progressFill,
@@ -403,8 +488,16 @@ function renderMetric(metric: CognitiveMetric) {
       </View>
 
       <View style={styles.metricFooter}>
-        <Text style={styles.metricNote}>{metric.note}</Text>
-        <Text style={styles.gamesPlayed}>
+        <Text style={[styles.metricNote, { 
+          color: mutedTextColor,
+          fontSize: 13 * fontScale 
+        }]}>
+          {metric.note}
+        </Text>
+        <Text style={[styles.gamesPlayed, { 
+          color: mutedTextColor,
+          fontSize: 12 * fontScale 
+        }]}>
           {metric.gamesPlayed} game{metric.gamesPlayed !== 1 ? 's' : ''} played
         </Text>
       </View>
@@ -415,7 +508,7 @@ function renderMetric(metric: CognitiveMetric) {
 /* ---------- styles ---------- */
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#FFF" },
+  flex: { flex: 1 },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -423,8 +516,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: PALETTE.neutralMuted,
   },
   header: {
     flexDirection: "row",
@@ -439,11 +530,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 48,
     height: 48,
-    backgroundColor: "#F3F4F6",
     borderRadius: 12,
   },
   headerButtonText: { fontSize: 20 },
-  headerTitle: { fontSize: 20, fontWeight: "700", color: "#111827" },
+  headerTitle: { fontSize: 20, fontWeight: "700" },
   content: { flex: 1, paddingHorizontal: 20 },
 
   centerCard: {
@@ -457,18 +547,16 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  emoji: { fontSize: 36, marginBottom: 10 },
-  cardTitle: { fontSize: 20, fontWeight: "700", marginBottom: 6, color: "#111827" },
+  emoji: { marginBottom: 10 },
+  cardTitle: { fontSize: 20, fontWeight: "700", marginBottom: 6 },
   bigStat: { fontSize: 28, fontWeight: "800" },
-  cardNote: { marginTop: 6, color: PALETTE.neutralMuted },
+  cardNote: { marginTop: 6 },
 
   metricCard: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
     shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -481,8 +569,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  metricEmoji: { fontSize: 22, marginRight: 8 },
-  metricTitle: { flex: 1, fontSize: 16, fontWeight: "700", color: "#111827" },
+  metricEmoji: { marginRight: 8 },
+  metricTitle: { flex: 1, fontSize: 16, fontWeight: "700" },
   metricValueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -495,7 +583,6 @@ const styles = StyleSheet.create({
   progressTrack: {
     width: "100%",
     height: 10,
-    backgroundColor: "#E5E7EB",
     borderRadius: 6,
     overflow: "hidden",
   },
@@ -506,8 +593,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  metricNote: { color: PALETTE.neutralMuted, fontSize: 13, flex: 1 },
-  gamesPlayed: { color: PALETTE.neutralMuted, fontSize: 12, fontStyle: 'italic' },
+  metricNote: { fontSize: 13, flex: 1 },
+  gamesPlayed: { fontSize: 12, fontStyle: 'italic' },
 
   infoCard: {
     flexDirection: "row",
@@ -521,8 +608,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
   },
-  infoEmoji: { fontSize: 22, marginRight: 10 },
+  infoEmoji: { marginRight: 10 },
   infoBody: { flex: 1 },
-  infoTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  infoText: { color: PALETTE.neutralMuted, marginTop: 4, lineHeight: 20 },
+  infoTitle: { fontSize: 16, fontWeight: "700" },
+  infoText: { marginTop: 4, lineHeight: 20 },
 });
