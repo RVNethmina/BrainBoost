@@ -178,7 +178,7 @@ const ProgressScreen: React.FC = () => {
       );
 
       const unsubscribeAssessments = onSnapshot(
-        query(collection(firestore, 'users', user.uid, 'mathAssessments'), orderBy('createdAt', 'desc'), limit(50)),
+        query(collection(firestore, 'users', user.uid, 'assessments'), orderBy('createdAt', 'desc'), limit(50)),
         () => fetchUserProgress(),
         (error) => console.error('Assessment results listener error:', error)
       );
@@ -208,7 +208,7 @@ const ProgressScreen: React.FC = () => {
         getDocs(query(collection(firestore, 'users', user.uid, 'mathResults'), orderBy('createdAt', 'desc'), limit(100))),
         getDocs(query(collection(firestore, 'users', user.uid, 'memoryResults'), orderBy('createdAt', 'desc'), limit(100))),
         getDocs(query(collection(firestore, 'users', user.uid, 'attentionResults'), orderBy('createdAt', 'desc'), limit(100))),
-        getDocs(query(collection(firestore, 'users', user.uid, 'mathAssessments'), orderBy('createdAt', 'desc'), limit(50))),
+        getDocs(query(collection(firestore, 'users', user.uid, 'assessments'), orderBy('createdAt', 'desc'), limit(50))),
       ]);
 
       // Process all data
@@ -220,7 +220,7 @@ const ProgressScreen: React.FC = () => {
       const assessmentData = calculateAssessmentBreakdown(assessmentResults);
 
       const finalStats = {
-        ...processedStats,
+        ...processedStats,      
         currentStreak: streak.current,
         longestStreak: streak.longest,
         lastPlayedDate: streak.lastDate,
@@ -242,7 +242,12 @@ const ProgressScreen: React.FC = () => {
     }
   };
 
-  const calculateEnhancedStats = (mathResults: any, memoryResults: any, attentionResults: any, assessmentResults: any) => {
+  const calculateEnhancedStats = (
+    mathResults: any, 
+    memoryResults: any, 
+    attentionResults: any, 
+    assessmentResults: any
+  ) => {
     let totalScore = 0;
     let totalAssessmentScore = 0;
     let totalTime = 0;
@@ -263,13 +268,31 @@ const ProgressScreen: React.FC = () => {
     };
 
     const processAssessmentResults = (results: any) => {
+      console.log('Processing assessment results, count:', results.size);
+      
       results.forEach((doc: any) => {
         const data = doc.data();
+        console.log('Assessment doc data:', {
+          id: doc.id,
+          score: data.score,
+          cognitiveLevel: data.cognitiveLevel,
+          totalQuestions: data.totalQuestions,
+          timestamp: data.createdAt
+        });
+        
         assessmentCount++;
-        const score = data.score || 0;
+        // Handle both percentage (0-100) and decimal (0-1) scores
+        let score = data.score || 0;
+        if (score <= 1 && score > 0) {
+          score = score * 100; // Convert decimal to percentage
+        }
+        
         totalAssessmentScore += score;
         bestAssessmentScore = Math.max(bestAssessmentScore, score);
       });
+      
+      console.log('Total assessments processed:', assessmentCount);
+      console.log('Average assessment score:', assessmentCount > 0 ? totalAssessmentScore / assessmentCount : 0);
     };
 
     processGameResults(mathResults);
@@ -277,8 +300,11 @@ const ProgressScreen: React.FC = () => {
     processGameResults(attentionResults);
     processAssessmentResults(assessmentResults);
 
-    // Calculate cognitive improvement trend
-    const cognitiveImprovement = calculateCognitiveImprovement(mathResults, memoryResults, attentionResults);
+    const cognitiveImprovement = calculateCognitiveImprovement(
+      mathResults, 
+      memoryResults, 
+      attentionResults
+    );
 
     return {
       mathGames: mathResults.size,
@@ -288,7 +314,9 @@ const ProgressScreen: React.FC = () => {
       totalGames: gameCount,
       totalAssessments: assessmentCount,
       averageScore: gameCount > 0 ? Math.round(totalScore / gameCount) : 0,
-      averageAssessmentScore: assessmentCount > 0 ? Math.round(totalAssessmentScore / assessmentCount) : 0,
+      averageAssessmentScore: assessmentCount > 0 
+        ? Math.round(totalAssessmentScore / assessmentCount) 
+        : 0,
       bestScore: Math.round(bestScore),
       bestAssessmentScore: Math.round(bestAssessmentScore),
       totalTimeSpent: totalTime,
@@ -530,38 +558,53 @@ const ProgressScreen: React.FC = () => {
   };
 
   const calculateAssessmentBreakdown = (assessmentResults: any): AssessmentBreakdown[] => {
-    if (assessmentResults.size === 0) return [];
+  if (assessmentResults.size === 0) {
+    console.log('No assessment results to calculate breakdown');
+    return [];
+  }
 
-    const breakdown: { [key: string]: { count: number; totalScore: number } } = {};
+  console.log('Calculating breakdown for', assessmentResults.size, 'assessments');
+  
+  const breakdown: { [key: string]: { count: number; totalScore: number } } = {};
+  
+  assessmentResults.forEach((doc: any) => {
+    const data = doc.data();
+    const level = data.cognitiveLevel || 'unknown';
     
-    assessmentResults.forEach((doc: any) => {
-      const data = doc.data();
-      const level = data.cognitiveLevel || 'unknown';
-      const score = data.score || 0;
-      
-      if (!breakdown[level]) {
-        breakdown[level] = { count: 0, totalScore: 0 };
-      }
-      breakdown[level].count++;
-      breakdown[level].totalScore += score;
-    });
+    // Handle both percentage and decimal scores
+    let score = data.score || 0;
+    if (score <= 1 && score > 0) {
+      score = score * 100;
+    }
+    
+    if (!breakdown[level]) {
+      breakdown[level] = { count: 0, totalScore: 0 };
+    }
+    breakdown[level].count++;
+    breakdown[level].totalScore += score;
+    
+    console.log('Added to breakdown:', { level, score, count: breakdown[level].count });
+  });
 
-    const total = assessmentResults.size;
-    const colors = {
-      excellent: PALETTE.green,
-      good: PALETTE.blue,
-      fair: PALETTE.orange,
-      needs_attention: PALETTE.red,
-      unknown: PALETTE.neutralMuted,
-    };
+  const total = assessmentResults.size;
+  const colors = {
+    excellent: PALETTE.green,
+    good: PALETTE.blue,
+    fair: PALETTE.orange,
+    needs_attention: PALETTE.red,
+    unknown: PALETTE.neutralMuted,
+  };
 
-    return Object.entries(breakdown).map(([level, data]) => ({
-      cognitiveLevel: level.replace('_', ' ').toUpperCase(),
-      count: data.count,
-      percentage: Math.round((data.count / total) * 100),
-      averageScore: Math.round(data.totalScore / data.count),
-      color: colors[level as keyof typeof colors] || PALETTE.neutralMuted,
-    }));
+  const result = Object.entries(breakdown).map(([level, data]) => ({
+    cognitiveLevel: level.replace('_', ' ').toUpperCase(),
+    count: data.count,
+    percentage: Math.round((data.count / total) * 100),
+    averageScore: Math.round(data.totalScore / data.count),
+    color: colors[level as keyof typeof colors] || PALETTE.neutralMuted,
+  }));
+  
+  console.log('Final breakdown:', result);
+  return result;
   };
 
   const calculateStreak = (mathResults: any, memoryResults: any, attentionResults: any, assessmentResults: any) => {
@@ -1068,7 +1111,7 @@ const ProgressScreen: React.FC = () => {
 
         <TouchableOpacity
           style={styles.viewAssessmentsButton}
-          onPress={() => navigation.navigate('AssessmentTest' as any)}
+          onPress={() => navigation.navigate('Assessment' as any)}
         >
           <Text style={styles.viewAssessmentsText}>Take New Assessment</Text>
           <Text style={styles.viewAssessmentsArrow}>→</Text>

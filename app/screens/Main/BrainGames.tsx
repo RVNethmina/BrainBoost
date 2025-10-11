@@ -1,4 +1,4 @@
-// app/src/screens/BrainGames.tsx
+// app/src/screens/Main/BrainGames.tsx
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext";
 
 type BrainGamesScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -24,7 +25,6 @@ type Game = {
   icon: string;
   description: string;
   difficulty: "Easy" | "Medium" | "Hard";
-  // we cast strings to route keys at runtime; see navigate(...) below
   screen: string;
 };
 
@@ -51,7 +51,7 @@ const games: Game[] = [
     icon: "🎯",
     description: "Focus exercises",
     difficulty: "Easy",
-    screen: "AttentionResults", // use a route that exists in your stack — adjust if needed
+    screen: "AttentionGame", 
   },
   {
     id: 4,
@@ -59,7 +59,7 @@ const games: Game[] = [
     icon: "🧩",
     description: "Solve simple puzzles",
     difficulty: "Hard",
-    screen: "PuzzleQuiz", // Changed from "MemoryQuiz" to "PuzzleQuiz"
+    screen: "PuzzleQuiz",
   },
 ];
 
@@ -71,60 +71,82 @@ const difficultyColorMap: Record<string, { bg: string; text: string }> = {
 
 export default function BrainGames() {
   const navigation = useNavigation<BrainGamesScreenNavigationProp>();
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#96B5B5';
+  const textColor = isDark ? '#fff' : '#2C3E3E';
+  const cardBg = isDark ? '#2a2a2a' : '#E6F1F1';
+  const backButtonBg = isDark ? '#3a3a3a' : '#E6F1F1';
 
   const handleNavigate = (screenName: string) => {
-    // TypeScript nav overloads are strict about literal route names.
-    // We cast to `any` here to satisfy the navigator while keeping runtime safety:
     navigation.navigate(screenName as any);
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
+      <View style={[styles.header, { backgroundColor: bgColor }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: backButtonBg }]}
           accessibilityRole="button"
           accessibilityLabel="Go back"
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={[styles.backIcon, { fontSize: 20 * fontScale, color: textColor }]}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Brain Games</Text>
+        <Text style={[styles.headerTitle, { fontSize: 22 * fontScale, color: textColor }]}>
+          Brain Games
+        </Text>
 
         <View style={{ width: 48 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.subtitle}>Choose a game to train your brain</Text>
+        <Text style={[styles.subtitle, { fontSize: 20 * fontScale, color: textColor }]}>
+          Choose a game to train your brain
+        </Text>
 
-        {/* Use single-column full-width cards for easier tapping */}
         <View style={styles.list}>
           {games.map((game) => {
             const difficulty = difficultyColorMap[game.difficulty] || difficultyColorMap.Easy;
             return (
               <TouchableOpacity
                 key={game.id}
-                style={styles.card}
+                style={[styles.card, { backgroundColor: cardBg }]}
                 onPress={() => handleNavigate(game.screen)}
                 accessibilityRole="button"
                 accessibilityLabel={`${game.title}. ${game.description}. Difficulty: ${game.difficulty}`}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <View style={styles.cardLeft}>
-                  <View style={[styles.iconCircle, { borderColor: difficulty.bg + "33" }]}>
+                  <View style={[
+                    styles.iconCircle, 
+                    { 
+                      borderColor: difficulty.bg + "33",
+                      backgroundColor: isDark ? '#3a3a3a' : '#fff'
+                    }
+                  ]}>
                     <Text style={styles.icon}>{game.icon}</Text>
                   </View>
 
                   <View style={styles.textWrap}>
-                    <Text style={styles.cardTitle}>{game.title}</Text>
-                    <Text style={styles.cardDesc}>{game.description}</Text>
+                    <Text style={[styles.cardTitle, { fontSize: 18 * fontScale, color: textColor }]}>
+                      {game.title}
+                    </Text>
+                    <Text style={[styles.cardDesc, { fontSize: 14 * fontScale, color: textColor }]}>
+                      {game.description}
+                    </Text>
                   </View>
                 </View>
 
                 <View style={[styles.badge, { backgroundColor: difficulty.bg }]}>
-                  <Text style={[styles.badgeText, { color: difficulty.text }]}>{game.difficulty}</Text>
+                  <Text style={[styles.badgeText, { fontSize: 14 * fontScale, color: difficulty.text }]}>
+                    {game.difficulty}
+                  </Text>
                 </View>
               </TouchableOpacity>
             );
@@ -138,7 +160,6 @@ export default function BrainGames() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#96B5B5", // keep your color
   },
   header: {
     flexDirection: "row",
@@ -152,12 +173,11 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "#E6F1F1",
     alignItems: "center",
     justifyContent: "center",
   },
-  backIcon: { fontSize: 20, color: "#2C3E3E" },
-  headerTitle: { fontSize: 22, fontWeight: "800", color: "#2C3E3E" },
+  backIcon: { fontWeight: "600" },
+  headerTitle: { fontWeight: "800" },
 
   content: {
     paddingHorizontal: 18,
@@ -165,9 +185,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   subtitle: {
-    fontSize: 20,
     textAlign: "center",
-    color: "#2C3E3E",
     marginVertical: 8,
     opacity: 0.9,
   },
@@ -178,7 +196,6 @@ const styles = StyleSheet.create({
 
   card: {
     width: "100%",
-    backgroundColor: "#E6F1F1",
     borderRadius: 12,
     paddingVertical: 18,
     paddingHorizontal: 14,
@@ -186,7 +203,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    // subtle elevation/shadow
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.06,
@@ -206,7 +222,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 12,
-    backgroundColor: "#fff",
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -215,8 +230,8 @@ const styles = StyleSheet.create({
   icon: { fontSize: 32 },
 
   textWrap: { flex: 1 },
-  cardTitle: { fontSize: 18, fontWeight: "800", color: "#2C3E3E", marginBottom: 6 },
-  cardDesc: { fontSize: 14, color: "#2C3E3E", opacity: 0.85 },
+  cardTitle: { fontWeight: "800", marginBottom: 6 },
+  cardDesc: { opacity: 0.85 },
 
   badge: {
     paddingHorizontal: 12,
@@ -225,5 +240,5 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginLeft: 6,
   },
-  badgeText: { fontSize: 14, fontWeight: "700" },
+  badgeText: { fontWeight: "700" },
 });

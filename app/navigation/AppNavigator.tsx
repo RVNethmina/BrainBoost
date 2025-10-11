@@ -1,6 +1,17 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
+import AttentionAssessmentIntro from '../screens/Assessments/AttentionAssessmentIntro';
+import AttentionAssessmentResult from '../screens/Assessments/AttentionAssessmentResult';
+import AttentionAssessmentRun from '../screens/Assessments/AttentionAssessmentRun';
+import MathAssessment from '../screens/Assessments/MathAssessment';
+import MathAssessmentResult from '../screens/Assessments/MathAssessmentResult';
+import MathAssessmentStart from '../screens/Assessments/MathAssessmentStart';
+import PuzzleAssessmentIntro from '../screens/Assessments/PuzzleAssessmentIntro';
+import PuzzleAssessmentResult from '../screens/Assessments/PuzzleAssessmentResult';
+import PuzzleAssessmentRun from '../screens/Assessments/PuzzleAssessmentRun';
+
+import MemoryTest from '../screens/Assessments/MemoryTest';
 import OnboardingScreen from '../screens/Auth/OnboardingScreen';
 import SignInScreen from '../screens/Auth/SignInScreen';
 import SignupScreen from '../screens/Auth/SignupScreen';
@@ -21,28 +32,24 @@ import MemoryPlayPattern from '../screens/Games/MemoryMatch/MemoryPlayPattern';
 import MemoryPlayPictures from '../screens/Games/MemoryMatch/MemoryPlayPictures';
 import MemoryQuiz from '../screens/Games/MemoryMatch/MemoryQuiz';
 import MemoryResultsScreen from '../screens/Games/MemoryMatch/MemoryResultsScreen';
-import MemoryTest from '../screens/Assessments/MemoryTest';
+import ArrowPlay from '../screens/Games/Puzzle/ArrowPlay';
+import CompPlay from '../screens/Games/Puzzle/CompPlay';
+import JigsawPlay from '../screens/Games/Puzzle/JigsawPlay';
+import OddPlay from '../screens/Games/Puzzle/OddPlay';
+import OrderTapPlay from '../screens/Games/Puzzle/OrderTapPlay';
+import PuzzleQuiz from '../screens/Games/Puzzle/PuzzleQuiz';
+import SeqPlay from '../screens/Games/Puzzle/SeqPlay';
+import SudokuPlay from '../screens/Games/Puzzle/SudokuPlay';
+import TargetNumberPlay from '../screens/Games/Puzzle/TargetNumberPlay';
 import AssessmentTest from '../screens/Main/AssessmentTest';
 import BrainGames from '../screens/Main/BrainGames';
 import HomeScreen from '../screens/Main/HomeScreen';
 import InsightsScreen from '../screens/Main/InsightsScreen';
 import ProfileScreen from '../screens/Main/ProfileScreen';
 import ProgressScreen from '../screens/Main/ProgressScreen';
-import ReminderScreen from '../screens/Main/RemainderScreen';
+import ReminderScreen from '../screens/Main/ReminderScreen';
 import SettingsScreen from '../screens/Main/SettingsScreen';
-import ArrowPlay from '../screens/Games/Puzzle/ArrowPlay';
-import CompPlay from '../screens/Games/Puzzle/CompPlay';
-import OddPlay from '../screens/Games/Puzzle/OddPlay';
-import PuzzleQuiz from '../screens/Games/Puzzle/PuzzleQuiz';
-import SeqPlay from '../screens/Games/Puzzle/SeqPlay';
-import MathAssessment from '../screens/Assessments/MathAssessment';
-import JigsawPlay from '../screens/Games/Puzzle/JigsawPlay';
-import OrderTapPlay from '../screens/Games/Puzzle/OrderTapPlay';
-import SudokuPlay from '../screens/Games/Puzzle/SudokuPlay';
-import TargetNumberPlay from '../screens/Games/Puzzle/TargetNumberPlay';
-import AttentionAssessmentIntro from '../screens/Assessments/AttentionAssessmentIntro';
-import AttentionAssessmentRun from '../screens/Assessments/AttentionAssessmentRun';
-import AttentionAssessmentResult from '../screens/Assessments/AttentionAssessmentResult';
+import { AssessmentResultPayload } from '../types/assessment';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -102,6 +109,12 @@ export type RootStackParamList = {
   AttentionPlayMedium: undefined;
   AttentionPlayHard: undefined;
   AttentionResults: undefined;
+  MathAssessmentStart: undefined;
+  MathAssessmentResult: {
+    results: AssessmentResultPayload;
+    savedId: string | null;
+  } | undefined;
+
 
   AttentionAssessmentIntro: undefined;
   AttentionAssessmentRun: undefined;
@@ -115,6 +128,21 @@ export type RootStackParamList = {
       responseTime: number | null;
       accuracy: boolean;
       timestamp: number;
+    }>;
+    overallAccuracy: number;
+    averageReactionTime: number;
+    tasksCompleted: number;
+  };
+
+  // NEW Puzzle Assessment
+  PuzzleAssessmentIntro: undefined;
+  PuzzleAssessmentRun: undefined;
+  PuzzleAssessmentResult: {
+    totalTime: number;
+    results: Array<{
+      task: string;
+      correct: boolean;
+      rt: number | null;
     }>;
     overallAccuracy: number;
     averageReactionTime: number;
@@ -166,9 +194,15 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="TargetNumberPlay" component={TargetNumberPlay} />
       <Stack.Screen name="OrderTapPlay" component={OrderTapPlay} />
       <Stack.Screen name="MathAssessment" component={MathAssessment} />
+      <Stack.Screen name="MathAssessmentStart" component={MathAssessmentStart} />
+      <Stack.Screen name="MathAssessmentResult" component={MathAssessmentResult} />
        <Stack.Screen name="AttentionAssessmentIntro" component={AttentionAssessmentIntro} />
       <Stack.Screen name="AttentionAssessmentRun" component={AttentionAssessmentRun} />
       <Stack.Screen name="AttentionAssessmentResult" component={AttentionAssessmentResult} />
+       <Stack.Screen name="PuzzleAssessmentIntro" component={PuzzleAssessmentIntro} />
+      <Stack.Screen name="PuzzleAssessmentRun" component={PuzzleAssessmentRun} />
+      <Stack.Screen name="PuzzleAssessmentResult" component={PuzzleAssessmentResult} />
+      
     </Stack.Navigator>
   );
 };
