@@ -145,13 +145,13 @@
 //   iconBtn: { width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center" },
 //   iconText: { fontSize: 24 },
 // });
-// screens/Games/Puzzle/OrderTapPlay.tsx
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "MathResults">;
 type Diff = "easy" | "medium" | "hard";
@@ -162,10 +162,24 @@ function shuffled<T>(arr: T[]) { const a = [...arr]; for (let i=a.length-1;i>0;i
 export default function OrderTapPlay() {
   const nav = useNavigation<Nav>();
   const route = useRoute<any>();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+  
   const diff: Diff = (route.params?.difficulty || "easy");
   const N = gridSize(diff);
   const total = N * N;
   const initialTime = diff === "easy" ? 120 : diff === "medium" ? 110 : 100;
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  const cardBg = isDark ? '#2a2a2a' : PALETTE.lightTeal;
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
+  const disabledBg = isDark ? '#3a3a3a' : '#E5E7EB';
+  const hintBg = isDark ? '#4a3a00' : '#FFEDCC';
 
   const [arr, setArr] = useState<number[]>([]);
   const [need, setNeed] = useState(1);
@@ -233,21 +247,54 @@ export default function OrderTapPlay() {
   const subtitle = phase === "asc" ? "Tap 1 → " + total : "Now tap " + total + " → 1";
 
   return (
-    <View style={{ flex: 1, backgroundColor: "white" }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       {/* Header */}
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 40, paddingBottom: 12, backgroundColor: PALETTE.lightPink }}>
-        <TouchableOpacity onPress={() => { setRunning(false); nav.goBack(); }} style={{ width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: PALETTE.lightTeal }}>
-          <Text style={{ fontSize: 24 }}>←</Text>
+      <View style={{ 
+        flexDirection: "row", 
+        alignItems: "center", 
+        justifyContent: "space-between", 
+        paddingHorizontal: 20, 
+        paddingTop: 40, 
+        paddingBottom: 12, 
+        backgroundColor: headerBg 
+      }}>
+        <TouchableOpacity 
+          onPress={() => { setRunning(false); nav.goBack(); }} 
+          style={{ 
+            width: 48, 
+            height: 48, 
+            borderRadius: 12, 
+            alignItems: "center", 
+            justifyContent: "center", 
+            backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightTeal 
+          }}
+        >
+          <Text style={{ fontSize: 24, color: textColor }}>←</Text>
         </TouchableOpacity>
         <View style={{ alignItems: "center" }}>
-          <Text style={{ fontSize: 14, color: "#6B7280" }}>Order Tap</Text>
-          <Text style={{ fontSize: 20, fontWeight: "700" }}>{formatTime(timeLeft)} · {score}</Text>
+          <Text style={{ 
+            fontSize: 14 * fontScale, 
+            color: secondaryTextColor 
+          }}>
+            Order Tap
+          </Text>
+          <Text style={{ 
+            fontSize: 20 * fontScale, 
+            fontWeight: "700",
+            color: textColor 
+          }}>
+            {formatTime(timeLeft)} · {score}
+          </Text>
         </View>
         <View style={{ width: 44, alignItems: "center" }}>
           {running ? (
-            <TouchableOpacity onPress={() => setRunning(false)}><Text style={{ fontSize: 24 }}>⏸️</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setRunning(false)}>
+              <Text style={{ fontSize: 24 }}>⏸️</Text>
+            </TouchableOpacity>
           ) : (
-            <TouchableOpacity onPress={() => setRunning(true)}><Text style={{ fontSize: 24 }}>▶️</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setRunning(true)}>
+              <Text style={{ fontSize: 24 }}>▶️</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -255,10 +302,19 @@ export default function OrderTapPlay() {
       {/* Body */}
       <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 12 }}>
         <View style={{ alignItems: "center", marginBottom: 12 }}>
-          <Text style={{ fontSize: 28, fontWeight: "800", color: PALETTE.teal }}>
+          <Text style={{ 
+            fontSize: 28 * fontScale, 
+            fontWeight: "800", 
+            color: PALETTE.teal 
+          }}>
             Next: {nextLabel}
           </Text>
-          <Text style={{ fontSize: 16, color: PALETTE.neutralMuted }}>{subtitle}</Text>
+          <Text style={{ 
+            fontSize: 16 * fontScale, 
+            color: secondaryTextColor 
+          }}>
+            {subtitle}
+          </Text>
         </View>
 
         {/* Grid */}
@@ -279,12 +335,18 @@ export default function OrderTapPlay() {
                   borderRadius: 16,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: tapped ? "#E5E7EB" : (isHint ? "#FFEDCC" : PALETTE.lightTeal),
+                  backgroundColor: tapped ? disabledBg : (isHint ? hintBg : cardBg),
                   borderColor: isHint ? PALETTE.orange : PALETTE.teal,
                   opacity: tapped ? 0.45 : 1,
                 }}
               >
-                <Text style={{ fontSize: 24, fontWeight: "800", color: PALETTE.teal }}>{v}</Text>
+                <Text style={{ 
+                  fontSize: 24 * fontScale, 
+                  fontWeight: "800", 
+                  color: isDark ? '#fff' : PALETTE.teal 
+                }}>
+                  {v}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -293,16 +355,59 @@ export default function OrderTapPlay() {
         {/* Controls */}
         <View style={{ alignItems: "center", marginTop: 16 }}>
           {!running ? (
-            <TouchableOpacity onPress={() => setRunning(true)} style={{ paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16, backgroundColor: PALETTE.teal }}>
-              <Text style={{ color: "white", fontSize: 18, fontWeight: "700" }}>Start</Text>
+            <TouchableOpacity 
+              onPress={() => setRunning(true)} 
+              style={{ 
+                paddingHorizontal: 24, 
+                paddingVertical: 14, 
+                borderRadius: 16, 
+                backgroundColor: PALETTE.teal 
+              }}
+            >
+              <Text style={{ 
+                color: "white", 
+                fontSize: 18 * fontScale, 
+                fontWeight: "700" 
+              }}>
+                Start
+              </Text>
             </TouchableOpacity>
           ) : (
             <View style={{ flexDirection: "row" }}>
-              <TouchableOpacity onPress={() => setRunning(false)} style={{ paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16, backgroundColor: PALETTE.lightPink, marginRight: 10 }}>
-                <Text style={{ color: "white", fontSize: 18, fontWeight: "700" }}>Pause</Text>
+              <TouchableOpacity 
+                onPress={() => setRunning(false)} 
+                style={{ 
+                  paddingHorizontal: 24, 
+                  paddingVertical: 14, 
+                  borderRadius: 16, 
+                  backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightPink, 
+                  marginRight: 10 
+                }}
+              >
+                <Text style={{ 
+                  color: "white", 
+                  fontSize: 18 * fontScale, 
+                  fontWeight: "700" 
+                }}>
+                  Pause
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={requestHint} style={{ paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16, backgroundColor: "#FFEDCC" }}>
-                <Text style={{ color: PALETTE.orange, fontSize: 18, fontWeight: "700" }}>Hint</Text>
+              <TouchableOpacity 
+                onPress={requestHint} 
+                style={{ 
+                  paddingHorizontal: 24, 
+                  paddingVertical: 14, 
+                  borderRadius: 16, 
+                  backgroundColor: hintBg 
+                }}
+              >
+                <Text style={{ 
+                  color: PALETTE.orange, 
+                  fontSize: 18 * fontScale, 
+                  fontWeight: "700" 
+                }}>
+                  Hint
+                </Text>
               </TouchableOpacity>
             </View>
           )}

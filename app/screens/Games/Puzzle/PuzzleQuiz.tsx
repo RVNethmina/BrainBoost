@@ -133,6 +133,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "BrainGames">;
 
@@ -155,9 +156,24 @@ const diffs = [
 
 export default function PuzzleQuiz() {
   const nav = useNavigation<Nav>();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+  
   const [game, setGame] = useState<typeof games[number] | null>(null);
   const [diff, setDiff] = useState<typeof diffs[number] | null>(null);
   const { width } = useWindowDimensions();
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : PALETTE.lightPink;
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.teal;
+  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
+  const gameCardBg = isDark ? '#3a3a3a' : '#F3F4F6';
+  const bottomBarBg = isDark ? '#2a2a2a' : 'rgba(255,255,255,0.96)';
+  const borderColor = isDark ? '#444' : '#E5E7EB';
 
   // responsive grid: 2 columns on small phones, 3 on wider screens
   const numCols = width < 380 ? 2 : width < 520 ? 3 : 3;
@@ -194,12 +210,12 @@ export default function PuzzleQuiz() {
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 10,
-          backgroundColor: selected ? PALETTE.teal : "#F3F4F6",
+          backgroundColor: selected ? PALETTE.teal : gameCardBg,
           borderWidth: 2,
-          borderColor: selected ? PALETTE.teal : "#E5E7EB",
+          borderColor: selected ? PALETTE.teal : borderColor,
           shadowColor: "#000",
           shadowRadius: 6,
-          shadowOpacity: Platform.OS === "ios" ? 0.08 : 0,
+          shadowOpacity: Platform.OS === "ios" ? (isDark ? 0.2 : 0.08) : 0,
           elevation: Platform.OS === "android" ? 2 : 0,
         }}
       >
@@ -209,9 +225,9 @@ export default function PuzzleQuiz() {
           style={{
             marginTop: 6,
             textAlign: "center",
-            fontSize: 14,
+            fontSize: 14 * fontScale,
             fontWeight: "700",
-            color: selected ? "#FFFFFF" : PALETTE.teal,
+            color: selected ? "#FFFFFF" : textColor,
             paddingHorizontal: 8,
           }}
         >
@@ -221,12 +237,22 @@ export default function PuzzleQuiz() {
     );
   };
 
+  // Theme-aware difficulty colors
+  const themeAwareDiffs = useMemo(() => {
+    return diffs.map(d => ({
+      ...d,
+      color: isDark ? 
+        (d.key === 'easy' ? '#2a4a4a' : 
+         d.key === 'medium' ? '#4a3a2a' : '#4a2a2a') : d.color
+    }));
+  }, [isDark]);
+
   return (
-    <View style={{ flex: 1, backgroundColor: PALETTE.lightPink }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       {/* Header */}
       <View
         style={{
-          backgroundColor: PALETTE.teal,
+          backgroundColor: headerBg,
           paddingTop: Platform.select({ ios: 54, android: 28 }),
           paddingBottom: 12,
           paddingHorizontal: 16,
@@ -243,16 +269,25 @@ export default function PuzzleQuiz() {
             width: 44,
             height: 44,
             borderRadius: 12,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: isDark ? '#3a3a3a' : "#FFFFFF",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontSize: 24, color: PALETTE.teal }}>←</Text>
+          <Text style={{ 
+            fontSize: 24, 
+            color: isDark ? '#fff' : PALETTE.teal 
+          }}>
+            ←
+          </Text>
         </TouchableOpacity>
 
         <Text
-          style={{ fontSize: 20, fontWeight: "800", color: "white" }}
+          style={{ 
+            fontSize: 20 * fontScale, 
+            fontWeight: "800", 
+            color: "white" 
+          }}
           numberOfLines={1}
         >
           Puzzle Quiz
@@ -284,14 +319,19 @@ export default function PuzzleQuiz() {
           <Text style={{ fontSize: width < 380 ? 40 : 56 }}>🧩</Text>
         </View>
         <Text
-          style={{ fontSize: 18, fontWeight: "800", color: PALETTE.teal, marginBottom: 4 }}
+          style={{ 
+            fontSize: 18 * fontScale, 
+            fontWeight: "800", 
+            color: textColor, 
+            marginBottom: 4 
+          }}
         >
           Puzzles
         </Text>
         <Text
           style={{
-            fontSize: 14,
-            color: PALETTE.teal,
+            fontSize: 14 * fontScale,
+            color: secondaryTextColor,
             opacity: 0.85,
             textAlign: "center",
             paddingHorizontal: 10,
@@ -305,21 +345,21 @@ export default function PuzzleQuiz() {
       <View
         style={{
           flex: 1,
-          backgroundColor: "white",
+          backgroundColor: cardBg,
           marginHorizontal: 12,
           borderRadius: 20,
           paddingTop: 12,
           paddingBottom: 88, // room for sticky Start bar
           paddingHorizontal: 12,
           borderWidth: 1,
-          borderColor: "#E5E7EB",
+          borderColor: borderColor,
         }}
       >
         <Text
           style={{
-            fontSize: 16,
+            fontSize: 16 * fontScale,
             fontWeight: "800",
-            color: PALETTE.teal,
+            color: textColor,
             textAlign: "center",
             marginBottom: 8,
           }}
@@ -343,9 +383,9 @@ export default function PuzzleQuiz() {
         <View style={{ marginTop: 8 }}>
           <Text
             style={{
-              fontSize: 16,
+              fontSize: 16 * fontScale,
               fontWeight: "800",
-              color: PALETTE.teal,
+              color: textColor,
               textAlign: "center",
               marginBottom: 8,
             }}
@@ -359,7 +399,7 @@ export default function PuzzleQuiz() {
               gap: 8,
             }}
           >
-            {diffs.map((d) => {
+            {themeAwareDiffs.map((d) => {
               const selected = diff?.key === d.key;
               return (
                 <TouchableOpacity
@@ -381,9 +421,9 @@ export default function PuzzleQuiz() {
                 >
                   <Text
                     style={{
-                      fontSize: 14,
+                      fontSize: 14 * fontScale,
                       fontWeight: "800",
-                      color: selected ? "white" : d.text,
+                      color: selected ? "white" : (isDark ? '#fff' : d.text),
                     }}
                   >
                     {d.name}
@@ -405,9 +445,9 @@ export default function PuzzleQuiz() {
           paddingHorizontal: 16,
           paddingBottom: Platform.select({ ios: 20, android: 12 }),
           paddingTop: 10,
-          backgroundColor: "rgba(255,255,255,0.96)",
+          backgroundColor: bottomBarBg,
           borderTopWidth: 1,
-          borderTopColor: "#E5E7EB",
+          borderTopColor: borderColor,
         }}
       >
         <TouchableOpacity
@@ -418,13 +458,17 @@ export default function PuzzleQuiz() {
             borderRadius: 16,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: game && diff ? PALETTE.teal : "#A7F3D0",
+            backgroundColor: game && diff ? PALETTE.teal : (isDark ? '#3a3a3a' : "#A7F3D0"),
             borderWidth: 2,
             borderColor: PALETTE.teal,
             opacity: game && diff ? 1 : 0.7,
           }}
         >
-          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "800" }}>
+          <Text style={{ 
+            color: game && diff ? "#fff" : (isDark ? '#ccc' : PALETTE.teal), 
+            fontSize: 16 * fontScale, 
+            fontWeight: "800" 
+          }}>
             {game && diff ? `Start: ${game.name} · ${diff.name}` : "Select a game & difficulty"}
           </Text>
         </TouchableOpacity>
