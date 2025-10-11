@@ -16,7 +16,7 @@ import { useSettings } from "@/app/contexts/SettingsContext";
 
 type RootNavProp = NativeStackNavigationProp<RootStackParamList>;
 
-type AssessmentRoute = "MemoryTest" | "AttentionAssessmentIntro" | "MathAssessment" | "PuzzleAssessmentIntro";
+type AssessmentRoute = "MemoryTest" | "AttentionAssessment" | "MathAssessment" | "PuzzleAssessmentIntro";
 
 type AssessmentItem = {
   id: number;
@@ -46,7 +46,7 @@ const assessments: AssessmentItem[] = [
     icon: "⚡",
     duration: "10 minutes",
     type: "Focus",
-    screen: "AttentionAssessmentIntro",
+    screen: "AttentionAssessment",
     bgColor: PALETTE.lightPink,
     textColor: PALETTE.orange,
   },
