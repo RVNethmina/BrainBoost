@@ -5,6 +5,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "MathResults">;
 type Diff = "easy" | "medium" | "hard";
@@ -42,8 +43,21 @@ export default function TargetNumberPlay({
 }: Props) {
   const nav = useNavigation<Nav>();
   const route = useRoute<any>();
+  // Add settings hook
+  const { theme, getFontScale } = useSettings();
+  const fontScale = getFontScale();
+  const isDark = theme === 'dark';
+  
   const diff: Diff = route.params?.difficulty || "easy";
   const { N, range, time } = cfg(diff);
+
+  // Dynamic colors based on theme
+  const bgColor = isDark ? '#1a1a1a' : '#fff';
+  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
+  const cardBg = isDark ? '#3a3a3a' : PALETTE.lightTeal;
+  const disabledBg = isDark ? '#2a2a2a' : '#E5E7EB';
+  const secondaryTextColor = isDark ? '#ccc' : '#6B7280';
 
   const [grid, setGrid] = useState<number[]>([]);
   const [target, setTarget] = useState<number>(rand(range[0], range[1]));
@@ -180,7 +194,7 @@ export default function TargetNumberPlay({
     )}`;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "white" }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       {/* Header */}
       <View
         style={{
@@ -190,7 +204,7 @@ export default function TargetNumberPlay({
           paddingHorizontal: 20,
           paddingTop: 40,
           paddingBottom: 12,
-          backgroundColor: PALETTE.lightPink,
+          backgroundColor: headerBg,
         }}
       >
         <TouchableOpacity
@@ -204,17 +218,28 @@ export default function TargetNumberPlay({
             borderRadius: 12,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: PALETTE.lightTeal,
+            backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightTeal,
           }}
         >
-          <Text style={{ fontSize: 24 }}>←</Text>
+          <Text style={{ fontSize: 24, color: textColor }}>←</Text>
         </TouchableOpacity>
         <View style={{ alignItems: "center" }}>
-          <Text style={{ fontSize: 14, color: "#6B7280" }}>Target Number</Text>
-          <Text style={{ fontSize: 16, color: "#374151" }}>
+          <Text style={{ 
+            fontSize: 14 * fontScale, 
+            color: secondaryTextColor 
+          }}>
+            Target Number
+          </Text>
+          <Text style={{ 
+            fontSize: 16 * fontScale, 
+            color: textColor 
+          }}>
             ⏱ {formatTime(timeLeft)} · ⭐ {score} · ❌ {mistakes}/5 · Lvl {level}/4
           </Text>
-          <Text style={{ fontSize: 12, color: "#6B7280" }}>
+          <Text style={{ 
+            fontSize: 12 * fontScale, 
+            color: secondaryTextColor 
+          }}>
             Remaining this level: {remaining}
           </Text>
         </View>
@@ -234,10 +259,17 @@ export default function TargetNumberPlay({
       {/* Body */}
       <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 12 }}>
         <View style={{ alignItems: "center", marginBottom: 8 }}>
-          <Text style={{ fontSize: 28, fontWeight: "800", color: PALETTE.teal }}>
+          <Text style={{ 
+            fontSize: 28 * fontScale, 
+            fontWeight: "800", 
+            color: PALETTE.teal 
+          }}>
             Target: {target}
           </Text>
-          <Text style={{ fontSize: 16, color: PALETTE.neutralMuted }}>
+          <Text style={{ 
+            fontSize: 16 * fontScale, 
+            color: secondaryTextColor 
+          }}>
             Tap all "{target}" tiles · remaining: {remaining}
           </Text>
         </View>
@@ -265,16 +297,16 @@ export default function TargetNumberPlay({
                   borderRadius: 16,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: hit ? "#E5E7EB" : PALETTE.lightTeal,
+                  backgroundColor: hit ? disabledBg : cardBg,
                   borderColor: PALETTE.teal,
                   opacity: hit ? 0.5 : 1,
                 }}
               >
                 <Text
                   style={{
-                    fontSize: 24,
+                    fontSize: 24 * fontScale,
                     fontWeight: "800",
-                    color: PALETTE.teal,
+                    color: isDark ? '#fff' : PALETTE.teal,
                   }}
                 >
                   {hit ? "✓" : v}
@@ -304,7 +336,11 @@ export default function TargetNumberPlay({
                 marginHorizontal: 8,
               }}
             >
-              <Text style={{ color: "white", fontSize: 18, fontWeight: "700" }}>
+              <Text style={{ 
+                color: "white", 
+                fontSize: 18 * fontScale, 
+                fontWeight: "700" 
+              }}>
                 Start
               </Text>
             </TouchableOpacity>
@@ -315,11 +351,15 @@ export default function TargetNumberPlay({
                 paddingHorizontal: 24,
                 paddingVertical: 14,
                 borderRadius: 16,
-                backgroundColor: PALETTE.lightPink,
+                backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightPink,
                 marginHorizontal: 8,
               }}
             >
-              <Text style={{ color: "white", fontSize: 18, fontWeight: "700" }}>
+              <Text style={{ 
+                color: "white", 
+                fontSize: 18 * fontScale, 
+                fontWeight: "700" 
+              }}>
                 Pause
               </Text>
             </TouchableOpacity>
@@ -335,7 +375,11 @@ export default function TargetNumberPlay({
               marginHorizontal: 8,
             }}
           >
-            <Text style={{ color: "white", fontSize: 18, fontWeight: "700" }}>
+            <Text style={{ 
+              color: "white", 
+              fontSize: 18 * fontScale, 
+              fontWeight: "700" 
+            }}>
               Reset
             </Text>
           </TouchableOpacity>
