@@ -266,13 +266,13 @@
 // });
 
 
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 /** ✅ NEW: props for assessment */
 type Props = {
@@ -345,7 +345,7 @@ export default function SudokuPlay({ assessmentMode = false, onComplete }: Props
 
   // Dynamic colors based on theme
   const bgColor = isDark ? '#1a1a1a' : '#fff';
-  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const textColor = isDark ? '#fff' : PALETTE.neutralDark;
   const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
   const cellBg = isDark ? '#2a2a2a' : '#FFF';
   const selectedCellBg = isDark ? '#3a3a3a' : PALETTE.teal;
