@@ -6,6 +6,10 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Vibration } from "react-native";
 import { useSettings } from "@/app/contexts/SettingsContext";
+import {
+  FatigueDetectionService,
+  FatigueLevel,
+} from "@/app/services/fatigueDetectionService";
 
 type AttentionPlayMediumNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -46,7 +50,7 @@ const AttentionPlayMedium: React.FC = () => {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [score, setScore] = useState<number>(0);
   const [currentRound, setCurrentRound] = useState<number>(0);
-  const [gameState, setGameState] = useState<'start' | 'showing' | 'playing' | 'feedback'>('start');
+  const [gameState, setGameState] = useState<'start' | 'showing' | 'playing' | 'feedback' | 'fatigueWarning'>('start');
   const [gridItems, setGridItems] = useState<GridItem[]>([]);
   const [targetShape, setTargetShape] = useState<typeof COLOR_SHAPES[0] | null>(null);
   const [targetsFound, setTargetsFound] = useState<number>(0);
@@ -55,7 +59,14 @@ const AttentionPlayMedium: React.FC = () => {
   const [correctSelections, setCorrectSelections] = useState<number>(0);
   const [totalSelections, setTotalSelections] = useState<number>(0);
   
+  // Fatigue Detection States
+  const [fatigueLevel, setFatigueLevel] = useState<FatigueLevel>('none');
+  const [fatigueMessage, setFatigueMessage] = useState<string>('');
+  const [showFatigueWarning, setShowFatigueWarning] = useState<boolean>(false);
+  
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fatigueServiceRef = useRef<FatigueDetectionService | null>(null);
+  const fatigueCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Dynamic colors based on theme
   const bgColor = isDark ? '#1a1a1a' : '#fff';
@@ -64,6 +75,16 @@ const AttentionPlayMedium: React.FC = () => {
   const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
   const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
 
+  // Initialize fatigue service on mount
+  useEffect(() => {
+    fatigueServiceRef.current = new FatigueDetectionService();
+    return () => {
+      if (fatigueCheckIntervalRef.current) {
+        clearInterval(fatigueCheckIntervalRef.current);
+      }
+    };
+  }, []);
+
   // Generate grid for current round
   const generateGrid = (round: number): { items: GridItem[], target: typeof COLOR_SHAPES[0] } => {
     const target = COLOR_SHAPES[round % COLOR_SHAPES.length];
@@ -71,7 +92,6 @@ const AttentionPlayMedium: React.FC = () => {
       s.color !== target.color || s.shape !== target.shape
     );
     
-    // Create grid items
     const items: GridItem[] = [];
     let targetCount = 0;
     
@@ -79,7 +99,6 @@ const AttentionPlayMedium: React.FC = () => {
       const row = Math.floor(i / 4);
       const col = i % 4;
       
-      // Decide if this should be a target
       const shouldBeTarget = targetCount < TARGET_COUNT && 
         (Math.random() < 0.25 || (GRID_SIZE - i) <= (TARGET_COUNT - targetCount));
       
@@ -88,7 +107,6 @@ const AttentionPlayMedium: React.FC = () => {
         colorShape = target;
         targetCount++;
       } else {
-        // Use random distractor
         colorShape = distractors[Math.floor(Math.random() * distractors.length)];
       }
       
@@ -101,7 +119,6 @@ const AttentionPlayMedium: React.FC = () => {
       });
     }
     
-    // Ensure we have exactly TARGET_COUNT targets
     while (targetCount < TARGET_COUNT) {
       const randomIndex = Math.floor(Math.random() * GRID_SIZE);
       if (!items[randomIndex].isTarget) {
@@ -156,6 +173,39 @@ const AttentionPlayMedium: React.FC = () => {
     };
   }, [isRunning]);
 
+  // Fatigue check effect - runs every 3 seconds during gameplay
+  useEffect(() => {
+    if (gameState === 'playing' && isRunning && fatigueServiceRef.current) {
+      if (fatigueCheckIntervalRef.current) {
+        clearInterval(fatigueCheckIntervalRef.current);
+      }
+
+      fatigueCheckIntervalRef.current = setInterval(() => {
+        const analysis = fatigueServiceRef.current!.analyzeFatigue();
+        setFatigueLevel(analysis.fatigueLevel);
+        setFatigueMessage(analysis.recommendation);
+
+        if (analysis.shouldRecommendBreak && !showFatigueWarning) {
+          setShowFatigueWarning(true);
+          setGameState('fatigueWarning');
+          setIsRunning(false);
+          
+          setTimeout(() => {
+            setShowFatigueWarning(false);
+            setGameState('playing');
+            setIsRunning(true);
+          }, 5000);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (fatigueCheckIntervalRef.current) {
+        clearInterval(fatigueCheckIntervalRef.current);
+      }
+    };
+  }, [gameState, isRunning, showFatigueWarning]);
+
   // Time up effect
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -166,6 +216,19 @@ const AttentionPlayMedium: React.FC = () => {
   // Check if round is complete
   useEffect(() => {
     if (gameState === 'playing' && targetsFound === TARGET_COUNT) {
+      const accuracy = (correctSelections / Math.max(1, totalSelections)) * 100;
+      const avgRT = reactionTimes.length > 0
+        ? reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
+        : 0;
+
+      if (fatigueServiceRef.current) {
+        fatigueServiceRef.current.addPerformanceData(
+          currentRound,
+          accuracy,
+          avgRT
+        );
+      }
+
       setGameState('feedback');
       setTimeout(() => {
         if (currentRound + 1 >= TOTAL_ROUNDS) {
@@ -175,14 +238,16 @@ const AttentionPlayMedium: React.FC = () => {
         }
       }, 1500);
     }
-  }, [targetsFound, gameState, currentRound]);
+  }, [targetsFound, gameState, currentRound, correctSelections, totalSelections, reactionTimes]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      }
+      if (fatigueCheckIntervalRef.current) {
+        clearInterval(fatigueCheckIntervalRef.current);
       }
     };
   }, []);
@@ -202,7 +267,6 @@ const AttentionPlayMedium: React.FC = () => {
     const reactionTime = Date.now() - roundStartTime;
     setTotalSelections(prev => prev + 1);
 
-    // Update grid item
     setGridItems(prev => 
       prev.map(g => 
         g.id === itemId ? { ...g, isSelected: true } : g
@@ -210,15 +274,13 @@ const AttentionPlayMedium: React.FC = () => {
     );
 
     if (item.isTarget) {
-      // Correct target found
       setTargetsFound(prev => prev + 1);
       setCorrectSelections(prev => prev + 1);
-      setScore(s => s + 15); // Higher points for medium difficulty
+      setScore(s => s + 15);
       setReactionTimes(prev => [...prev, reactionTime]);
       Vibration.vibrate(100);
     } else {
-      // Wrong selection
-      setScore(s => Math.max(0, s - 3)); // Larger penalty for medium
+      setScore(s => Math.max(0, s - 3));
       Vibration.vibrate([50, 50, 50]);
     }
   };
@@ -247,7 +309,8 @@ const AttentionPlayMedium: React.FC = () => {
       accuracy,
       avgReactionTime,
       totalSelections,
-      correctSelections
+      correctSelections,
+      fatigueLevel,
     } as any);
   };
 
@@ -273,6 +336,15 @@ const AttentionPlayMedium: React.FC = () => {
 
   const progressPercent = Math.min(100, ((currentRound) / TOTAL_ROUNDS) * 100);
   const accuracy = totalSelections > 0 ? Math.round((correctSelections / totalSelections) * 100) : 0;
+
+  const getFatigueColor = () => {
+    switch (fatigueLevel) {
+      case 'high': return PALETTE.red;
+      case 'moderate': return PALETTE.orange;
+      case 'early': return '#F59E0B';
+      default: return PALETTE.teal;
+    }
+  };
 
   return (
     <View className="flex-1" style={{ backgroundColor: bgColor }}>
@@ -355,7 +427,18 @@ const AttentionPlayMedium: React.FC = () => {
           </View>
         </View>
 
-        <View style={{ width: 44 }}>
+        {fatigueLevel !== 'none' && (
+          <View 
+            className="items-center justify-center w-10 h-10 rounded-full"
+            style={{ backgroundColor: getFatigueColor() }}
+          >
+            <Text className="text-lg">
+              {fatigueLevel === 'high' ? '😴' : fatigueLevel === 'moderate' ? '😐' : '😊'}
+            </Text>
+          </View>
+        )}
+
+        <View style={{ width: fatigueLevel !== 'none' ? 0 : 44 }}>
           {gameState === 'start' ? (
             <TouchableOpacity onPress={handleStart}>
               <Text className="text-2xl">▶️</Text>
@@ -374,6 +457,41 @@ const AttentionPlayMedium: React.FC = () => {
 
       {/* Game Area */}
       <View className="justify-center flex-1 px-5">
+        {gameState === 'fatigueWarning' && (
+          <View
+            className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
+            style={{ 
+              backgroundColor: cardBg, 
+              borderColor: getFatigueColor() 
+            }}
+          >
+            <Text 
+              className="mb-4 font-bold text-center text-3xl"
+              style={{ color: getFatigueColor() }}
+            >
+              {fatigueLevel === 'high' ? '💙 Rest Recommended' : '⚠️ Fatigue Detected'}
+            </Text>
+            <Text 
+              className="mb-6 text-center" 
+              style={{ 
+                fontSize: 18 * fontScale,
+                color: textColor 
+              }}
+            >
+              {fatigueMessage}
+            </Text>
+            <Text 
+              className="text-center text-sm" 
+              style={{ 
+                fontSize: 14 * fontScale,
+                color: secondaryTextColor 
+              }}
+            >
+              Resuming in a moment...
+            </Text>
+          </View>
+        )}
+
         {gameState === 'start' && (
           <View
             className="p-6 mb-8 border-2 shadow-sm rounded-2xl"
@@ -398,7 +516,7 @@ const AttentionPlayMedium: React.FC = () => {
                 color: textColor 
               }}
             >
-              Find all items that match the target color and shape. Ignore similar distractors!
+              Find all items that match the target color and shape. The game adapts to keep you comfortable!
             </Text>
             <TouchableOpacity
               className="px-8 py-4 rounded-2xl"
@@ -570,15 +688,33 @@ const AttentionPlayMedium: React.FC = () => {
                 className="mt-4 p-3 rounded-xl" 
                 style={{ backgroundColor: isDark ? '#3a3a3a' : '#F9FAFB' }}
               >
-                <Text 
-                  className="text-center" 
-                  style={{ 
-                    fontSize: 16 * fontScale,
-                    color: textColor 
-                  }}
-                >
-                  Accuracy: {accuracy}% ({correctSelections}/{totalSelections})
-                </Text>
+                <View className="flex-row justify-between items-center">
+                  <Text 
+                    className="text-center" 
+                    style={{ 
+                      fontSize: 16 * fontScale,
+                      color: textColor 
+                    }}
+                  >
+                    Accuracy: {accuracy}% ({correctSelections}/{totalSelections})
+                  </Text>
+                  {fatigueLevel !== 'none' && (
+                    <View 
+                      className="px-3 py-1 rounded-full"
+                      style={{ backgroundColor: getFatigueColor() + '20' }}
+                    >
+                      <Text 
+                        style={{ 
+                          fontSize: 12 * fontScale,
+                          color: getFatigueColor(),
+                          fontWeight: '600'
+                        }}
+                      >
+                        {fatigueLevel === 'high' ? 'High Fatigue' : fatigueLevel === 'moderate' ? 'Moderate Fatigue' : 'Early Fatigue'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             )}
           </View>

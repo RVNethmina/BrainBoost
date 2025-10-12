@@ -1,10 +1,10 @@
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "MathResults">;
 
@@ -50,12 +50,12 @@ const PuzzlePlayTemplate: React.FC<Props> = ({
 
   // Dynamic colors based on theme
   const bgColor = isDark ? '#1a1a1a' : '#fff';
-  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const textColor = isDark ? '#fff' : PALETTE.neutralDark;
   const headerBg = isDark ? '#2a2a2a' : PALETTE.lightPink;
   const cardBg = isDark ? '#2a2a2a' : '#fff';
   const optionBg = isDark ? '#3a3a3a' : PALETTE.lightTeal;
   const disabledBg = isDark ? '#2a2a2a' : '#F3F4F6';
-  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.neutralMuted;
 
   // build questions
   useEffect(() => {

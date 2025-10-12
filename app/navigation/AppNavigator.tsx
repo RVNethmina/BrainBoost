@@ -1,13 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
-// Remove these old Attention Assessment imports:
-// import AttentionAssessmentIntro from '../screens/Assessments/AttentionAssessmentIntro';
-// import AttentionAssessmentResult from '../screens/Assessments/AttentionAssessmentResult';
-// import AttentionAssessmentRun from '../screens/Assessments/AttentionAssessmentRun';
-
-// Add the new consolidated Attention Assessment import:
-import AttentionAssessment from '../screens/Assessments/AttentionAssessment'; // Add this import
+import AttentionAssessment from '../screens/Assessments/AttentionAssessment';
 
 import MathAssessment from '../screens/Assessments/MathAssessment';
 import MathAssessmentResult from '../screens/Assessments/MathAssessmentResult';
@@ -55,6 +49,7 @@ import ProgressScreen from '../screens/Main/ProgressScreen';
 import ReminderScreen from '../screens/Main/ReminderScreen';
 import SettingsScreen from '../screens/Main/SettingsScreen';
 import { AssessmentResultPayload } from '../types/assessment';
+import { FatigueLevel } from '../services/fatigueDetectionService';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -113,36 +108,29 @@ export type RootStackParamList = {
   AttentionPlayEasy: undefined;
   AttentionPlayMedium: undefined;
   AttentionPlayHard: undefined;
-  AttentionResults: undefined;
+  AttentionResults: {
+    score: number;
+    totalQuestions: number;
+    timeTaken: number;
+    endedBy: string;
+    gameType: 'symbol_search' | 'color_focus' | 'speed_challenge';
+    level: number;
+    difficulty: 'easy' | 'medium' | 'hard';
+    accuracy: number;
+    avgReactionTime: number;
+    totalSelections: number;
+    correctSelections: number;
+    missedRounds?: number;
+    fatigueLevel?: FatigueLevel;
+  };
   MathAssessmentStart: undefined;
   MathAssessmentResult: {
     results: AssessmentResultPayload;
     savedId: string | null;
   } | undefined;
 
-  // Updated: Single Attention Assessment route (no params needed since it's self-contained)
   AttentionAssessment: undefined;
 
-  // Remove these old Attention Assessment routes:
-  // AttentionAssessmentIntro: undefined;
-  // AttentionAssessmentRun: undefined;
-  // AttentionAssessmentResult: {
-  //   totalTime: number;
-  //   results: Array<{
-  //     taskId: number;
-  //     trialNumber: number;
-  //     targetPresent: boolean;
-  //     responseGiven: boolean;
-  //     responseTime: number | null;
-  //     accuracy: boolean;
-  //     timestamp: number;
-  //   }>;
-  //   overallAccuracy: number;
-  //   averageReactionTime: number;
-  //   tasksCompleted: number;
-  // };
-
-  // NEW Puzzle Assessment
   PuzzleAssessmentIntro: undefined;
   PuzzleAssessmentRun: undefined;
   PuzzleAssessmentResult: {
@@ -185,7 +173,6 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="MemoryResults" component={MemoryResultsScreen} />
       <Stack.Screen name="MemoryTest" component={MemoryTest} />
       
-      {/* Updated: Single Attention Assessment screen */}
       <Stack.Screen name="AttentionAssessment" component={AttentionAssessment} />
       
       <Stack.Screen name="Reminder" component={ReminderScreen} />
@@ -208,11 +195,6 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="MathAssessment" component={MathAssessment} />
       <Stack.Screen name="MathAssessmentStart" component={MathAssessmentStart} />
       <Stack.Screen name="MathAssessmentResult" component={MathAssessmentResult} />
-      
-      {/* Remove these old Attention Assessment screens: */}
-      {/* <Stack.Screen name="AttentionAssessmentIntro" component={AttentionAssessmentIntro} /> */}
-      {/* <Stack.Screen name="AttentionAssessmentRun" component={AttentionAssessmentRun} /> */}
-      {/* <Stack.Screen name="AttentionAssessmentResult" component={AttentionAssessmentResult} /> */}
       
       <Stack.Screen name="PuzzleAssessmentIntro" component={PuzzleAssessmentIntro} />
       <Stack.Screen name="PuzzleAssessmentRun" component={PuzzleAssessmentRun} />

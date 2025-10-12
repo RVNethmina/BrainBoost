@@ -1,13 +1,13 @@
 // app/src/screens/Main/ReminderScreen.tsx
+import TimePicker from '@/app/components/TimePicker';
+import { useSettings } from '@/app/contexts/SettingsContext';
 import { PALETTE } from '@/app/design/colors';
 import { RootStackParamList } from '@/app/navigation/AppNavigator';
+import { NotificationService } from '@/config/NotificationService';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
-import { useSettings } from '@/app/contexts/SettingsContext';
-import { NotificationService } from '@/config/NotificationService';
-import TimePicker from '@/app/components/TimePicker';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type ReminderScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,

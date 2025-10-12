@@ -23,7 +23,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { useSettings } from '@/app/contexts/SettingsContext'; // Import the settings context
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -63,11 +62,6 @@ const auth = getAuth();
 
 const MemoryTest: React.FC = () => {
   const navigation = useNavigation<NavProp>();
-  // Use settings context
-  const { theme, getFontScale } = useSettings();
-  const fontScale = getFontScale();
-  const isDark = theme === 'dark';
-
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number }>({});
   const [showResults, setShowResults] = useState(false);
@@ -80,17 +74,6 @@ const MemoryTest: React.FC = () => {
 
   // Base question pool - will be shuffled daily
   const baseQuestions: Question[] = [
-  // Dynamic colors based on theme
-  const bgColor = isDark ? '#1a1a1a' : '#F7FAFC';
-  const textColor = isDark ? '#fff' : PALETTE.teal;
-  const mutedTextColor = isDark ? '#aaa' : '#64748b';
-  const darkTextColor = isDark ? '#fff' : '#0f172a';
-  const cardBg = isDark ? '#2a2a2a' : '#fff';
-  const cardBorderColor = isDark ? PALETTE.teal : PALETTE.lightTeal;
-  const lightCardBg = isDark ? '#3a3a3a' : '#F0F9FF';
-
-  // Simplified 8-question set for elderly-friendly assessment
-  const questions: Question[] = [
     { id: 1, question: 'Look at this pattern:\n🔴 🔵 🔴 🔵 ___\n\nWhat comes next?', options: ['🔴','🔵','🟡','🟢'], correctAnswer: 0, difficulty: 'easy', category: 'pattern', type: 'multiple_choice' },
     { id: 2, question: 'Remember this sequence:\n7, 3, 9, 1\nWhich number was third?', options: ['7','3','9','1'], correctAnswer: 2, difficulty: 'easy', category: 'sequence', type: 'multiple_choice' },
     { id: 3, question: 'Study these items:\n🍎 🚗 📚 ⚽\nHow many items were there?', options: ['3','4','5','6'], correctAnswer: 1, difficulty: 'easy', category: 'recall', type: 'multiple_choice' },
@@ -406,9 +389,9 @@ const MemoryTest: React.FC = () => {
 
   if (!assessmentStarted && restored) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.topRow}>
-           <TouchableOpacity 
+          <TouchableOpacity 
             style={styles.backBtn} 
             onPress={() => { 
               HapticFeedbackService.buttonPress(); 
@@ -417,50 +400,19 @@ const MemoryTest: React.FC = () => {
             activeOpacity={0.7}
           >
             <Text style={[styles.backBtnText, { color: PALETTE.teal }]}>← Back</Text>
-          <TouchableOpacity style={styles.backBtn} onPress={() => { HapticFeedbackService.buttonPress(); navigation.goBack(); }} activeOpacity={0.7}>
-            <Text style={[styles.backBtnText, { color: PALETTE.teal, fontSize: 18 * fontScale }]}>← Back</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false}>
-          <Text style={[styles.bigTitle, { 
-            color: textColor,
-            fontSize: 34 * fontScale 
-          }]}>🧠 Memory Assessment</Text>
-          
-          <Text style={[styles.largeSubtitle, { 
-            color: mutedTextColor,
-            fontSize: 20 * fontScale 
-          }]}>Evaluate your cognitive abilities</Text>
+          <Text style={[styles.bigTitle, { color: PALETTE.teal }]}>🧠 Memory Assessment</Text>
+          <Text style={[styles.largeSubtitle, { color: '#666' }]}>Evaluate your cognitive abilities</Text>
 
-          <View style={[styles.welcomeCard, { 
-            borderColor: cardBorderColor,
-            backgroundColor: cardBg
-          }]}>
-            <Text style={[styles.welcomeCardTitle, { 
-              color: textColor,
-              fontSize: 20 * fontScale 
-            }]}>What We Test</Text>
-            
-            <Text style={[styles.welcomeLine, { 
-              color: mutedTextColor,
-              fontSize: 18 * fontScale 
-            }]}>• 🎨 Pattern recognition</Text>
-            
-            <Text style={[styles.welcomeLine, { 
-              color: mutedTextColor,
-              fontSize: 18 * fontScale 
-            }]}>• 🔢 Sequence recall</Text>
-            
-            <Text style={[styles.welcomeLine, { 
-              color: mutedTextColor,
-              fontSize: 18 * fontScale 
-            }]}>• 👁️ Visual memory</Text>
-            
-            <Text style={[styles.welcomeLine, { 
-              color: mutedTextColor,
-              fontSize: 18 * fontScale 
-            }]}>• 🧩 Problem solving</Text>
+          <View style={[styles.welcomeCard, { borderColor: PALETTE.lightTeal }]}>
+            <Text style={styles.welcomeCardTitle}>What We Test</Text>
+            <Text style={styles.welcomeLine}>• 🎨 Pattern recognition</Text>
+            <Text style={styles.welcomeLine}>• 🔢 Sequence recall</Text>
+            <Text style={styles.welcomeLine}>• 👁️ Visual memory</Text>
+            <Text style={styles.welcomeLine}>• 🧩 Problem solving</Text>
           </View>
 
           <View style={[styles.welcomeCard, { borderColor: PALETTE.lightTeal, backgroundColor: '#F0F9FF' }]}>
@@ -491,45 +443,6 @@ const MemoryTest: React.FC = () => {
             activeOpacity={0.7}
           >
             <Text style={[styles.smallActionText, { color: '#666' }]}>Clear saved progress</Text>
-          <View style={[styles.welcomeCard, { 
-            borderColor: cardBorderColor, 
-            backgroundColor: lightCardBg 
-          }]}>
-            <Text style={[styles.welcomeCardTitle, { 
-              color: textColor,
-              fontSize: 20 * fontScale 
-            }]}>Assessment Details</Text>
-            
-            <Text style={[styles.welcomeLine, { 
-              color: mutedTextColor,
-              fontSize: 18 * fontScale 
-            }]}>• ✅ 8 carefully designed questions</Text>
-            
-            <Text style={[styles.welcomeLine, { 
-              color: mutedTextColor,
-              fontSize: 18 * fontScale 
-            }]}>• ⏱️ Takes about 6-8 minutes</Text>
-            
-            <Text style={[styles.welcomeLine, { 
-              color: mutedTextColor,
-              fontSize: 18 * fontScale 
-            }]}>• 💾 Progress saved automatically</Text>
-            
-            <Text style={[styles.welcomeLine, { 
-              color: mutedTextColor,
-              fontSize: 18 * fontScale 
-            }]}>• 📊 Detailed results provided</Text>
-          </View>
-
-          <TouchableOpacity style={[styles.startButton, { backgroundColor: PALETTE.teal }]} onPress={startAssessment} activeOpacity={0.8} accessibilityLabel="Start memory assessment">
-            <Text style={[styles.startButtonText, { fontSize: 20 * fontScale }]}>Start Assessment</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.smallAction} onPress={async () => { HapticFeedbackService.buttonPress(); await AsyncStorage.removeItem(STORAGE_KEY); Alert.alert('Cleared', 'Saved progress cleared.'); }} activeOpacity={0.7}>
-            <Text style={[styles.smallActionText, { 
-              color: mutedTextColor,
-              fontSize: 16 * fontScale 
-            }]}>Clear saved progress</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -543,31 +456,14 @@ const MemoryTest: React.FC = () => {
     const badge = getCognitiveBadge(results.cognitiveLevel);
 
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
+      <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.resultsContent} showsVerticalScrollIndicator={false}>
-          <Text style={[styles.resultsTitle, { 
-            color: textColor,
-            fontSize: 26 * fontScale 
-          }]}>Assessment Complete! {badge.emoji}</Text>
+          <Text style={[styles.resultsTitle, { color: PALETTE.teal }]}>Assessment Complete! {badge.emoji}</Text>
 
-          <View style={[styles.badgeBox, { 
-            borderColor: badge.color,
-            backgroundColor: cardBg
-          }]}>
-            <Text style={[styles.badgeLabel, { 
-              color: badge.color,
-              fontSize: 20 * fontScale 
-            }]}>{badge.label}</Text>
-            
-            <Text style={[styles.badgeScore, { 
-              color: badge.color,
-              fontSize: 48 * fontScale 
-            }]}>{results.score}%</Text>
-            
-            <Text style={[styles.badgeMsg, { 
-              color: mutedTextColor,
-              fontSize: 17 * fontScale 
-            }]}>{badge.text}</Text>
+          <View style={[styles.badgeBox, { borderColor: badge.color }]}>
+            <Text style={[styles.badgeLabel, { color: badge.color }]}>{badge.label}</Text>
+            <Text style={[styles.badgeScore, { color: badge.color }]}>{results.score}%</Text>
+            <Text style={styles.badgeMsg}>{badge.text}</Text>
           </View>
 
           <View style={styles.statsRow}>
@@ -582,45 +478,10 @@ const MemoryTest: React.FC = () => {
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>{Math.floor(results.timeSpent / 60)}m</Text>
               <Text style={styles.statLabel}>Time</Text>
-            <View style={[styles.statCard, { backgroundColor: cardBg }]}>
-              <Text style={[styles.statNumber, { 
-                color: PALETTE.teal,
-                fontSize: 32 * fontScale 
-              }]}>{results.correctAnswers}</Text>
-              <Text style={[styles.statLabel, { 
-                color: mutedTextColor,
-                fontSize: 14 * fontScale 
-              }]}>Correct</Text>
-            </View>
-            
-            <View style={[styles.statCard, { backgroundColor: cardBg }]}>
-              <Text style={[styles.statNumber, { 
-                color: PALETTE.teal,
-                fontSize: 32 * fontScale 
-              }]}>{results.incorrectAnswers}</Text>
-              <Text style={[styles.statLabel, { 
-                color: mutedTextColor,
-                fontSize: 14 * fontScale 
-              }]}>Incorrect</Text>
-            </View>
-            
-            <View style={[styles.statCard, { backgroundColor: cardBg }]}>
-              <Text style={[styles.statNumber, { 
-                color: PALETTE.teal,
-                fontSize: 32 * fontScale 
-              }]}>{Math.floor(results.timeSpent / 60)}m</Text>
-              <Text style={[styles.statLabel, { 
-                color: mutedTextColor,
-                fontSize: 14 * fontScale 
-              }]}>Time</Text>
             </View>
           </View>
 
-          <Text style={[styles.domainHeader, { 
-            color: darkTextColor,
-            fontSize: 20 * fontScale 
-          }]}>Performance by Category</Text>
-          
+          <Text style={styles.domainHeader}>Performance by Category</Text>
           <View style={styles.domainGrid}>
             {domainStats.map((d) => (
               <View key={d.category} style={styles.domainCard}>
@@ -630,25 +491,6 @@ const MemoryTest: React.FC = () => {
                   <View style={[styles.domainFill, { width: `${d.percent}%`, backgroundColor: PALETTE.teal }]} />
                 </View>
                 <Text style={styles.domainSmall}>{d.correct}/{d.total} correct</Text>
-              <View key={d.category} style={[styles.domainCard, { backgroundColor: cardBg }]}>
-                <Text style={[styles.domainTitle, { 
-                  color: darkTextColor,
-                  fontSize: 13 * fontScale 
-                }]}>{d.category}</Text>
-                
-                <Text style={[styles.domainPercent, { 
-                  color: PALETTE.teal,
-                  fontSize: 28 * fontScale 
-                }]}>{d.percent}%</Text>
-                
-                <View style={[styles.domainBar, { backgroundColor: isDark ? '#3a3a3a' : '#EEF2FF' }]}>
-                  <View style={[styles.domainFill, { width: `${d.percent}%`, backgroundColor: PALETTE.teal }]} />
-                </View>
-                
-                <Text style={[styles.domainSmall, { 
-                  color: mutedTextColor,
-                  fontSize: 13 * fontScale 
-                }]}>{d.correct}/{d.total} correct</Text>
               </View>
             ))}
           </View>
@@ -688,20 +530,6 @@ const MemoryTest: React.FC = () => {
             activeOpacity={0.8}
           >
             <Text style={[styles.retakeText, { color: PALETTE.teal }]}>Take Again</Text>
-            <TouchableOpacity style={[styles.resultNavBtn, { backgroundColor: PALETTE.teal }]} onPress={() => { HapticFeedbackService.buttonPress(); navigation.navigate('Home'); }} activeOpacity={0.8}>
-              <Text style={[styles.resultNavText, { fontSize: 16 * fontScale }]}>Go Home</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={[styles.resultNavBtnAlt, { backgroundColor: PALETTE.orange }]} onPress={() => { HapticFeedbackService.buttonPress(); navigation.navigate('Assessment'); }} activeOpacity={0.8}>
-              <Text style={[styles.resultNavTextAlt, { fontSize: 16 * fontScale }]}>All Assessments</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={[styles.retakeBtn, { backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightTeal }]} onPress={resetAssessment} activeOpacity={0.8}>
-            <Text style={[styles.retakeText, { 
-              color: PALETTE.teal,
-              fontSize: 16 * fontScale 
-            }]}>Take Again</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -714,7 +542,7 @@ const MemoryTest: React.FC = () => {
   const answered = selectedAnswers[question.id] !== undefined;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.headerRow}>
         <TouchableOpacity 
           onPress={() => { 
@@ -734,27 +562,6 @@ const MemoryTest: React.FC = () => {
       </View>
 
       <View style={[styles.progressBar, { backgroundColor: PALETTE.lightTeal }]}>
-        <TouchableOpacity onPress={() => { HapticFeedbackService.buttonPress(); navigation.goBack(); }} activeOpacity={0.7}>
-          <Text style={[styles.backSmall, { 
-            color: PALETTE.teal,
-            fontSize: 16 * fontScale 
-          }]}>← Back</Text>
-        </TouchableOpacity>
-        
-        <Text style={[styles.progressText, { 
-          color: darkTextColor,
-          fontSize: 18 * fontScale 
-        }]}>Question {currentQuestion + 1} / {questions.length}</Text>
-        
-        <TouchableOpacity onPress={exitAssessment} activeOpacity={0.7}>
-          <Text style={[styles.exitText, { 
-            color: PALETTE.red,
-            fontSize: 16 * fontScale 
-          }]}>Exit</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.progressBar, { backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightTeal }]}>
         <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: PALETTE.teal }]} />
       </View>
 
@@ -782,20 +589,6 @@ const MemoryTest: React.FC = () => {
               <Text style={[styles.jumpBtnText, active ? styles.jumpBtnTextActive : null]}>
                 {idx + 1}
               </Text>
-            <TouchableOpacity key={q.id} onPress={() => jumpToQuestion(idx)} accessibilityLabel={`Jump to question ${idx + 1}`} activeOpacity={0.7} style={[
-              styles.jumpBtn, 
-              { backgroundColor: isDark ? '#3a3a3a' : '#F1F5F9' },
-              active ? [styles.jumpBtnActive, { backgroundColor: PALETTE.teal }] : null, 
-              questionAnswered ? [styles.jumpBtnAnswered, { borderColor: PALETTE.orange }] : null
-            ]}>
-              <Text style={[
-                styles.jumpBtnText, 
-                { 
-                  color: isDark ? '#fff' : '#0f172a',
-                  fontSize: 22 * fontScale 
-                },
-                active ? styles.jumpBtnTextActive : null
-              ]}>{idx + 1}</Text>
             </TouchableOpacity>
           );
         })}
@@ -809,18 +602,6 @@ const MemoryTest: React.FC = () => {
           <Text style={[styles.questionText, { fontSize: 22, lineHeight: 32 }]}>
             {question.question}
           </Text>
-        <View style={[styles.card, { backgroundColor: cardBg }]}>
-          <Text style={[styles.category, { 
-            color: PALETTE.teal, 
-            backgroundColor: isDark ? '#3a3a3a' : PALETTE.lightTeal,
-            fontSize: 13 * fontScale 
-          }]}>{question.category.toUpperCase()}</Text>
-          
-          <Text style={[styles.questionText, { 
-            fontSize: 22 * fontScale, 
-            lineHeight: 32 * fontScale,
-            color: darkTextColor 
-          }]}>{question.question}</Text>
 
           <View style={{ marginTop: 16 }}>
             {question.options.map((opt, i) => {
@@ -845,26 +626,6 @@ const MemoryTest: React.FC = () => {
                       <Text style={{ color: PALETTE.teal, fontSize: 20, fontWeight: 'bold' }}>✓</Text>
                     </View>
                   )}
-                <TouchableOpacity key={i} onPress={() => handleAnswerSelect(i)} activeOpacity={0.7} style={[
-                  styles.option, 
-                  { 
-                    backgroundColor: isDark ? '#3a3a3a' : '#F8FAFC',
-                    borderColor: selected ? PALETTE.teal : (isDark ? '#555' : '#E6EEF8')
-                  }, 
-                  selected ? [styles.optionSelected, { backgroundColor: isDark ? '#2a4a4a' : '#F0F9FF' }] : null
-                ]} accessibilityLabel={`Option ${i + 1}: ${opt}`}>
-                  <Text style={[
-                    styles.optionText, 
-                    { 
-                      color: darkTextColor,
-                      fontSize: 19 * fontScale 
-                    }, 
-                    selected ? [styles.optionTextSelected, { color: PALETTE.teal }] : null
-                  ]}>{opt}</Text>
-                  
-                  {selected && <View style={[styles.checkmark, { backgroundColor: isDark ? '#1a3a3a' : PALETTE.lightTeal }]}>
-                    <Text style={{ color: PALETTE.teal, fontSize: 20 * fontScale, fontWeight: 'bold' }}>✓</Text>
-                  </View>}
                 </TouchableOpacity>
               );
             })}
@@ -899,28 +660,6 @@ const MemoryTest: React.FC = () => {
             <Text style={[styles.navBtnText, !answered ? styles.navDisabledText : null]}>
               {currentQuestion === questions.length - 1 ? 'Finish ✓' : 'Next →'}
             </Text>
-          <TouchableOpacity onPress={goPrev} disabled={currentQuestion === 0} activeOpacity={0.8} style={[
-            styles.navBtn, 
-            { backgroundColor: PALETTE.teal }, 
-            currentQuestion === 0 ? [styles.navDisabled, { backgroundColor: isDark ? '#555' : '#cbd5e1' }] : null
-          ]}>
-            <Text style={[
-              styles.navBtnText, 
-              { fontSize: 18 * fontScale },
-              currentQuestion === 0 ? [styles.navDisabledText, { color: isDark ? '#888' : '#475569' }] : null
-            ]}>← Previous</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity onPress={goNext} disabled={!answered} activeOpacity={0.8} style={[
-            styles.navBtn, 
-            { backgroundColor: PALETTE.teal }, 
-            !answered ? [styles.navDisabled, { backgroundColor: isDark ? '#555' : '#cbd5e1' }] : null
-          ]}>
-            <Text style={[
-              styles.navBtnText, 
-              { fontSize: 18 * fontScale },
-              !answered ? [styles.navDisabledText, { color: isDark ? '#888' : '#475569' }] : null
-            ]}>{currentQuestion === questions.length - 1 ? 'Finish ✓' : 'Next →'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -929,25 +668,26 @@ const MemoryTest: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#F7FAFC' },
 
   topRow: { paddingHorizontal: 16, paddingTop: 16, alignItems: 'flex-start' },
   backBtn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
-  backBtnText: { fontWeight: '700' },
+  backBtnText: { fontWeight: '700', fontSize: 18 },
 
   welcomeContent: { padding: 24, alignItems: 'center' },
-  bigTitle: { fontWeight: '800', marginBottom: 10, textAlign: 'center' },
-  largeSubtitle: { marginBottom: 24, textAlign: 'center' },
+  bigTitle: { fontSize: 34, fontWeight: '800', marginBottom: 10, textAlign: 'center' },
+  largeSubtitle: { fontSize: 20, marginBottom: 24, textAlign: 'center' },
   welcomeCard: { 
     width: '100%', 
+    backgroundColor: '#fff', 
     padding: 22, 
     borderRadius: 16, 
     marginBottom: 20, 
     elevation: 3,
     borderWidth: 2
   },
-  welcomeCardTitle: { fontWeight: '700', marginBottom: 12 },
-  welcomeLine: { marginVertical: 4, lineHeight: 26 },
+  welcomeCardTitle: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
+  welcomeLine: { fontSize: 18, color: '#475569', marginVertical: 4, lineHeight: 26 },
   startButton: { 
     marginTop: 12, 
     paddingVertical: 20, 
@@ -955,9 +695,9 @@ const styles = StyleSheet.create({
     borderRadius: 16, 
     width: '100%' 
   },
-  startButtonText: { color: '#fff', fontWeight: '800', textAlign: 'center' },
+  startButtonText: { fontSize: 20, color: '#fff', fontWeight: '800', textAlign: 'center' },
   smallAction: { marginTop: 14 },
-  smallActionText: { textDecorationLine: 'underline' },
+  smallActionText: { textDecorationLine: 'underline', fontSize: 16 },
 
   headerRow: { 
     padding: 16, 
@@ -965,9 +705,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'center' 
   },
-  progressText: { fontWeight: '700' },
-  backSmall: { fontWeight: '700' },
-  exitText: { fontWeight: '700' },
+  progressText: { fontSize: 18, fontWeight: '700' },
+  backSmall: { fontWeight: '700', fontSize: 16 },
+  exitText: { fontSize: 16, fontWeight: '700' },
 
   progressBar: { height: 10, marginHorizontal: 16, borderRadius: 8, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 8 },
@@ -977,28 +717,31 @@ const styles = StyleSheet.create({
     width: 70, 
     height: 70, 
     borderRadius: 35, 
+    backgroundColor: '#F1F5F9', 
     alignItems: 'center', 
     justifyContent: 'center', 
     marginRight: 12 
   },
-  jumpBtnActive: {},
-  jumpBtnAnswered: { borderWidth: 3 },
-  jumpBtnText: { fontWeight: '800' },
+  jumpBtnActive: { backgroundColor: PALETTE.teal },
+  jumpBtnAnswered: { borderWidth: 3, borderColor: PALETTE.orange },
+  jumpBtnText: { fontSize: 22, fontWeight: '800', color: '#0f172a' },
   jumpBtnTextActive: { color: '#fff' },
 
   questionWrap: { padding: 20, paddingBottom: 40 },
-  card: { padding: 24, borderRadius: 16, elevation: 3 },
+  card: { backgroundColor: '#fff', padding: 24, borderRadius: 16, elevation: 3 },
   category: { 
     alignSelf: 'flex-start', 
     paddingHorizontal: 14, 
     paddingVertical: 8, 
     borderRadius: 14, 
-    fontWeight: '700',
+    fontWeight: '700', 
+    fontSize: 13,
     marginBottom: 16 
   },
-  questionText: { lineHeight: 32, marginBottom: 10 },
+  questionText: { fontSize: 22, color: '#0f172a', lineHeight: 32, marginBottom: 10 },
 
   option: { 
+    backgroundColor: '#F8FAFC', 
     paddingVertical: 20, 
     paddingHorizontal: 16, 
     borderRadius: 14, 
@@ -1008,13 +751,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between'
   },
-  optionSelected: {},
-  optionText: { flex: 1 },
-  optionTextSelected: { fontWeight: '800' },
+  optionSelected: { backgroundColor: '#F0F9FF' },
+  optionText: { fontSize: 19, color: '#0f172a', flex: 1 },
+  optionTextSelected: { fontWeight: '800', color: PALETTE.teal },
   checkmark: { 
     width: 32, 
     height: 32, 
     borderRadius: 16, 
+    backgroundColor: PALETTE.lightTeal, 
     alignItems: 'center', 
     justifyContent: 'center' 
   },
@@ -1026,24 +770,25 @@ const styles = StyleSheet.create({
     borderRadius: 14, 
     alignItems: 'center' 
   },
-  navBtnText: { color: '#fff', fontWeight: '800' },
-  navDisabled: {},
-  navDisabledText: {},
+  navBtnText: { color: '#fff', fontWeight: '800', fontSize: 18 },
+  navDisabled: { backgroundColor: '#cbd5e1' },
+  navDisabledText: { color: '#475569' },
 
   resultsContent: { padding: 24, alignItems: 'center' },
-  resultsTitle: { fontWeight: '800', marginBottom: 16, textAlign: 'center' },
+  resultsTitle: { fontSize: 26, fontWeight: '800', marginBottom: 16, textAlign: 'center' },
 
   badgeBox: { 
     width: '100%', 
+    backgroundColor: '#fff', 
     padding: 20, 
     borderRadius: 16, 
     alignItems: 'center', 
     borderWidth: 3, 
     marginBottom: 20 
   },
-  badgeLabel: { fontWeight: '900' },
-  badgeScore: { fontWeight: '900', marginTop: 8 },
-  badgeMsg: { marginTop: 12, textAlign: 'center', lineHeight: 24 },
+  badgeLabel: { fontSize: 20, fontWeight: '900' },
+  badgeScore: { fontSize: 48, fontWeight: '900', marginTop: 8 },
+  badgeMsg: { marginTop: 12, textAlign: 'center', fontSize: 17, lineHeight: 24 },
 
   statsRow: {
     flexDirection: 'row',
@@ -1054,22 +799,29 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
     elevation: 2
   },
   statNumber: {
-    fontWeight: '900'
+    fontSize: 32,
+    fontWeight: '900',
+    color: PALETTE.teal
   },
   statLabel: {
+    fontSize: 14,
+    color: '#666',
     marginTop: 4
   },
 
   domainHeader: {
+    fontSize: 20,
     fontWeight: '700',
     marginBottom: 12,
-    alignSelf: 'flex-start'
+    alignSelf: 'flex-start',
+    color: '#0f172a'
   },
   domainGrid: { 
     width: '100%', 
@@ -1080,21 +832,23 @@ const styles = StyleSheet.create({
   },
   domainCard: { 
     width: '48%', 
+    backgroundColor: '#fff', 
     padding: 16, 
     borderRadius: 12, 
     marginBottom: 12, 
     elevation: 2 
   },
-  domainTitle: { fontWeight: '800', marginBottom: 8 },
-  domainPercent: { fontWeight: '900' },
+  domainTitle: { fontWeight: '800', marginBottom: 8, fontSize: 13, color: '#0f172a' },
+  domainPercent: { fontSize: 28, fontWeight: '900' },
   domainBar: { 
     height: 10, 
+    backgroundColor: '#EEF2FF', 
     borderRadius: 8, 
     overflow: 'hidden', 
     marginTop: 10 
   },
   domainFill: { height: '100%', borderRadius: 8 },
-  domainSmall: { marginTop: 8 },
+  domainSmall: { marginTop: 8, color: '#475569', fontSize: 13 },
 
   resultNavRow: { 
     flexDirection: 'row', 
@@ -1116,8 +870,8 @@ const styles = StyleSheet.create({
     borderRadius: 12, 
     alignItems: 'center' 
   },
-  resultNavText: { color: '#fff', fontWeight: '800' },
-  resultNavTextAlt: { color: '#fff', fontWeight: '800' },
+  resultNavText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  resultNavTextAlt: { color: '#fff', fontWeight: '800', fontSize: 16 },
 
   retakeBtn: { 
     marginTop: 8, 
@@ -1126,7 +880,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: '100%'
   },
-  retakeText: { fontWeight: '800', textAlign: 'center' }
+  retakeText: { fontWeight: '800', textAlign: 'center', fontSize: 16 }
 });
 
 export default MemoryTest;

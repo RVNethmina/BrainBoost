@@ -119,6 +119,7 @@
 //   );
 // }
 // screens/Games/Puzzle/PuzzleQuiz.tsx
+import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 import { PALETTE } from "@/app/design/colors";
 import { RootStackParamList } from "@/app/navigation/AppNavigator";
 import { useNavigation } from "@react-navigation/native";
@@ -133,7 +134,6 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { useSettings } from "@/app/contexts/SettingsContext"; // Add this import
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "BrainGames">;
 
@@ -167,10 +167,10 @@ export default function PuzzleQuiz() {
 
   // Dynamic colors based on theme
   const bgColor = isDark ? '#1a1a1a' : PALETTE.lightPink;
-  const textColor = isDark ? '#fff' : PALETTE.darkGray;
+  const textColor = isDark ? '#fff' : PALETTE.neutralDark;
   const headerBg = isDark ? '#2a2a2a' : PALETTE.teal;
   const cardBg = isDark ? '#2a2a2a' : '#fff';
-  const secondaryTextColor = isDark ? '#ccc' : PALETTE.gray;
+  const secondaryTextColor = isDark ? '#ccc' : PALETTE.neutralMuted;
   const gameCardBg = isDark ? '#3a3a3a' : '#F3F4F6';
   const bottomBarBg = isDark ? '#2a2a2a' : 'rgba(255,255,255,0.96)';
   const borderColor = isDark ? '#444' : '#E5E7EB';

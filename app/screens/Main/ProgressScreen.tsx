@@ -60,15 +60,6 @@ interface WeeklyData {
   date: Date;
 }
 
-interface MonthlyData {
-  month: string;
-  games: number;
-  assessments: number;
-  avgScore: number;
-  avgAssessmentScore: number;
-  totalTime: number;
-}
-
 interface Achievement {
   id: string;
   title: string;
@@ -105,7 +96,6 @@ const ProgressScreen: React.FC = () => {
   const navigation = useNavigation<ProgressScreenNavigationProp>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [selectedChart, setSelectedChart] = useState<'activity' | 'performance' | 'cognitive'>('activity');
   const [animatedValue] = useState(new Animated.Value(0));
 
@@ -128,7 +118,6 @@ const ProgressScreen: React.FC = () => {
   });
 
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [cognitiveScores, setCognitiveScores] = useState<CognitiveScore[]>([]);
   const [assessmentBreakdown, setAssessmentBreakdown] = useState<AssessmentBreakdown[]>([]);
@@ -214,7 +203,6 @@ const ProgressScreen: React.FC = () => {
       // Process all data
       const processedStats = calculateEnhancedStats(mathResults, memoryResults, attentionResults, assessmentResults);
       const weekData = calculateEnhancedWeeklyData(mathResults, memoryResults, attentionResults, assessmentResults);
-      const monthData = calculateMonthlyData(mathResults, memoryResults, attentionResults, assessmentResults);
       const cogScores = calculateEnhancedCognitiveScores(mathResults, memoryResults, attentionResults, assessmentResults);
       const streak = calculateStreak(mathResults, memoryResults, attentionResults, assessmentResults);
       const assessmentData = calculateAssessmentBreakdown(assessmentResults);
@@ -230,7 +218,6 @@ const ProgressScreen: React.FC = () => {
 
       setStats(finalStats);
       setWeeklyData(weekData);
-      setMonthlyData(monthData);
       setCognitiveScores(cogScores);
       setAchievements(achievementsList);
       setAssessmentBreakdown(assessmentData);
@@ -240,6 +227,16 @@ const ProgressScreen: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const normalizeScore = (score: number | undefined): number => {
+    let s = score || 0;
+    // If the score is a decimal between 0 and 1, convert it to a percentage.
+    if (s > 0 && s <= 1) {
+      s *= 100;
+    }
+    // Cap the score at 100 to handle erroneous data like '1500' and ensure it's not negative.
+    return Math.max(0, Math.min(s, 100));
   };
 
   const calculateEnhancedStats = (
@@ -260,7 +257,7 @@ const ProgressScreen: React.FC = () => {
       results.forEach((doc: any) => {
         const data = doc.data();
         gameCount++;
-        const score = data.percentage || data.score || 0;
+        const score = normalizeScore(data.percentage || data.score);
         totalScore += score;
         totalTime += data.timeTaken || 0;
         bestScore = Math.max(bestScore, score);
@@ -268,31 +265,13 @@ const ProgressScreen: React.FC = () => {
     };
 
     const processAssessmentResults = (results: any) => {
-      console.log('Processing assessment results, count:', results.size);
-      
       results.forEach((doc: any) => {
         const data = doc.data();
-        console.log('Assessment doc data:', {
-          id: doc.id,
-          score: data.score,
-          cognitiveLevel: data.cognitiveLevel,
-          totalQuestions: data.totalQuestions,
-          timestamp: data.createdAt
-        });
-        
         assessmentCount++;
-        // Handle both percentage (0-100) and decimal (0-1) scores
-        let score = data.score || 0;
-        if (score <= 1 && score > 0) {
-          score = score * 100; // Convert decimal to percentage
-        }
-        
+        const score = normalizeScore(data.score);
         totalAssessmentScore += score;
         bestAssessmentScore = Math.max(bestAssessmentScore, score);
       });
-      
-      console.log('Total assessments processed:', assessmentCount);
-      console.log('Average assessment score:', assessmentCount > 0 ? totalAssessmentScore / assessmentCount : 0);
     };
 
     processGameResults(mathResults);
@@ -331,7 +310,7 @@ const ProgressScreen: React.FC = () => {
         const data = doc.data();
         const date = data.createdAt?.toDate() || new Date(data.timestamp);
         allResults.push({
-          score: data.percentage || data.score || 0,
+          score: normalizeScore(data.percentage || data.score),
           date: date
         });
       });
@@ -347,7 +326,9 @@ const ProgressScreen: React.FC = () => {
     const firstAvg = firstQuarter.reduce((sum, item) => sum + item.score, 0) / firstQuarter.length;
     const lastAvg = lastQuarter.reduce((sum, item) => sum + item.score, 0) / lastQuarter.length;
 
-    return Math.round(((lastAvg - firstAvg) / firstAvg) * 100) || 0;
+    if (firstAvg <= 0) return 0;
+
+    return Math.round(((lastAvg - firstAvg) / firstAvg) * 100);
   };
 
   const calculateEnhancedWeeklyData = (mathResults: any, memoryResults: any, attentionResults: any, assessmentResults: any): WeeklyData[] => {
@@ -378,7 +359,7 @@ const ProgressScreen: React.FC = () => {
           if (checkDate(doc)) {
             const data = doc.data();
             dayGames++;
-            dayScore += data.percentage || data.score || 0;
+            dayScore += normalizeScore(data.percentage || data.score);
             dayTime += data.timeTaken || 0;
           }
         });
@@ -389,7 +370,7 @@ const ProgressScreen: React.FC = () => {
         if (checkDate(doc)) {
           const data = doc.data();
           dayAssessments++;
-          dayAssessmentScore += data.score || 0;
+          dayAssessmentScore += normalizeScore(data.score);
         }
       });
 
@@ -407,66 +388,13 @@ const ProgressScreen: React.FC = () => {
     return weekData;
   };
 
-  const calculateMonthlyData = (mathResults: any, memoryResults: any, attentionResults: any, assessmentResults: any): MonthlyData[] => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentMonth = new Date().getMonth();
-    const monthData: MonthlyData[] = [];
-
-    for (let i = 5; i >= 0; i--) {
-      const monthIndex = (currentMonth - i + 12) % 12;
-      const year = new Date().getFullYear() - (currentMonth - i < 0 ? 1 : 0);
-      
-      let monthGames = 0;
-      let monthAssessments = 0;
-      let monthScore = 0;
-      let monthAssessmentScore = 0;
-      let monthTime = 0;
-
-      const checkMonth = (doc: any) => {
-        const data = doc.data();
-        const docDate = data.createdAt?.toDate() || new Date(data.timestamp);
-        return docDate.getMonth() === monthIndex && docDate.getFullYear() === year;
-      };
-
-      [mathResults, memoryResults, attentionResults].forEach(results => {
-        results.forEach((doc: any) => {
-          if (checkMonth(doc)) {
-            const data = doc.data();
-            monthGames++;
-            monthScore += data.percentage || data.score || 0;
-            monthTime += data.timeTaken || 0;
-          }
-        });
-      });
-
-      assessmentResults.forEach((doc: any) => {
-        if (checkMonth(doc)) {
-          const data = doc.data();
-          monthAssessments++;
-          monthAssessmentScore += data.score || 0;
-        }
-      });
-
-      monthData.push({
-        month: months[monthIndex],
-        games: monthGames,
-        assessments: monthAssessments,
-        avgScore: monthGames > 0 ? Math.round(monthScore / monthGames) : 0,
-        avgAssessmentScore: monthAssessments > 0 ? Math.round(monthAssessmentScore / monthAssessments) : 0,
-        totalTime: monthTime,
-      });
-    }
-
-    return monthData;
-  };
-
   const calculateEnhancedCognitiveScores = (mathResults: any, memoryResults: any, attentionResults: any, assessmentResults: any): CognitiveScore[] => {
     const calculateAverage = (results: any) => {
       if (results.size === 0) return 0;
       let total = 0;
       results.forEach((doc: any) => {
         const data = doc.data();
-        total += data.percentage || data.score || 0;
+        total += normalizeScore(data.percentage || data.score);
       });
       return Math.round(total / results.size);
     };
@@ -479,14 +407,14 @@ const ProgressScreen: React.FC = () => {
       const older = docs.slice(Math.floor(docs.length / 2));
       
       const recentAvg = recent.reduce((acc: number, doc: any) => {
-        return acc + (doc.data().percentage || doc.data().score || 0);
+        return acc + normalizeScore(doc.data().percentage || doc.data().score);
       }, 0) / recent.length;
       
       const olderAvg = older.reduce((acc: number, doc: any) => {
-        return acc + (doc.data().percentage || doc.data().score || 0);
+        return acc + normalizeScore(doc.data().percentage || doc.data().score);
       }, 0) / older.length;
       
-      if (olderAvg === 0) return { trend: 'stable', change: 0 };
+      if (olderAvg <= 0) return { trend: 'stable', change: 0 };
       
       const change = Math.round(((recentAvg - olderAvg) / olderAvg) * 100);
       let trend: 'up' | 'down' | 'stable' = 'stable';
@@ -504,7 +432,7 @@ const ProgressScreen: React.FC = () => {
     // Calculate assessment cognitive level
     const assessmentAvg = assessmentResults.size > 0 
       ? Array.from(assessmentResults.docs).reduce((acc: number, doc: any) => {
-          return acc + (doc.data().score || 0);
+          return acc + normalizeScore(doc.data().score);
         }, 0) / assessmentResults.size
       : 0;
 
@@ -558,53 +486,40 @@ const ProgressScreen: React.FC = () => {
   };
 
   const calculateAssessmentBreakdown = (assessmentResults: any): AssessmentBreakdown[] => {
-  if (assessmentResults.size === 0) {
-    console.log('No assessment results to calculate breakdown');
-    return [];
-  }
-
-  console.log('Calculating breakdown for', assessmentResults.size, 'assessments');
-  
-  const breakdown: { [key: string]: { count: number; totalScore: number } } = {};
-  
-  assessmentResults.forEach((doc: any) => {
-    const data = doc.data();
-    const level = data.cognitiveLevel || 'unknown';
-    
-    // Handle both percentage and decimal scores
-    let score = data.score || 0;
-    if (score <= 1 && score > 0) {
-      score = score * 100;
+    if (assessmentResults.size === 0) {
+      return [];
     }
-    
-    if (!breakdown[level]) {
-      breakdown[level] = { count: 0, totalScore: 0 };
-    }
-    breakdown[level].count++;
-    breakdown[level].totalScore += score;
-    
-    console.log('Added to breakdown:', { level, score, count: breakdown[level].count });
-  });
-
-  const total = assessmentResults.size;
-  const colors = {
-    excellent: PALETTE.green,
-    good: PALETTE.blue,
-    fair: PALETTE.orange,
-    needs_attention: PALETTE.red,
-    unknown: PALETTE.neutralMuted,
-  };
-
-  const result = Object.entries(breakdown).map(([level, data]) => ({
-    cognitiveLevel: level.replace('_', ' ').toUpperCase(),
-    count: data.count,
-    percentage: Math.round((data.count / total) * 100),
-    averageScore: Math.round(data.totalScore / data.count),
-    color: colors[level as keyof typeof colors] || PALETTE.neutralMuted,
-  }));
   
-  console.log('Final breakdown:', result);
-  return result;
+    const breakdown: { [key: string]: { count: number; totalScore: number } } = {};
+    
+    assessmentResults.forEach((doc: any) => {
+      const data = doc.data();
+      const level = data.cognitiveLevel || 'unknown';
+      const score = normalizeScore(data.score);
+      
+      if (!breakdown[level]) {
+        breakdown[level] = { count: 0, totalScore: 0 };
+      }
+      breakdown[level].count++;
+      breakdown[level].totalScore += score;
+    });
+
+    const total = assessmentResults.size;
+    const colors = {
+      excellent: PALETTE.green,
+      good: PALETTE.blue,
+      fair: PALETTE.orange,
+      needs_attention: PALETTE.red,
+      unknown: PALETTE.neutralMuted,
+    };
+
+    return Object.entries(breakdown).map(([level, data]) => ({
+      cognitiveLevel: level.replace('_', ' ').toUpperCase(),
+      count: data.count,
+      percentage: Math.round((data.count / total) * 100),
+      averageScore: Math.round(data.totalScore / data.count),
+      color: colors[level as keyof typeof colors] || PALETTE.neutralMuted,
+    }));
   };
 
   const calculateStreak = (mathResults: any, memoryResults: any, attentionResults: any, assessmentResults: any) => {
@@ -808,28 +723,6 @@ const ProgressScreen: React.FC = () => {
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
 
-  const renderPeriodSelector = () => (
-    <View style={styles.periodSelector}>
-      {(['week', 'month'] as const).map((period) => (
-        <TouchableOpacity
-          key={period}
-          style={[
-            styles.periodButton,
-            selectedPeriod === period && styles.periodButtonActive
-          ]}
-          onPress={() => setSelectedPeriod(period)}
-        >
-          <Text style={[
-            styles.periodButtonText,
-            selectedPeriod === period && styles.periodButtonTextActive
-          ]}>
-            {period.charAt(0).toUpperCase() + period.slice(1)}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
   const renderChartSelector = () => (
     <View style={styles.chartSelector}>
       {([
@@ -858,10 +751,7 @@ const ProgressScreen: React.FC = () => {
   );
 
   const renderEnhancedBarChart = () => {
-    const data = selectedPeriod === 'week' ? weeklyData : monthlyData;
-    const maxValue = selectedPeriod === 'week' 
-      ? Math.max(...weeklyData.map(d => Math.max(d.games, d.assessments)), 1)
-      : Math.max(...monthlyData.map(d => Math.max(d.games, d.assessments)), 1);
+    const maxValue = Math.max(...weeklyData.map(d => Math.max(d.games, d.assessments)), 1);
     
     return (
       <Animated.View style={[
@@ -872,15 +762,13 @@ const ProgressScreen: React.FC = () => {
           <Text style={styles.chartTitle}>
             {selectedChart === 'activity' ? 'Activity Overview' : 
              selectedChart === 'performance' ? 'Performance Trends' : 
-             'Cognitive Progress'}
+             'Cognitive Progress'} (Weekly)
           </Text>
           {renderChartSelector()}
         </View>
         
-        {renderPeriodSelector()}
-
         <View style={styles.enhancedBarChart}>
-          {selectedPeriod === 'week' ? weeklyData.map((data, index) => {
+          {weeklyData.map((data, index) => {
             const gameHeight = maxValue > 0 ? (data.games / maxValue) * 120 : 0;
             const assessmentHeight = maxValue > 0 ? (data.assessments / maxValue) * 120 : 0;
             const isToday = index === weeklyData.length - 1;
@@ -938,56 +826,6 @@ const ProgressScreen: React.FC = () => {
                   {data.day}
                 </Text>
               </TouchableOpacity>
-            );
-          }) : monthlyData.map((data, index) => {
-            const gameHeight = maxValue > 0 ? (data.games / maxValue) * 120 : 0;
-            const assessmentHeight = maxValue > 0 ? (data.assessments / maxValue) * 120 : 0;
-            const isCurrentMonth = index === monthlyData.length - 1;
-            
-            return (
-              <View key={data.month} style={styles.barColumn}>
-                <View style={styles.barValues}>
-                  {data.games > 0 && (
-                    <Text style={styles.barValueText}>{data.games}</Text>
-                  )}
-                  {data.assessments > 0 && (
-                    <Text style={[styles.barValueText, { color: PALETTE.purple }]}>
-                      {data.assessments}A
-                    </Text>
-                  )}
-                </View>
-                
-                <View style={styles.barContainer}>
-                  {gameHeight > 0 && (
-                    <View
-                      style={[
-                        styles.bar,
-                        {
-                          height: Math.max(gameHeight, 3),
-                          backgroundColor: isCurrentMonth ? PALETTE.purple : PALETTE.lightTeal,
-                          marginBottom: 2,
-                        },
-                      ]}
-                    />
-                  )}
-                  
-                  {assessmentHeight > 0 && (
-                    <View
-                      style={[
-                        styles.bar,
-                        {
-                          height: Math.max(assessmentHeight, 3),
-                          backgroundColor: PALETTE.orange,
-                        },
-                      ]}
-                    />
-                  )}
-                </View>
-                
-                <Text style={[styles.barLabel, isCurrentMonth && styles.todayLabel]}>
-                  {data.month}
-                </Text>
-              </View>
             );
           })}
         </View>
@@ -1513,37 +1351,6 @@ const styles = StyleSheet.create({
     color: PALETTE.neutralMuted,
     marginTop: 4,
     textAlign: 'center',
-  },
-  periodSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 16,
-  },
-  periodButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  periodButtonActive: {
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  periodButtonText: {
-    fontSize: 14,
-    color: PALETTE.neutralMuted,
-    fontWeight: '500',
-  },
-  periodButtonTextActive: {
-    color: PALETTE.neutralDark,
-    fontWeight: '700',
   },
   chartSelector: {
     flexDirection: 'row',
