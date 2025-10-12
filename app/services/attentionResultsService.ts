@@ -3,6 +3,7 @@ import { NotificationService } from '@/config/NotificationService';
 import { auth, firestore } from '@/config/firebaseConfig';
 import { addDoc, collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { Platform } from 'react-native';
+import { FatigueLevel } from '@/app/services/fatigueDetectionService';
 
 export type AttentionResultPayload = {
   score: number;
@@ -17,6 +18,7 @@ export type AttentionResultPayload = {
   totalSelections: number;
   correctSelections: number;
   missedRounds?: number; // for time-limited rounds
+  fatigueLevel?: FatigueLevel; // 'none', 'early', 'moderate', 'high'
 };
 
 export async function saveAttentionResult(payload: AttentionResultPayload) {
@@ -27,11 +29,12 @@ export async function saveAttentionResult(payload: AttentionResultPayload) {
       ? Math.round((payload.score / payload.totalQuestions) * 100)
       : 0;
 
-    console.log('🔍 Debug Info:');
+    console.log('🔍 Attention Debug Info:');
     console.log('- User authenticated:', !!user);
     console.log('- User UID:', uid || 'none');
     console.log('- User email:', user?.email || 'none');
     console.log('- Auth state:', auth.currentUser ? 'signed in' : 'signed out');
+    console.log('- Fatigue Level:', payload.fatigueLevel || 'none');
 
     const docData = {
       score: payload.score,
@@ -51,7 +54,10 @@ export async function saveAttentionResult(payload: AttentionResultPayload) {
       createdAt: serverTimestamp(),
       userId: uid || null,
       userEmail: user?.email || 'anonymous',
-      timestamp: Date.now(), // Add regular timestamp as backup
+      timestamp: Date.now(),
+      // NEW: Fatigue tracking data
+      fatigueLevel: payload.fatigueLevel || 'none',
+      fatigueDetected: payload.fatigueLevel && payload.fatigueLevel !== 'none',
     };
 
     console.log('📝 Document data to save:', JSON.stringify(docData, null, 2));
@@ -67,6 +73,26 @@ export async function saveAttentionResult(payload: AttentionResultPayload) {
         
         await setDoc(resultRef, docData);
         console.log('✅ Attention result saved to user collection:', resultRef.id);
+
+        // Also save to fatigue tracking collection for analysis
+        if (payload.fatigueLevel && payload.fatigueLevel !== 'none') {
+          try {
+            const fatigueRef = doc(collection(userDocRef, 'fatigueHistory'));
+            await setDoc(fatigueRef, {
+              gameType: payload.gameType,
+              difficulty: payload.difficulty,
+              fatigueLevel: payload.fatigueLevel,
+              accuracy: payload.accuracy,
+              avgReactionTime: payload.avgReactionTime,
+              timeTaken: payload.timeTaken,
+              timestamp: serverTimestamp(),
+              createdAt: Date.now(),
+            });
+            console.log('✅ Fatigue history saved:', fatigueRef.id);
+          } catch (fatigueErr) {
+            console.warn('⚠️ Could not save fatigue history:', fatigueErr);
+          }
+        }
 
         // Try to send notification
         try {
@@ -105,7 +131,6 @@ async function saveToPublicCollection(docData: any) {
   try {
     console.log('📍 Public collection path: publicAttentionResults');
     
-    // Remove userId for public collection to avoid confusion
     const publicDocData = {
       ...docData,
       userId: null,
@@ -139,12 +164,26 @@ export async function getAttentionResults(userId: string, limit: number = 10) {
     const userDocRef = doc(firestore, 'users', userId);
     const resultsRef = collection(userDocRef, 'attentionResults');
     
-    // This would typically use orderBy and limit, but showing the structure
     console.log('📊 Fetching attention results for user:', userId);
     
-    return { success: true, results: [] }; // Placeholder
+    return { success: true, results: [] };
   } catch (error) {
     console.error('Error fetching attention results:', error);
+    return { success: false, error };
+  }
+}
+
+// Helper function to get fatigue history
+export async function getFatigueHistory(userId: string) {
+  try {
+    const userDocRef = doc(firestore, 'users', userId);
+    const fatigueRef = collection(userDocRef, 'fatigueHistory');
+    
+    console.log('📊 Fetching fatigue history for user:', userId);
+    
+    return { success: true, fatigueHistory: [] };
+  } catch (error) {
+    console.error('Error fetching fatigue history:', error);
     return { success: false, error };
   }
 }
@@ -157,13 +196,37 @@ export function getAttentionSummary(results: AttentionResultPayload[]) {
       averageReactionTime: 0,
       totalGamesPlayed: 0,
       bestScore: 0,
-      improvementTrend: 'neutral' as 'improving' | 'declining' | 'neutral'
+      improvementTrend: 'neutral' as 'improving' | 'declining' | 'neutral',
+      fatigueCount: 0,
+      mostCommonFatigue: 'none' as FatigueLevel,
     };
   }
 
   const totalAccuracy = results.reduce((sum, r) => sum + r.accuracy, 0);
   const totalReactionTime = results.reduce((sum, r) => sum + r.avgReactionTime, 0);
   const scores = results.map(r => r.score);
+  
+  // Count fatigue occurrences
+  const fatigueCounts = {
+    none: 0,
+    early: 0,
+    moderate: 0,
+    high: 0,
+  };
+  
+  results.forEach(r => {
+    if (r.fatigueLevel && fatigueCounts[r.fatigueLevel] !== undefined) {
+      fatigueCounts[r.fatigueLevel]++;
+    }
+  });
+
+  // Find most common fatigue level
+  const fatigueEntries = Object.entries(fatigueCounts) as [FatigueLevel, number][];
+  const mostCommonFatigue = fatigueEntries.reduce((prev, current) =>
+    current[1] > prev[1] ? current : prev
+  )[0];
+
+  const totalFatigueCount = fatigueCounts.early + fatigueCounts.moderate + fatigueCounts.high;
   
   // Calculate improvement trend (last 5 vs previous 5)
   let improvementTrend: 'improving' | 'declining' | 'neutral' = 'neutral';
@@ -182,7 +245,9 @@ export function getAttentionSummary(results: AttentionResultPayload[]) {
     averageReactionTime: Math.round(totalReactionTime / results.length),
     totalGamesPlayed: results.length,
     bestScore: Math.max(...scores),
-    improvementTrend
+    improvementTrend,
+    fatigueCount: totalFatigueCount,
+    mostCommonFatigue,
   };
 }
 
@@ -201,7 +266,8 @@ export async function testAttentionFirebaseConnection() {
       test: true,
       gameType: 'test_attention',
       timestamp: serverTimestamp(),
-      platform: Platform.OS
+      platform: Platform.OS,
+      fatigueLevel: 'none',
     };
     
     const testDocRef = await addDoc(testCollection, testData);
@@ -216,4 +282,44 @@ export async function testAttentionFirebaseConnection() {
       code: error.code 
     };
   }
+}
+
+// Helper function to analyze fatigue trends over time
+export function analyzeFatigueTrends(results: AttentionResultPayload[]) {
+  if (results.length === 0) {
+    return {
+      highFatigueGames: [],
+      recentFatigueLevel: 'none' as FatigueLevel,
+      fatigueFrequency: 0,
+      recommendedBreakDuration: 0,
+    };
+  }
+
+  // Get high fatigue games
+  const highFatigueGames = results.filter(r => r.fatigueLevel === 'high');
+  
+  // Get recent fatigue level (last game)
+  const recentFatigueLevel = results[results.length - 1].fatigueLevel || 'none';
+  
+  // Calculate fatigue frequency
+  const fatigueFrequency = results.filter(r => r.fatigueLevel && r.fatigueLevel !== 'none').length;
+  const fatiguePercentage = (fatigueFrequency / results.length) * 100;
+  
+  // Recommend break duration based on fatigue frequency
+  let recommendedBreakDuration = 0;
+  if (fatiguePercentage > 50) {
+    recommendedBreakDuration = 30; // 30 minutes
+  } else if (fatiguePercentage > 25) {
+    recommendedBreakDuration = 15; // 15 minutes
+  } else if (fatiguePercentage > 10) {
+    recommendedBreakDuration = 10; // 10 minutes
+  }
+
+  return {
+    highFatigueGames,
+    recentFatigueLevel,
+    fatigueFrequency,
+    fatiguePercentage: Math.round(fatiguePercentage),
+    recommendedBreakDuration,
+  };
 }
