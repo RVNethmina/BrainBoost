@@ -452,7 +452,7 @@ const AttentionResults: React.FC = () => {
                   navigation.navigate('AttentionPlayHard');
                   break;
                 default:
-                  navigation.navigate('AttentionQuiz');
+                  navigation.navigate('AttentionGame');
               }
             }}
           >
@@ -468,7 +468,7 @@ const AttentionResults: React.FC = () => {
           <TouchableOpacity
             className="flex-row items-center justify-center py-5 mb-4 rounded-2xl"
             style={{ backgroundColor: PALETTE.teal }}
-            onPress={() => navigation.navigate('AttentionQuiz')}
+            onPress={() => navigation.navigate('AttentionGame')}
           >
             <Text className="mr-2 text-2xl">🔄</Text>
             <Text 
