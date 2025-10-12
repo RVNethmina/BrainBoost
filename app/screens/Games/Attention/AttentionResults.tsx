@@ -5,7 +5,13 @@ import { saveAttentionResult } from '@/app/services/attentionResultsService';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useRef, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { 
+  Text, 
+  TouchableOpacity, 
+  View, 
+  ScrollView, 
+  SafeAreaView 
+} from 'react-native';
 import { useSettings } from '@/app/contexts/SettingsContext';
 import { FatigueLevel } from '@/app/services/fatigueDetectionService';
 
@@ -178,325 +184,331 @@ const AttentionResults: React.FC = () => {
   const cardBg = isDark ? '#2a2a2a' : '#fff';
 
   return (
-    <View className="flex-1" style={{ backgroundColor: bgColor }}>
-      {/* Content */}
-      <View className="items-center justify-center flex-1 p-5">
-        <View
-          className="items-center justify-center w-32 h-32 mb-6 rounded-full"
-          style={{ backgroundColor: getDifficultyColor() }}
-        >
-          <Text className="text-6xl">{getTrophyEmoji()}</Text>
-        </View>
-
-        <Text 
-          className="mb-4 text-4xl font-bold" 
-          style={{ fontSize: 32 * fontScale, color: PALETTE.teal }}
-        >
-          {accuracy >= 90
-            ? 'Sharp Focus!'
-            : accuracy >= 70
-            ? 'Good Attention!'
-            : 'Keep Training!'}
-        </Text>
-
-        <Text 
-          className="mb-2 text-xl text-center" 
-          style={{ fontSize: 18 * fontScale, color: textColor }}
-        >
-          {getEndMessage()}
-        </Text>
-        <Text 
-          className="mb-2 text-lg text-center" 
-          style={{ fontSize: 16 * fontScale, color: textColor }}
-        >
-          {getPerformanceMessage()}
-        </Text>
-        <Text
-          className="mb-8 text-lg font-semibold text-center"
-          style={{ fontSize: 16 * fontScale, color: getDifficultyColor() }}
-        >
-          {getGameTypeName()} - Level {level}
-        </Text>
-
-        {/* Save Status Indicator */}
-        {saveStatus === 'saving' && (
-          <Text className="mb-2 text-sm" style={{ fontSize: 12 * fontScale, color: textColor }}>
-            Saving your results...
-          </Text>
-        )}
-        {saveStatus === 'error' && (
-          <Text className="mb-2 text-sm" style={{ fontSize: 12 * fontScale, color: PALETTE.red }}>
-            Couldn't save results (offline?)
-          </Text>
-        )}
-
-        <View className="w-full mb-8 space-y-4">
-          {/* Main Stats */}
-          <View 
-            className="p-5 rounded-2xl" 
-            style={{ backgroundColor: PALETTE.lightTeal }}
+    <SafeAreaView className="flex-1" style={{ backgroundColor: bgColor }}>
+      <ScrollView 
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Content */}
+        <View className="items-center justify-center flex-1 p-5">
+          <View
+            className="items-center justify-center w-32 h-32 mb-6 rounded-full"
+            style={{ backgroundColor: getDifficultyColor() }}
           >
-            <View className="flex-row justify-between">
-              <View className="items-center flex-1">
-                <Text 
-                  className="font-bold" 
-                  style={{ fontSize: 24 * fontScale, color: PALETTE.teal }}
-                >
-                  {formatTime(timeTaken)}
-                </Text>
-                <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
-                  Time
-                </Text>
-              </View>
-              <View className="items-center flex-1">
-                <Text 
-                  className="font-bold" 
-                  style={{ fontSize: 24 * fontScale, color: PALETTE.teal }}
-                >
-                  {score}
-                </Text>
-                <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
-                  Score
-                </Text>
-              </View>
-              <View className="items-center flex-1">
-                <Text 
-                  className="font-bold" 
-                  style={{ fontSize: 24 * fontScale, color: PALETTE.teal }}
-                >
-                  {accuracy}%
-                </Text>
-                <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
-                  Accuracy
-                </Text>
-              </View>
-            </View>
+            <Text className="text-6xl">{getTrophyEmoji()}</Text>
           </View>
 
-          {/* Detailed Stats */}
-          <View 
-            className="p-5 rounded-2xl" 
-            style={{ backgroundColor: '#F9FAFB' }}
+          <Text 
+            className="mb-4 text-4xl font-bold" 
+            style={{ fontSize: 32 * fontScale, color: PALETTE.teal }}
           >
-            <View className="flex-row justify-between mb-3">
-              <View className="items-center flex-1">
-                <Text 
-                  className="font-bold" 
-                  style={{ fontSize: 18 * fontScale, color: reactionRating.color }}
-                >
-                  {avgReactionTime}ms
-                </Text>
-                <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
-                  Avg Response
-                </Text>
-                <Text 
-                  style={{ fontSize: 11 * fontScale, color: reactionRating.color }}
-                >
-                  {reactionRating.text}
-                </Text>
-              </View>
-              <View className="items-center flex-1">
-                <Text 
-                  className="font-bold" 
-                  style={{ fontSize: 18 * fontScale, color: PALETTE.teal }}
-                >
-                  {correctSelections}/{totalSelections}
-                </Text>
-                <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
-                  Correct/Total
-                </Text>
-              </View>
-              {missedRounds !== undefined && missedRounds > 0 && (
+            {accuracy >= 90
+              ? 'Sharp Focus!'
+              : accuracy >= 70
+              ? 'Good Attention!'
+              : 'Keep Training!'}
+          </Text>
+
+          <Text 
+            className="mb-2 text-xl text-center" 
+            style={{ fontSize: 18 * fontScale, color: textColor }}
+          >
+            {getEndMessage()}
+          </Text>
+          <Text 
+            className="mb-2 text-lg text-center" 
+            style={{ fontSize: 16 * fontScale, color: textColor }}
+          >
+            {getPerformanceMessage()}
+          </Text>
+          <Text
+            className="mb-8 text-lg font-semibold text-center"
+            style={{ fontSize: 16 * fontScale, color: getDifficultyColor() }}
+          >
+            {getGameTypeName()} - Level {level}
+          </Text>
+
+          {/* Save Status Indicator */}
+          {saveStatus === 'saving' && (
+            <Text className="mb-2 text-sm" style={{ fontSize: 12 * fontScale, color: textColor }}>
+              Saving your results...
+            </Text>
+          )}
+          {saveStatus === 'error' && (
+            <Text className="mb-2 text-sm" style={{ fontSize: 12 * fontScale, color: PALETTE.red }}>
+              Couldn't save results (offline?)
+            </Text>
+          )}
+
+          <View className="w-full mb-10">
+            {/* Main Stats */}
+            <View 
+              className="p-6 mb-8 rounded-2xl" 
+              style={{ backgroundColor: PALETTE.lightTeal }}
+            >
+              <View className="flex-row justify-between">
                 <View className="items-center flex-1">
                   <Text 
                     className="font-bold" 
-                    style={{ fontSize: 18 * fontScale, color: PALETTE.red }}
+                    style={{ fontSize: 24 * fontScale, color: PALETTE.teal }}
                   >
-                    {missedRounds}
+                    {formatTime(timeTaken)}
                   </Text>
                   <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
-                    Missed Rounds
+                    Time
                   </Text>
                 </View>
-              )}
-            </View>
-          </View>
-
-          {/* Fatigue Status */}
-          {fatigueLevel && fatigueLevel !== 'none' && (
-            <View 
-              className="p-4 rounded-2xl" 
-              style={{ backgroundColor: getFatigueColor() + '20' }}
-            >
-              <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">
-                  {fatigueLevel === 'high' ? '😴' : fatigueLevel === 'moderate' ? '😐' : '😊'}
-                </Text>
-                <View className="flex-1">
+                <View className="items-center flex-1">
                   <Text 
                     className="font-bold" 
-                    style={{ fontSize: 14 * fontScale, color: getFatigueColor() }}
+                    style={{ fontSize: 24 * fontScale, color: PALETTE.teal }}
                   >
-                    {fatigueLevel === 'high'
-                      ? 'High Fatigue Detected'
-                      : fatigueLevel === 'moderate'
-                      ? 'Moderate Fatigue'
-                      : 'Early Signs of Fatigue'}
+                    {score}
+                  </Text>
+                  <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
+                    Score
+                  </Text>
+                </View>
+                <View className="items-center flex-1">
+                  <Text 
+                    className="font-bold" 
+                    style={{ fontSize: 24 * fontScale, color: PALETTE.teal }}
+                  >
+                    {accuracy}%
+                  </Text>
+                  <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
+                    Accuracy
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Detailed Stats */}
+            <View 
+              className="p-6 mb-8 rounded-2xl" 
+              style={{ backgroundColor: '#F9FAFB' }}
+            >
+              <View className="flex-row justify-between">
+                <View className="items-center flex-1">
+                  <Text 
+                    className="font-bold" 
+                    style={{ fontSize: 18 * fontScale, color: reactionRating.color }}
+                  >
+                    {avgReactionTime}ms
+                  </Text>
+                  <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
+                    Avg Response
                   </Text>
                   <Text 
-                    style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 4 }}
+                    style={{ fontSize: 11 * fontScale, color: reactionRating.color }}
                   >
-                    {fatigueLevel === 'high'
-                      ? 'Please rest before your next session.'
-                      : fatigueLevel === 'moderate'
-                      ? 'Consider taking a break soon.'
-                      : 'You performed well, but monitor your energy.'}
+                    {reactionRating.text}
                   </Text>
                 </View>
+                <View className="items-center flex-1">
+                  <Text 
+                    className="font-bold" 
+                    style={{ fontSize: 18 * fontScale, color: PALETTE.teal }}
+                  >
+                    {correctSelections}/{totalSelections}
+                  </Text>
+                  <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
+                    Correct/Total
+                  </Text>
+                </View>
+                {missedRounds !== undefined && missedRounds > 0 && (
+                  <View className="items-center flex-1">
+                    <Text 
+                      className="font-bold" 
+                      style={{ fontSize: 18 * fontScale, color: PALETTE.red }}
+                    >
+                      {missedRounds}
+                    </Text>
+                    <Text style={{ fontSize: 12 * fontScale, color: textColor }}>
+                      Missed Rounds
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
-          )}
 
-          {/* Achievements */}
-          {accuracy >= 95 && avgReactionTime < 1000 && (
-            <View className="p-4 rounded-2xl" style={{ backgroundColor: '#FEF3C7' }}>
-              <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">⚡</Text>
-                <View className="flex-1">
-                  <Text style={{ fontSize: 14 * fontScale, fontWeight: 'bold', color: textColor }}>
-                    Lightning Focus!
+            {/* Fatigue Status */}
+            {fatigueLevel && fatigueLevel !== 'none' && (
+              <View 
+                className="p-5 mb-6 rounded-2xl" 
+                style={{ backgroundColor: getFatigueColor() + '20' }}
+              >
+                <View className="flex-row items-center gap-4">
+                  <Text className="text-2xl">
+                    {fatigueLevel === 'high' ? '😴' : fatigueLevel === 'moderate' ? '😐' : '😊'}
                   </Text>
-                  <Text style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 2 }}>
-                    Outstanding speed and accuracy on {difficulty} level!
-                  </Text>
+                  <View className="flex-1">
+                    <Text 
+                      className="font-bold" 
+                      style={{ fontSize: 14 * fontScale, color: getFatigueColor() }}
+                    >
+                      {fatigueLevel === 'high'
+                        ? 'High Fatigue Detected'
+                        : fatigueLevel === 'moderate'
+                        ? 'Moderate Fatigue'
+                        : 'Early Signs of Fatigue'}
+                    </Text>
+                    <Text 
+                      style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 4 }}
+                    >
+                      {fatigueLevel === 'high'
+                        ? 'Please rest before your next session.'
+                        : fatigueLevel === 'moderate'
+                        ? 'Consider taking a break soon.'
+                        : 'You performed well, but monitor your energy.'}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            )}
 
-          {accuracy >= 90 && (
-            <View className="p-4 rounded-2xl" style={{ backgroundColor: PALETTE.lightPink }}>
-              <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">👁️</Text>
-                <View className="flex-1">
-                  <Text style={{ fontSize: 14 * fontScale, fontWeight: 'bold', color: textColor }}>
-                    Eagle Eye!
-                  </Text>
-                  <Text style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 2 }}>
-                    Your attention to detail is impressive!
-                  </Text>
+            {/* Achievements */}
+            {accuracy >= 95 && avgReactionTime < 1000 && (
+              <View className="p-4 rounded-2xl" style={{ backgroundColor: '#FEF3C7' }}>
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-2xl">⚡</Text>
+                  <View className="flex-1">
+                    <Text style={{ fontSize: 14 * fontScale, fontWeight: 'bold', color: textColor }}>
+                      Lightning Focus!
+                    </Text>
+                    <Text style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 2 }}>
+                      Outstanding speed and accuracy on {difficulty} level!
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            )}
 
-          {difficulty === 'hard' && accuracy >= 75 && (
-            <View className="p-4 rounded-2xl" style={{ backgroundColor: '#E0E7FF' }}>
-              <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">💎</Text>
-                <View className="flex-1">
-                  <Text style={{ fontSize: 14 * fontScale, fontWeight: 'bold', color: textColor }}>
-                    Speed Master!
-                  </Text>
-                  <Text style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 2 }}>
-                    You conquered the hardest attention challenge!
-                  </Text>
+            {accuracy >= 90 && (
+              <View className="p-4 rounded-2xl" style={{ backgroundColor: PALETTE.lightPink }}>
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-2xl">👁️</Text>
+                  <View className="flex-1">
+                    <Text style={{ fontSize: 14 * fontScale, fontWeight: 'bold', color: textColor }}>
+                      Eagle Eye!
+                    </Text>
+                    <Text style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 2 }}>
+                      Your attention to detail is impressive!
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            )}
 
-          {avgReactionTime < 800 && (
-            <View className="p-4 rounded-2xl" style={{ backgroundColor: '#ECFDF5' }}>
-              <View className="flex-row items-center gap-3">
-                <Text className="text-2xl">⚡</Text>
-                <View className="flex-1">
-                  <Text style={{ fontSize: 14 * fontScale, fontWeight: 'bold', color: textColor }}>
-                    Quick Reflexes!
-                  </Text>
-                  <Text style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 2 }}>
-                    Average response time under 800ms - very fast!
-                  </Text>
+            {difficulty === 'hard' && accuracy >= 75 && (
+              <View className="p-4 rounded-2xl" style={{ backgroundColor: '#E0E7FF' }}>
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-2xl">💎</Text>
+                  <View className="flex-1">
+                    <Text style={{ fontSize: 14 * fontScale, fontWeight: 'bold', color: textColor }}>
+                      Speed Master!
+                    </Text>
+                    <Text style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 2 }}>
+                      You conquered the hardest attention challenge!
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            )}
+
+            {avgReactionTime < 800 && (
+              <View className="p-4 rounded-2xl" style={{ backgroundColor: '#ECFDF5' }}>
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-2xl">⚡</Text>
+                  <View className="flex-1">
+                    <Text style={{ fontSize: 14 * fontScale, fontWeight: 'bold', color: textColor }}>
+                      Quick Reflexes!
+                    </Text>
+                    <Text style={{ fontSize: 12 * fontScale, color: textColor, marginTop: 2 }}>
+                      Average response time under 800ms - very fast!
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
 
-      {/* Action Buttons */}
-      <View className="p-5 space-y-4">
-        <TouchableOpacity
-          className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: getDifficultyColor() }}
-          onPress={() => {
-            switch (gameType) {
-              case 'symbol_search':
-                navigation.navigate('AttentionPlayEasy');
-                break;
-              case 'color_focus':
-                navigation.navigate('AttentionPlayMedium');
-                break;
-              case 'speed_challenge':
-                navigation.navigate('AttentionPlayHard');
-                break;
-              default:
-                navigation.navigate('AttentionQuiz');
-            }
-          }}
-        >
-          <Text className="mr-2 text-2xl">🎯</Text>
-          <Text 
-            className="font-semibold text-white" 
-            style={{ fontSize: 18 * fontScale }}
+        {/* Action Buttons */}
+        <View className="px-5 pb-5 space-y-5">
+          <TouchableOpacity
+            className="flex-row items-center justify-center py-5 mb-4 rounded-2xl"
+            style={{ backgroundColor: getDifficultyColor() }}
+            onPress={() => {
+              switch (gameType) {
+                case 'symbol_search':
+                  navigation.navigate('AttentionPlayEasy');
+                  break;
+                case 'color_focus':
+                  navigation.navigate('AttentionPlayMedium');
+                  break;
+                case 'speed_challenge':
+                  navigation.navigate('AttentionPlayHard');
+                  break;
+                default:
+                  navigation.navigate('AttentionQuiz');
+              }
+            }}
           >
-            Play Same Game
-          </Text>
-        </TouchableOpacity>
+            <Text className="mr-2 text-2xl">🎯</Text>
+            <Text 
+              className="font-semibold text-white" 
+              style={{ fontSize: 18 * fontScale }}
+            >
+              Play Same Game
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: PALETTE.teal }}
-          onPress={() => navigation.navigate('AttentionQuiz')}
-        >
-          <Text className="mr-2 text-2xl">🔄</Text>
-          <Text 
-            className="font-semibold text-white" 
-            style={{ fontSize: 18 * fontScale }}
+          <TouchableOpacity
+            className="flex-row items-center justify-center py-5 mb-4 rounded-2xl"
+            style={{ backgroundColor: PALETTE.teal }}
+            onPress={() => navigation.navigate('AttentionQuiz')}
           >
-            Try Different Level
-          </Text>
-        </TouchableOpacity>
+            <Text className="mr-2 text-2xl">🔄</Text>
+            <Text 
+              className="font-semibold text-white" 
+              style={{ fontSize: 18 * fontScale }}
+            >
+              Try Different Level
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: PALETTE.lightTeal }}
-          onPress={() => navigation.navigate('BrainGames')}
-        >
-          <Text className="mr-2 text-2xl">🎮</Text>
-          <Text 
-            className="font-semibold text-white" 
-            style={{ fontSize: 18 * fontScale }}
+          <TouchableOpacity
+            className="flex-row items-center justify-center py-5 mb-4 rounded-2xl"
+            style={{ backgroundColor: PALETTE.lightTeal }}
+            onPress={() => navigation.navigate('BrainGames')}
           >
-            More Games
-          </Text>
-        </TouchableOpacity>
+            <Text className="mr-2 text-2xl">🎮</Text>
+            <Text 
+              className="font-semibold text-white" 
+              style={{ fontSize: 18 * fontScale }}
+            >
+              More Games
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-row items-center justify-center py-4 rounded-2xl"
-          style={{ backgroundColor: PALETTE.lightTeal }}
-          onPress={() => navigation.navigate('Home')}
-        >
-          <Text className="mr-2 text-2xl">🏠</Text>
-          <Text 
-            className="font-semibold text-white" 
-            style={{ fontSize: 18 * fontScale }}
+          <TouchableOpacity
+            className="flex-row items-center justify-center py-5 mb-4 rounded-2xl"
+            style={{ backgroundColor: PALETTE.lightTeal }}
+            onPress={() => navigation.navigate('Home')}
           >
-            Home
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+            <Text className="mr-2 text-2xl">🏠</Text>
+            <Text 
+              className="font-semibold text-white" 
+              style={{ fontSize: 18 * fontScale }}
+            >
+              Home
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
